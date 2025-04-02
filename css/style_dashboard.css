@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Boldonse&family=Dancing+Script:wght@400..700&family=Winky+Sans:ital,wght@0,300..900;1,300..900&display=swap');
+
+/* Variables CSS para colores principales */
+:root {
+    --primary-color: #000000;  /* Color primario azul */
+    --secondary-color: #722d2b; /* Color secundario azul oscuro */
+    --light-color: #722d2b;    /* Color claro de fondo */
+    --dark-color: #212529;     /* Color oscuro para texto */
+}
+
+/* Estilos generales */
+body {
+    font-family: "Winky Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400px;
+    font-style: normal;
+    background-color: #690808;  /* Color de fondo gris claro */
+}
+
+/* Estilos para el encabezado del dashboard */
+.dashboard-header {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Sombra suave */
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Estilos para las tarjetas de métricas */
+.metric-card {
+    font-family: "Winky Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400px;
+    font-style: normal;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s; /* Animación al hacer hover */
+}
+
+/* Efecto hover para las tarjetas */
+.metric-card:hover {
+    transform: translateY(-5px); /* Levantar ligeramente la tarjeta */
+}
+
+/* Estilos para los valores numéricos grandes */
+.metric-value {
+    font-family: "Winky Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color); /* Usa el color primario */
+}
+
+/* Estilos para los títulos de las métricas */
+.metric-title {
+    font-family: "Winky Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400px;
+    font-style: normal;
+    font-size: 1rem;
+    color: #000000; /* Color gris para texto secundario */
+    margin-bottom: 10px;
+}
+
+/* Personalización de la barra de progreso */
+.progress {
+    height: 10px;
+    border-radius: 5px;
+}
+
+/* Estilos para las fuentes de tráfico */
+.traffic-source {
+    margin-bottom: 8px;
+}
+
+/* Texto en negrita para las etiquetas */
+.traffic-source span {
+    font-weight: 600;
+}
+
+/* Contenedores para gráficos */
+.chart-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    height: 100%;
+}
+
+/* Lista de crecimiento de audiencia */
+.audience-growth {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+/* Elementos de la lista de crecimiento */
+.audience-growth li {
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* Contenedor circular para la auditoría del sitio */
+.site-audit {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+
+/* Puntuación centrada en el gráfico circular */
+.site-audit-score {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 768px) {
+    .metric-value {
+        font-size: 2rem; /* Tamaño más pequeño en móviles */
+    }
+}
