@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
             let password = document.getElementById("password").value;
 
             if (usuario === "admin" && password === "1234") {
-                window.location.href = "dashboard.html"; // Redirigir a otra página (cambia la URL según necesites)
+                window.location.href = "/php/dashboard.html"; // Redirigir a otra página (cambia la URL según necesites)
             } else {
                 alert("❌ Usuario o contraseña incorrectos");
             }
