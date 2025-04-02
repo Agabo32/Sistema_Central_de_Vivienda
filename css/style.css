@@ -1,0 +1,94 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Boldonse&family=Dancing+Script:wght@400..700&family=Winky+Sans:ital,wght@0,300..900;1,300..900&display=swap');
+h4{
+    font-family: "Boldonse", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+h5{
+    font-family: "Dancing Script", cursive;
+    font-optical-sizing: auto;
+    font-weight: 400px;
+    font-style: normal;
+}
+
+p1{
+    font-family: "Dancing Script", cursive;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+
+p{
+    font-family: "Winky Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400px;
+    font-style: normal;
+}
+
+
+body {
+    background: linear-gradient(to right, #000000, #000000); 
+    font-family: 'Arial', sans-serif;
+}
+
+/* Campos de entrada más minimalistas */
+.modern-input {
+    border-radius: 10px;
+    border: 1px solid #000000;
+    transition: all 0.3s ease-in-out;
+}
+
+.modern-input:focus {
+    border-color: #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.829);
+}
+
+.btn-animado {
+    background-color: #ff1504; 
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 10px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s;
+}
+
+.btn-animado:hover {
+    background-color: #000000; /* Verde más oscuro */
+}
+
+.btn-animado:active {
+    transform: scale(0.95);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+/* Fondo con sombras */
+.gradient-form {
+    background: url('/imagenes/fondo1.jpg') no-repeat center center/cover;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+.gradient-custom-2 {
+    /* fallback for old browsers */
+    background: #000000;
+    
+    /* Chrome 10-25, Safari 5.1-6 */
+    background: -webkit-linear-gradient(to right, #220707, #660808, #220510, #660808);
+    
+    /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    background: linear-gradient(to right,  #220707, #660808, #220707, #660808);
+    }
+    
+    @media (min-width: 768px) {
+    .gradient-form {
+    height: 100vh !important;
+    }
+    }
+    @media (min-width: 769px) {
+    .gradient-custom-2 {
+    border-top-right-radius: .3rem;
+    border-bottom-right-radius: .3rem;
+    }
+    }
+
