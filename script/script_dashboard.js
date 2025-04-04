@@ -1,25 +1,25 @@
 // Datos para las tarjetas de métricas principales
 const metrics = [
     {
-        title: "Beneficiarios Registrados",
+        title: "Me gusta en Facebook",
         value: "3,009",
         change: "342 este mes",
         icon: "fa-thumbs-up"
     },
     {
-        title: "Casas Culminadas",
+        title: "Suscriptores de YouTube",
         value: "342",
         change: "28 este mes",
         icon: "fa-youtube"
     },
     {
-        title: "Casas sin culminar",
+        title: "Visitas al Sitio",
         value: "35,295",
         change: "12% respecto al mes pasado",
         icon: "fa-globe"
     },
     {
-        title: "Actualizaciones",
+        title: "Posiciones en Google",
         value: "27",
         change: "5 nuevas posiciones",
         icon: "fa-google"
@@ -28,11 +28,11 @@ const metrics = [
 
 // Datos de las fuentes de tráfico
 const trafficSources = [
-    { name: "Búsqueda Orgánica", value: "16,028", percentage: 100, color: "success" },
+    { name: "Búsqueda Orgánica", value: "16,028", percentage: 45, color: "success" },
     { name: "Directo", value: "9,324", percentage: 26, color: "primary" },
     { name: "Búsqueda de Pago", value: "6,177", percentage: 18, color: "info" },
-    { name: "Email", value: "1,228", percentage: 100, color: "warning" },
-    { name: "Referidos", value: "986", percentage: 100, color: "danger" }
+    { name: "Email", value: "1,228", percentage: 4, color: "warning" },
+    { name: "Referidos", value: "986", percentage: 3, color: "danger" }
 ];
 
 // Datos de distribución de rankings
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: [72, 28],
                 backgroundColor: [
-                    '#FF0800FF',
+                    '#4361ee',
                     '#e9ecef'
                 ],
                 borderWidth: 0
@@ -189,4 +189,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggler = document.querySelector('.sidebar-toggler');
+    const menuToggler = document.querySelector('.menu-toggler');
+    
+    // Verificar el ancho de la pantalla al cargar
+    function checkScreenSize() {
+        if (window.innerWidth <= 992) {
+            sidebar.classList.add('collapsed');
+            sidebar.classList.remove('menu-active');
+        } else {
+            sidebar.classList.remove('collapsed', 'menu-active');
+        }
+    }
+    
+    // Toggle para colapsar/expandir la barra lateral
+    sidebarToggler.addEventListener('click', function() {
+        if (window.innerWidth > 992) {
+            sidebar.classList.toggle('collapsed');
+        }
+    });
+    
+    // Toggle para el menú móvil
+    menuToggler.addEventListener('click', function() {
+        if (window.innerWidth <= 992) {
+            sidebar.classList.toggle('menu-active');
+            
+            // Cambiar el icono del menú
+            const menuIcon = menuToggler.querySelector('span');
+            if (sidebar.classList.contains('menu-active')) {
+                menuIcon.textContent = 'close';
+            } else {
+                menuIcon.textContent = 'menu';
+            }
+        }
+    });
+    
+    // Manejar cambios de tamaño de pantalla
+    window.addEventListener('resize', function() {
+        checkScreenSize();
+    });
+    
+    // Inicializar
+    checkScreenSize();
+    
+    // [Aquí puedes agregar el resto de tu código JavaScript para el dashboard]
 });
