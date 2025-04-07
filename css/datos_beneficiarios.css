@@ -1,0 +1,402 @@
+:root {
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 70px;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #2c3e50;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+  z-index: 1000;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+/* Contenido principal */
+.container {
+  margin-left: var(--sidebar-width);
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+}
+
+/* Ajuste cuando el sidebar está colapsado */
+.sidebar.collapsed ~ .container {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Tabla al 100% del contenedor */
+.user-table {
+  width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+
+
+/* Estilo general */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f8fa;
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
+  
+  /* Contenedor principal */
+  .container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  /* Título */
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+    font-size: 28px;
+  }
+  
+  /* Tabla de usuarios */
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .user-table th, .user-table td {
+    padding: 12px 15px;
+    text-align: left;
+  }
+  
+  .user-table thead {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  .user-table tbody tr {
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .user-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  /* Botones de acción */
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  button.edit {
+    background-color: #f1c40f;
+    color: #fff;
+  }
+  
+  button.delete {
+    background-color: #e74c3c;
+    color: #fff;
+  }
+  
+  button.edit:hover {
+    background-color: #d4ac0d;
+  }
+  
+  button.delete:hover {
+    background-color: #c0392b;
+  }
+  
+  /* Estilo para el formulario de agregar usuario */
+  form.add-user-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  form.add-user-form input, form.add-user-form select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  form.add-user-form button {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  form.add-user-form button:hover {
+    background-color: #27ae60;
+  }
+  
+  /* Responsive */
+  @media screen and (max-width: 768px) {
+    .user-table, .user-table thead, .user-table tbody, .user-table th, .user-table td, .user-table tr {
+      display: block;
+    }
+  
+    .user-table tr {
+      margin-bottom: 15px;
+    }
+  
+    .user-table td {
+      text-align: right;
+      padding-left: 50%;
+      position: relative;
+    }
+  
+    .user-table td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 15px;
+      width: 45%;
+      padding-left: 10px;
+      font-weight: bold;
+      text-align: left;
+    }
+  }
+  /* Animación para la barra lateral */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    transition: width var(--transition-duration) ease;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ocultar scrollbar para Chrome, Safari y Opera */
+.sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Encabezado de la barra lateral */
+.sidebar-header {
+    padding: 15px;
+    height: 80px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #1a252f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: all var(--transition-duration) ease;
+}
+
+.header-logo {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all var(--transition-duration) ease;
+}
+
+.header-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-duration) ease;
+}
+
+/* Contenido de la barra lateral */
+.sidebar-content {
+    flex: 1;
+    padding: 15px 0;
+    overflow-y: auto;
+    transition: all var(--transition-duration) ease;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ocultar scrollbar para Chrome, Safari y Opera */
+.sidebar-content::-webkit-scrollbar {
+    display: none;
+}
+
+/* Elementos de navegación */
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nav-item {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    color: #ecf0f1;
+    text-decoration: none;
+    width: 100%;
+    transition: all var(--transition-duration) ease;
+    position: relative;
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    transition: all var(--transition-duration) ease;
+    display: flex;
+    justify-content: center;
+    min-width: 24px;
+}
+
+.nav-label {
+    margin-left: 15px;
+    transition: all var(--transition-duration) ease;
+    white-space: nowrap;
+}
+
+/* Estado colapsado */
+.sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .header-logo {
+    transform: scale(0.9);
+}
+
+.sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.sidebar.collapsed ~ .container {
+    margin-left: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .nav-section-title {
+    display: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Estilos para el botón de colapso */
+.sidebar-collapse-btn {
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    background: #2c3e50;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1001;
+    transition: all var(--transition-duration) ease;
+}
+
+.sidebar-collapse-btn:hover {
+    background: #3498db;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 3px 0 15px rgba(0,0,0,0.3);
+}
+
+.collapse-icon {
+    transition: transform var(--transition-duration) ease;
+}
+
+.sidebar.collapsed .collapse-icon {
+    transform: rotate(180deg);
+}
+
+
+
+/* Efectos hover */
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link:hover .nav-icon {
+    transform: scale(1.2);
+    color: #e74c3c;
+}
+
+/* Tooltips para elementos del menú */
+.nav-item {
+    position: relative;
+}
+
+.nav-tooltip {
+    position: absolute;
+    left: calc(100% + 15px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.sidebar.collapsed .nav-item:hover .nav-tooltip {
+    opacity: 1;
+    visibility: visible;
+    left: calc(var(--sidebar-collapsed-width) + 15px);
+}
+
+/* Responsive: barra lateral encima */
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  .container {
+    margin-left: 0 !important;
+  }
+}
