@@ -190,51 +190,78 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
-    const sidebarToggler = document.querySelector('.sidebar-toggler');
-    const menuToggler = document.querySelector('.menu-toggler');
+    const collapseBtn = document.querySelector('.sidebar-collapse-btn');
+    const container = document.querySelector('.container');
     
-    // Verificar el ancho de la pantalla al cargar
-    function checkScreenSize() {
-        if (window.innerWidth <= 992) {
-            sidebar.classList.add('collapsed');
-            sidebar.classList.remove('menu-active');
+    // Verificar si hay un estado guardado
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        container.style.marginLeft = 'var(--sidebar-collapsed-width)';
+    }
+    
+    // Función para alternar el estado
+    function toggleSidebar() {
+        // Prevenir múltiples clics durante la animación
+        if (sidebar.classList.contains('animating')) return;
+        
+        sidebar.classList.add('animating');
+        sidebar.classList.toggle('collapsed');
+        
+        // Animar el contenedor principal
+        if (sidebar.classList.contains('collapsed')) {
+            container.style.marginLeft = 'var(--sidebar-collapsed-width)';
         } else {
-            sidebar.classList.remove('collapsed', 'menu-active');
+            container.style.marginLeft = 'var(--sidebar-width)';
+        }
+        
+        // Guardar preferencia
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        
+        // Notificar cambios
+        document.dispatchEvent(new Event('sidebarToggled'));
+        
+        // Remover la clase de animación después de que termine
+        setTimeout(() => {
+            sidebar.classList.remove('animating');
+        }, 300);
+    }
+    
+    // Función para alternar el menú móvil
+    function toggleMobileMenu() {
+        if (window.innerWidth <= 992) {
+            sidebar.classList.toggle('menu-active');
+            const menuIcon = menuToggler.querySelector('span');
+            menuIcon.textContent = sidebar.classList.contains('menu-active') ? 'close' : 'menu';
         }
     }
     
-    // Toggle para colapsar/expandir la barra lateral
-    sidebarToggler.addEventListener('click', function() {
-        if (window.innerWidth > 992) {
-            sidebar.classList.toggle('collapsed');
-        }
-    });
+    // Asignar evento al botón
+    collapseBtn.addEventListener('click', toggleSidebar);
     
-    // Toggle para el menú móvil
-    menuToggler.addEventListener('click', function() {
-        if (window.innerWidth <= 992) {
-            sidebar.classList.toggle('menu-active');
-            
-            // Cambiar el icono del menú
-            const menuIcon = menuToggler.querySelector('span');
-            if (sidebar.classList.contains('menu-active')) {
-                menuIcon.textContent = 'close';
+    // Manejar responsive
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < 992) {
+            sidebar.classList.add('collapsed');
+            container.style.marginLeft = 'var(--sidebar-collapsed-width)';
+        } else {
+            // Restaurar estado preferido
+            const shouldCollapse = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (shouldCollapse) {
+                sidebar.classList.add('collapsed');
+                container.style.marginLeft = 'var(--sidebar-collapsed-width)';
             } else {
-                menuIcon.textContent = 'menu';
+                sidebar.classList.remove('collapsed');
+                container.style.marginLeft = 'var(--sidebar-width)';
             }
         }
     });
     
-    // Manejar cambios de tamaño de pantalla
-    window.addEventListener('resize', function() {
-        checkScreenSize();
-    });
-    
-    // Inicializar
-    checkScreenSize();
-    
-    // [Aquí puedes agregar el resto de tu código JavaScript para el dashboard]
+    // Inicialización para móviles
+    if (window.innerWidth < 992) {
+        sidebar.classList.add('collapsed');
+        container.style.marginLeft = 'var(--sidebar-collapsed-width)';
+    }
 });
