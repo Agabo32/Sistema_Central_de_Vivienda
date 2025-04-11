@@ -6,20 +6,38 @@ def cargar_y_verificar_csv(archivo_entrada):
     Función para cargar un archivo CSV, verificar sus columnas y adaptarlas a los nombres esperados
     """
     try:
-        # 1. Primera lectura solo para ver las columnas disponibles
+        # 1. Leer el archivo como texto y limpiar las filas
+        with open(archivo_entrada, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Limpiar las filas: eliminar el primer ; si existe
+        cleaned_lines = []
+        for i, line in enumerate(lines):
+            if i == 0:  # Mantener los encabezados sin cambios
+                cleaned_lines.append(line)
+            else:
+                if line.startswith(';'):
+                    cleaned_lines.append(line[1:])  # Eliminar el primer ;
+                else:
+                    cleaned_lines.append(line)
+        
+        # Crear un archivo temporal limpio
+        temp_file = 'temp_cleaned.csv'
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            f.writelines(cleaned_lines)
+        
+        # 2. Primera lectura solo para ver las columnas disponibles
         print("\n=== Verificando estructura del CSV ===")
-        df_prueba = pd.read_csv(archivo_entrada, nrows=0, sep=';', encoding='utf-8')
+        df_prueba = pd.read_csv(temp_file, nrows=0, sep=';', encoding='utf-8')
         print("Columnas encontradas en el CSV:")
         print(df_prueba.columns.tolist())
         
-        # 2. Detectar el separador correcto automáticamente
-        print("\n=== Detectando separador correcto ===")
-        separador = detectar_separador(archivo_entrada)
-        print(f"Separador detectado: '{separador}'")
-        
         # 3. Cargar el archivo completo con el separador detectado
         print("\n=== Cargando archivo completo ===")
-        df = pd.read_csv(archivo_entrada, sep=separador, encoding='utf-8', low_memory=False)
+        df = pd.read_csv(temp_file, sep=';', encoding='utf-8', low_memory=False)
+        
+        # Eliminar el archivo temporal
+        os.remove(temp_file)
         
         # 4. Mapear nombres de columnas a los nombres deseados
         print("\n=== Ajustando nombres de columnas ===")
@@ -38,34 +56,36 @@ def cargar_y_verificar_csv(archivo_entrada):
         
         try:
             # Reintentar con codificación latin1
-            df_prueba = pd.read_csv(archivo_entrada, nrows=0, sep=';', encoding='latin1')
-            separador = detectar_separador(archivo_entrada, encoding='latin1')
-            df = pd.read_csv(archivo_entrada, sep=separador, encoding='latin1', low_memory=False)
+            with open(archivo_entrada, 'r', encoding='latin1') as f:
+                lines = f.readlines()
+            
+            cleaned_lines = []
+            for i, line in enumerate(lines):
+                if i == 0:
+                    cleaned_lines.append(line)
+                else:
+                    if line.startswith(';'):
+                        cleaned_lines.append(line[1:])
+                    else:
+                        cleaned_lines.append(line)
+            
+            temp_file = 'temp_cleaned.csv'
+            with open(temp_file, 'w', encoding='latin1') as f:
+                f.writelines(cleaned_lines)
+            
+            df_prueba = pd.read_csv(temp_file, nrows=0, sep=';', encoding='latin1')
+            df = pd.read_csv(temp_file, sep=';', encoding='latin1', low_memory=False)
+            os.remove(temp_file)
+            
             df = renombrar_columnas(df)
             df = verificar_columnas_faltantes(df)
             return df
         except Exception as e2:
             print(f"Error persistente: {str(e2)}")
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
             raise Exception("No se pudo cargar el archivo con ninguna codificación estándar")
-
-def detectar_separador(archivo, encoding='utf-8'):
-    """
-    Detecta automáticamente el separador usado en el archivo CSV
-    """
-    separadores = [',', ';', '\t', '|']
-    
-    for sep in separadores:
-        try:
-            with open(archivo, 'r', encoding=encoding) as f:
-                primera_linea = f.readline()
-                if sep in primera_linea:
-                    return sep
-        except:
-            continue
-    
-    # Si no se detecta, usar ; por defecto (común en archivos europeos)
-    return ';'
-
+        
 def renombrar_columnas(df):
     """
     Renombra las columnas del DataFrame según un mapeo predefinido
@@ -279,7 +299,7 @@ if __name__ == "__main__":
         print(df_final.dtypes)
         
         # Exportar el archivo procesado
-        ruta_exportacion = os.path.join(os.path.dirname(archivo_entrada), "datos_procesados_2.csv")
+        ruta_exportacion = os.path.join(os.path.dirname(archivo_entrada), "datos_procesados_55.csv")
         exportar_a_csv(df_final, ruta_exportacion)
         
     except Exception as e:
