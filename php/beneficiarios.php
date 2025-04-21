@@ -1,5 +1,7 @@
 <?php
 require_once '../php/conf/conexion.php'; // Asegúrate que la ruta sea correcta
+$sql = "SELECT * FROM beneficiario";
+$resultado = $conexion->query($sql);
 ?>
 
 <!DOCTYPE html>
@@ -27,11 +29,35 @@ require_once '../php/conf/conexion.php'; // Asegúrate que la ruta sea correcta
         }
 
         body {
-            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
             color: var(--text-color);
             min-height: 100vh;
+            height: 100vh;
             padding: 0;
             margin: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 2;
+            padding: 2rem;
         }
 
         .navbar {
@@ -346,7 +372,6 @@ require_once '../php/conf/conexion.php'; // Asegúrate que la ruta sea correcta
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <!-- JS personalizado -->
-    <script src="/script/beneficiarios.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Manejar el scroll del navbar y el margen del contenido

@@ -12,45 +12,101 @@
     <!-- CSS personalizado -->
     <style>
         :root {
-            --primary-color: #1565C0;     /* Naranja brillante */
-            --secondary-color: #0074D9;   /* Azul brillante */
-            --accent-color:rgba(247, 5, 5, 0.9);      /* Rojo brillante */
-            --background-dark: #1A237E;   /* Azul oscuro */
-            --background-light: #1565C0;  /* Azul más claro */
+            --primary-color: #1565C0;
+            --secondary-color: #0074D9;
+            --accent-color: rgba(247, 5, 5, 0.9);
+            --background-dark: #1A237E;
+            --background-light: #1565C0;
             --text-color: #FFFFFF;
-            --shadow-color: #FFA500;
-            --border-color: #FFA500;
+            --shadow-color: yellow;
+            --border-color: rgba(221, 7, 7, 0.7);
         }
 
         body {
-            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
             color: var(--text-color);
+            height: 100vh;
             min-height: 100vh;
-            padding: 0;
+            width: 100%;
             margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            pointer-events: none;
         }
 
         .navbar {
             background: var(--primary-color);
             backdrop-filter: blur(10px);
             border-bottom: 2px solid var(--secondary-color);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px var(--shadow-color);
+            padding: 1rem 1.5rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            height: 60px;
+            display: flex;
+            align-items: center;
         }
 
         .navbar-brand {
-            margin-right: 2rem;
+            margin-right: 1.5rem;
+            transition: all 0.3s ease;
         }
 
         .nav-link {
             color: white !important;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
             transition: all 0.3s ease;
         }
 
         .nav-link:hover {
-            border: 1px flex var(--border-color);
+            border: 1px solid var(--border-color);
             background: rgba(80, 80, 80, 0.9);
+        }
+
+        .navbar.scrolled {
+            padding: 0.7rem 1.2rem;
+            background: rgba(21, 101, 192, 0.95);
+            height: 55px;
+        }
+
+        .navbar.scrolled .navbar-brand {
+            margin-right: 1.2rem;
+        }
+
+        .navbar.scrolled .nav-link {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .navbar.scrolled .nav-link i {
+            font-size: 0.95rem;
+        }
+
+        .navbar.scrolled .navbar-brand img {
+            height: 25px;
         }
 
         .dropdown-menu {
@@ -61,7 +117,8 @@
 
         .dropdown-item {
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
             transition: all 0.3s ease;
         }
 
@@ -76,28 +133,42 @@
         }
 
         .carousel {
-            margin-top: 60px; /* Altura del navbar + padding */
+            max-width: 900px; /* Ajustando el ancho máximo */
+            margin: 0 auto;
+            padding: 30px;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(221, 7, 7, 0.7);
             background: rgba(221, 7, 7, 0.7);
             position: relative;
             z-index: 1;
+            margin-top: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .carousel-item img {
-            height: 500px;
+            height: 100%;
+            width: 100%;
             object-fit: cover;
+            min-height: 500px;
+        }
+
+        .carousel-item {
+            height: 500px;
         }
 
         .carousel-caption {
-            bottom: 100px;
-            background: rgba(221, 7, 7, 0.7);
-            padding: 2rem;
-            border-radius: 10px;
+            bottom: 80px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 25px;
+            border-radius: 15px;
         }
 
         .stat-card {
+            position: relative;
+            z-index: 2;
             background: rgba(255, 165, 0, 0.1);
             border-radius: 15px;
             padding: 2rem;
@@ -106,12 +177,6 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px var(--shadow-color);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-            box-shadow: 0 15px 40px var(--shadow-color);
         }
 
         .stat-card:hover {
@@ -190,7 +255,7 @@
 <body>
     <!-- Barra de navegación superior -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 40px;">
             </a>
@@ -200,10 +265,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Beneficiarios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Proyectos</a>
+                        <a class="nav-link" href="../php/beneficiarios.php">Beneficiarios</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Reportes</a>
@@ -222,11 +284,11 @@
     </nav>
 
     <!-- Carrusel de imágenes -->
-    <div class="container-fluid p-0">
+    <div class="main-content">
         <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <img src="../imagenes/construccion1.jpg" class="d-block w-100" alt="Construcción 1" style="height: 600px; object-fit: cover;">
+                    <img src="../imagenes/C0XUWCQWgAAnTeb.jpg" class="d-block w-100" alt="Construcción 1" style="height: 600px; object-fit: cover;">
                     <div class="carousel-caption d-none d-md-block">
                         <h5 class="text-white">Proyecto Vivienda Digna</h5>
                         <p class="text-white">Avance de construcción: 75%</p>
@@ -273,7 +335,7 @@
     </div>
 
     <!-- Tarjetas de estadísticas -->
-    <div class="container mt-5">
+    <div class="container mt-5" style="z-index: 2; position: relative;">
         <div class="row">
             <div class="col-md-4">
                 <div class="stat-card">

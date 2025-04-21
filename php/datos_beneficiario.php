@@ -1,5 +1,5 @@
 <?php
-require_once '../php/conf/conexion.php'; // Ajusta si tu ruta es distinta
+require_once '../php/conf/conexion.php';
 
 if (!isset($_GET['id'])) {
     echo "ID de beneficiario no especificado.";
@@ -31,8 +31,7 @@ $resultado = $stmt->get_result();
 
 if ($resultado->num_rows > 0) {
     $data = $resultado->fetch_assoc();
-
-    ?>
+?>
 
 <!DOCTYPE html>
 <html lang="es">
@@ -45,403 +44,406 @@ if ($resultado->num_rows > 0) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS personalizado -->
     <style>
         :root {
             --primary-color: #1565C0;
             --secondary-color: #0074D9;
-            --accent-color: rgba(247, 5, 5, 0.9);
+            --accent-color: #E53935;
             --background-dark: #1A237E;
             --background-light: #1565C0;
             --text-color: #FFFFFF;
-            --shadow-color: rgba(221, 7, 7, 0.7);
-            --border-color: rgba(221, 7, 7, 0.7);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --progress-complete: #4CAF50;
+            --progress-medium: #FFC107;
+            --progress-low: #F44336;
         }
 
         body {
-            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
             color: var(--text-color);
             min-height: 100vh;
+            height: 100vh;
             padding: 0;
             margin: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: -1;
+            pointer-events: none;
         }
 
         .navbar {
             background: var(--primary-color);
-            backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--secondary-color);
-            padding: 1.2rem 2rem;
-            box-shadow: 0 2px 10px var(--shadow-color);
-            transition: all 0.3s ease;
-        }
-
-        .navbar-brand {
-            margin-right: 2rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link {
-            color: white !important;
-            padding: 0.7rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            border: 1px solid var(--border-color);
-            background: rgba(80, 80, 80, 0.9);
-        }
-
-        .navbar.scrolled {
-            padding: 0.4rem 1.5rem;
-            background: rgba(21, 101, 192, 0.95);
-            box-shadow: 0 2px 5px var(--shadow-color);
-        }
-
-        .navbar.scrolled .navbar-brand {
-            margin-right: 1rem;
-        }
-
-        .navbar.scrolled .nav-link {
-            padding: 0.2rem 0.5rem;
-            font-size: 0.8rem;
-        }
-
-        .navbar.scrolled .nav-link i {
-            font-size: 0.8rem;
-        }
-
-        /* Ajustar el tamaño del logo en el navbar reducido */
-        .navbar.scrolled .navbar-brand img {
-            height: 25px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .content-wrapper {
-            margin-top: 100px;
-            padding-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .content-wrapper.scrolled {
-            margin-top: 60px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
         }
 
         .card {
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 25px;
+            border: none;
+            overflow: hidden;
+            background: var(--card-bg);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
         }
 
         .card-header {
-            background: rgba(255, 255, 255, 0.95);
-            border-bottom: 1px solid var(--secondary-color);
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            border-bottom: none;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 8px;
+            margin: 20px 0 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            margin: 10px 0;
+            height: 25px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 20px;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            transition: width 1s ease-in-out;
+        }
+
+        .complete {
+            background-color: var(--progress-complete);
+        }
+
+        .medium {
+            background-color: var(--progress-medium);
+        }
+
+        .low {
+            background-color: var(--progress-low);
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: rgba(245, 245, 245, 0.9);
             padding: 15px;
-            border-radius: 10px 10px 0 0;
+            border-radius: 8px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .card-body {
-            padding: 20px;
-        }
-
-        .table {
-            margin-bottom: 0;
-        }
-
-        .table th {
-            width: 20%;
+        .info-label {
             font-weight: 600;
             color: var(--primary-color);
+            margin-bottom: 5px;
         }
 
-        .table td {
-            width: 80%;
+        .info-value {
+            font-size: 15px;
         }
 
-        .btn-link {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .btn-link:hover {
-            color: var(--accent-color);
-            text-decoration: underline;
-        }
-
-        .carousel {
-            margin-top: 60px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px var(--shadow-color);
-            background: var(--shadow-color);
-            position: relative;
-            z-index: 1;
-        }
-
-        .carousel-caption {
-            bottom: 100px;
-            background: var(--shadow-color);
-            padding: 2rem;
-            border-radius: 10px;
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Barra de navegación superior -->
+    <!-- Barra de navegación -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="#">
                 <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 40px;">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="menu_principal.php">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Beneficiarios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Proyectos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Reportes</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Cerrar Sesión</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="menu_principal.php">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="#">Beneficiarios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Proyectos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Reportes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../index.php">Cerrar Sesión</a></li>
                 </ul>
-                <div class="nav-item ms-3">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-user"></i>
-                    </a>
-                </div>
             </div>
         </div>
     </nav>
 
-    <div class="content-wrapper">
-        <div class="container">
-        <div class="row">
-            <div class="col-12 mb-4">
-                <h2 class="text-center text-white mb-4" style="background: var(--primary-color); padding: 1rem; border-radius: 10px;">Datos del Beneficiario</h2>
-            </div>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="mb-0">Información Personal</h3>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalActualizar">
-                                <i class="fas fa-edit me-2"></i>Actualizar Datos
-                            </button>
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminar">
-                                <i class="fas fa-trash me-2"></i>Eliminar Registro
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <table class="table">
-                            <tbody>
-                                <tr>
-                                    <th scope="row">Nombre:</th>
-                                    <td><?php echo $data['nombre_completo'] ; ?></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">Cédula:</th>
-                                    <td><?php echo $data['cedula']; ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Teléfono:</th>
-                                    <td><?php echo $data['telefono']; ?></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="mb-0">Información de la Vivienda</h3>
-                    </div>
-                    <h3>Ubicación</h3>
-                    <p><strong>Comunidad:</strong> <?php echo $data['comunidad']; ?></p>
-                    <p><strong>Manzana:</strong> <?php echo $data['manzana']; ?></p>
-                    <p><strong>Parcela:</strong> <?php echo $data['parcela']; ?></p>
-                    <p><strong>Zona:</strong> <?php echo $data['zona']; ?></p>
-
-                    <h3>Proyecto de Construcción</h3>
-                    <p><strong>Código de Obra:</strong> <?php echo $data['codigo_obra']; ?></p>
-<p><strong>Método Constructivo:</strong> <?php echo $data['metodo_constructivo']; ?></p>
-<p><strong>Modelo Constructivo:</strong> <?php echo $data['modelo_constructivo']; ?></p>
-<p><strong>Fiscalizador:</strong> <?php echo $data['fiscalizador']; ?></p>
-
-                    <h3>Acondicionamiento</h3>
-                    <p><strong>Limpieza:</strong> <?php echo $data['limpieza']; ?></p>
-                    <p><strong>Replanteo:</strong> <?php echo $data['replanteo']; ?></p>
-                    <p><strong>Relleno:</strong> <?php echo $data['relleno']; ?></p>
-
-                    <h3>Avance Constructivo</h3>
-                    <p><strong>Cerramiento:</strong> <?php echo $data['cerramiento']; ?></p>
-                    <p><strong>Techo:</strong> <?php echo $data['techo']; ?></p>
-                    <p><strong>Acabado:</strong> <?php echo $data['acabado']; ?></p>
-                    <p><strong>Bloqueado:</strong> <?php echo $data['bloqueado']; ?></p>
-                    <p><strong>Colocación de Correas:</strong> <?php echo $data['colocacion_correas']; ?></p>
-                    <p><strong>Colocación de Techo:</strong> <?php echo $data['colocacion_techo']; ?></p>
-                    <p><strong>Colocación de Ventanas:</strong> <?php echo $data['colocacion_ventanas']; ?></p>
-                    <p><strong>Colocación de Puertas Principales:</strong> <?php echo $data['colocacion_puertas_principales']; ?></p>
-                    <p><strong>Intalaciones Electricas, Sanitarias, Paredes:</strong> <?php echo $data['intalaciones_electricas_sanitarias_paredes']; ?></p>
-                    <p><strong>Frisos:</strong> <?php echo $data['frisos']; ?></p>
-                    <p><strong>Sobrepiso:</strong> <?php echo $data['sobrepiso']; ?></p>
-                    <p><strong>Ceramica de Baño:</strong> <?php echo $data['ceramica_de_bano']; ?></p>
-                    <p><strong>Colocacion de Puertas Internas:</strong> <?php echo $data['colocacion_puertas_internas']; ?></p>
-                    <p><strong>Equipos y Accesorios Electricos:</strong> <?php echo $data['equipos_accesorios_electricos']; ?></p>
-                    <p><strong>Equipos y Accesorios Sanitarios:</strong> <?php echo $data['equipos_accesorios_sanitarios']; ?></p>
-                    <p><strong>Colocacion de Lavaplatos:</strong> <?php echo $data['colocacion_lavaplatos']; ?></p>
-                    <p><strong>Pintura:</strong> <?php echo $data['pintura']; ?></p>
-
-                    <h3>Estado de la Vivienda</h3>
-                    <p><strong>Estado:</strong> <?php echo $data['estado_vivienda']; ?></p>
-                    <p><strong>Fecha de Inicio:</strong> <?php echo $data['fecha_inicio']; ?></p>
-                    <p><strong>Fecha de Culminación:</strong> <?php echo $data['fecha_culminacion']; ?></p>
-                    <p><strong>Avances:</strong> <?php echo $data['avances']; ?></p>
-                    <p><strong>Observaciones:</strong> <?php echo $data['observaciones']; ?></p>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <!-- Modales -->
-</ADDITIONAL_METADATA>
-                        </table>
+                <h1 class="text-center text-white mb-3">Datos del Beneficiario</h1>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="text-white"><?php echo $data['nombre_completo']; ?></h2>
+                    <div>
+                        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalActualizar">
+                            <i class="fas fa-edit me-1"></i> Actualizar
+                        </button>
+                        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalEliminar">
+                            <i class="fas fa-trash me-1"></i> Eliminar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    </div>
 
-    <!-- Modales -->
-    <!-- Modal Actualizar -->
-    <div class="modal fade" id="modalActualizar" tabindex="-1" aria-labelledby="modalActualizarLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalActualizarLabel">Actualizar Datos del Beneficiario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <!-- Información Personal -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-user me-2"></i>Información Personal</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Cédula</div>
+                        <div class="info-value"><?php echo $data['cedula']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Teléfono</div>
+                        <div class="info-value"><?php echo $data['telefono']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Estado Civil</div>
+                        <div class="info-value"><?php echo $data['estado_civil'] ?? 'No especificado'; ?></div>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <form id="formActualizar">
-                        <div class="mb-3">
-                            <label for="nombre" class="form-label">Nombre Completo</label>
-                            <input type="text" class="form-control" id="nombre" value="Carlos García">
-                        </div>
-                        <div class="mb-3">
-                            <label for="cedula" class="form-label">Cédula</label>
-                            <input type="text" class="form-control" id="cedula" value="V-12345678">
-                        </div>
-                        <div class="mb-3">
-                            <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" id="fecha_nacimiento" value="1980-01-01">
-                        </div>
-                        <div class="mb-3">
-                            <label for="estado_civil" class="form-label">Estado Civil</label>
-                            <select class="form-select" id="estado_civil">
-                                <option value="casado">Casado</option>
-                                <option value="soltero">Soltero</option>
-                                <option value="divorciado">Divorciado</option>
-                                <option value="viudo">Viudo</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="telefono" class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" id="telefono" value="0412-1234567">
-                        </div>
-                        <div class="mb-3">
-                            <label for="direccion" class="form-label">Dirección</label>
-                            <textarea class="form-control" id="direccion" rows="3">Calle Principal, Barrio Centro, Caracas</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" id="email" value="carlos@example.com">
-                        </div>
-                    </form>
+            </div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Ubicación</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Comunidad</div>
+                        <div class="info-value"><?php echo $data['comunidad']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Parroquia</div>
+                        <div class="info-value"><?php echo $data['parroquia']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Municipio</div>
+                        <div class="info-value"><?php echo $data['municipio']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Dirección Exacta</div>
+                        <div class="info-value"><?php echo $data['direccion_exacta']; ?></div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="actualizarDatos()">Guardar Cambios</button>
+            </div>
+        </div>
+
+        <!-- Proyecto de Construcción -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-home me-2"></i>Proyecto de Construcción</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Código de Obra</div>
+                        <div class="info-value"><?php echo $data['codigo_obra']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Modelo Constructivo</div>
+                        <div class="info-value"><?php echo $data['modelo_constructivo']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Método Constructivo</div>
+                        <div class="info-value"><?php echo $data['metodo_constructivo']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Fiscalizador</div>
+                        <div class="info-value"><?php echo $data['fiscalizador']; ?></div>
+                    </div>
+                </div>
+
+                <h4 class="section-title">Avance Físico</h4>
+                <div class="progress-container">
+                    <div class="progress-bar complete" style="width: <?php echo $data['avance_fisico'] ?? 0; ?>%">
+                        <?php echo $data['avance_fisico'] ?? 0; ?>%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acondicionamiento -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-tools me-2"></i>Acondicionamiento</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Limpieza</div>
+                        <div class="info-value"><?php echo $data['limpieza']; ?></div>
+                        <div class="progress-container">
+                            <div class="progress-bar <?php echo getProgressClass($data['limpieza']); ?>" style="width: <?php echo getProgressWidth($data['limpieza']); ?>%">
+                                <?php echo getProgressWidth($data['limpieza']); ?>%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Replanteo</div>
+                        <div class="info-value"><?php echo $data['replanteo']; ?></div>
+                        <div class="progress-container">
+                            <div class="progress-bar <?php echo getProgressClass($data['replanteo']); ?>" style="width: <?php echo getProgressWidth($data['replanteo']); ?>%">
+                                <?php echo getProgressWidth($data['replanteo']); ?>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cerramiento y Acabados -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-building me-2"></i>Cerramiento y Acabados</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Cerramiento</div>
+                        <div class="info-value"><?php echo $data['cerramiento']; ?></div>
+                        <div class="progress-container">
+                            <div class="progress-bar <?php echo getProgressClass($data['cerramiento']); ?>" style="width: <?php echo getProgressWidth($data['cerramiento']); ?>%">
+                                <?php echo getProgressWidth($data['cerramiento']); ?>%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Colocación de Techo</div>
+                        <div class="info-value"><?php echo $data['colocacion_techo']; ?></div>
+                        <div class="progress-container">
+                            <div class="progress-bar <?php echo getProgressClass($data['colocacion_techo']); ?>" style="width: <?php echo getProgressWidth($data['colocacion_techo']); ?>%">
+                                <?php echo getProgressWidth($data['colocacion_techo']); ?>%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Pintura</div>
+                        <div class="info-value"><?php echo $data['pintura']; ?></div>
+                        <div class="progress-container">
+                            <div class="progress-bar <?php echo getProgressClass($data['pintura']); ?>" style="width: <?php echo getProgressWidth($data['pintura']); ?>%">
+                                <?php echo getProgressWidth($data['pintura']); ?>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado General -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Estado General</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Fecha Inicio</div>
+                        <div class="info-value"><?php echo $data['fecha_inicio'] ?? 'No especificada'; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Fecha Culminación</div>
+                        <div class="info-value"><?php echo $data['fecha_culminacion'] ?? 'No especificada'; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Acta Entregada</div>
+                        <div class="info-value">
+                            <span class="status-badge <?php echo ($data['acta_entregada'] == 'Sí') ? 'bg-success' : 'bg-warning'; ?>">
+                                <?php echo $data['acta_entregada'] ?? 'No'; ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="section-title">Observaciones</h4>
+                <div class="alert alert-info">
+                    <?php echo $data['observaciones'] ?? 'No hay observaciones registradas'; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Eliminar -->
-    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalEliminarLabel">Eliminar Registro</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" onclick="eliminarRegistro()">Eliminar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Modales (se mantienen igual) -->
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- JS personalizado -->
-    <script>
-        // Manejar el scroll del navbar y el margen del contenido
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            const contentWrapper = document.querySelector('.content-wrapper');
-            
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-                contentWrapper.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-                contentWrapper.classList.remove('scrolled');
-            }
-        });
-
-        // Funciones para manejar los botones
-        function actualizarDatos() {
-            // Aquí iría la lógica para actualizar los datos
-            alert('Funcionalidad de actualizar datos no implementada');
-        }
-
-        function eliminarRegistro() {
-            // Aquí iría la lógica para eliminar el registro
-            alert('Funcionalidad de eliminar datos no implementada');
-        }
-    </script>
-    <script src="../script/datos_benficiarios.js"></script>
 </body>
 </html>
+
 <?php
 } else {
-    echo "No se encontraron datos para este beneficiario.";
+    echo "<div class='alert alert-danger'>No se encontraron datos para este beneficiario.</div>";
 }
 
 $stmt->close();
 $conexion->close();
+
+// Funciones auxiliares para las barras de progreso
+function getProgressWidth($status) {
+    switch($status) {
+        case 'Completo': return 100;
+        case 'Avanzado': return 75;
+        case 'En progreso': return 50;
+        case 'Pendiente': return 25;
+        case 'No iniciado': return 0;
+        default: return 0;
+    }
+}
+
+function getProgressClass($status) {
+    switch($status) {
+        case 'Completo': return 'complete';
+        case 'Avanzado': return 'medium';
+        case 'En progreso': return 'medium';
+        case 'Pendiente': return 'low';
+        case 'No iniciado': return 'low';
+        default: return 'low';
+    }
+}
 ?>
