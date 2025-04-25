@@ -20,10 +20,10 @@ $resultado = $conexion->query($sql);
     <!-- CSS personalizado -->
     <style>
         :root {
-            --primary-color: #4361ee;
-            --primary-hover: #3a56d4;
-            --secondary-color: #3f37c9;
-            --accent-color: #f72585;
+            --primary-color: #0D36EEFF;
+            --primary-hover: #0523AAFF;
+            --secondary-color: #0523AAFF;
+            --accent-color: #0523AAFF;
             --dark-color: #1a1a2e;
             --light-color: #f8f9fa;
             --success-color: #4cc9f0;
@@ -39,9 +39,35 @@ $resultado = $conexion->query($sql);
         }
 
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
+            color: var(--text-color);
+            height: 100vh;
+            min-height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            z-index: -1;
             min-height: 100vh;
             color: #333;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            pointer-events: none;
+            z-index: -1;
         }
 
         .glass-navbar {

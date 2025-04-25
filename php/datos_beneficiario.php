@@ -8,7 +8,7 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']); // Asegurarse de que el ID es un número entero
 
-$sql = $sql = "
+$sql = "
 SELECT
     b.id_beneficiario, 
     b.cedula, 
@@ -147,7 +147,7 @@ function formatProgressValue($value) {
     <style>
         :root {
             --primary-color: #1565C0;
-            --secondary-color: #0074D9;
+            --secondary-color: #0523AAFF;
             --accent-color: #E53935;
             --background-dark: #1A237E;
             --background-light: #1565C0;
@@ -161,11 +161,37 @@ function formatProgressValue($value) {
         }
 
         body {
-            background-color: #f5f7fa;
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
+            color: var(--text-color);
+            height: 100vh;
+            min-height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            z-index: -1;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text-color);
             line-height: 1.6;
         }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            pointer-events: none;
+            z-index: -1;
+        }
+
 
         .glass-navbar {
     background: rgba(67, 97, 238, 0.9);
@@ -425,7 +451,7 @@ function formatProgressValue($value) {
             <div class="col-12">
                 <h1 class="page-title text-center">Datos del Beneficiario</h1>
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="mb-0"><?php echo htmlspecialchars($data['nombre_beneficiario']); ?></h2>
+                    <h2 class="mb-0" style="color: #ffffff;"><?php echo htmlspecialchars($data['nombre_beneficiario']); ?></h2>
                     <div>
                         <button class="btn btn-primary btn-action me-2" data-bs-toggle="modal" data-bs-target="#modalActualizar">
                             <i class="fas fa-edit me-1"></i> Actualizar
