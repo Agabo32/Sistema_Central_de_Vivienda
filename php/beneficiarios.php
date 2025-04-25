@@ -1,6 +1,6 @@
 <?php
-require_once '../php/conf/conexion.php'; // Asegúrate que la ruta sea correcta
-$sql = "SELECT * FROM beneficiario";
+require_once '../php/conf/conexion.php';
+$sql = "SELECT * FROM beneficiarios";
 $resultado = $conexion->query($sql);
 ?>
 
@@ -15,405 +15,440 @@ $resultado = $conexion->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- CSS personalizado -->
     <style>
         :root {
-            --primary-color: #1565C0;
-            --secondary-color: #0074D9;
-            --accent-color: rgba(247, 5, 5, 0.9);
-            --background-dark: #1A237E;
-            --background-light: #1565C0;
-            --text-color: #FFFFFF;
-            --shadow-color: rgba(221, 7, 7, 0.7);
-            --border-color: rgba(221, 7, 7, 0.7);
+            --primary-color: #4361ee;
+            --primary-hover: #3a56d4;
+            --secondary-color: #3f37c9;
+            --accent-color: #f72585;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --success-color: #4cc9f0;
+            --warning-color: #f8961e;
+            --danger-color: #ef233c;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            background: url('../imagenes/fondo1.jpg') no-repeat center center;
-            background-size: cover;
-            background-attachment: fixed;
-            position: relative;
-            color: var(--text-color);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
-            height: 100vh;
-            padding: 0;
-            margin: 0;
-            overflow-x: hidden;
+            color: #333;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .main-content {
-            position: relative;
-            z-index: 2;
-            padding: 2rem;
-        }
-
-        .navbar {
-            background: var(--primary-color);
+        .glass-navbar {
+            background: rgba(67, 97, 238, 0.9);
             backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--secondary-color);
-            padding: 1.2rem 2rem;
-            box-shadow: 0 2px 10px var(--shadow-color);
-            transition: all 0.3s ease;
-        }
-
-        .navbar-brand {
-            margin-right: 2rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link {
-            color: white !important;
-            padding: 0.7rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            border: 1px solid var(--border-color);
-            background: rgba(80, 80, 80, 0.9);
-        }
-
-        .navbar.scrolled {
-            padding: 0.4rem 1.5rem;
-            background: rgba(21, 101, 192, 0.95);
-            box-shadow: 0 2px 5px var(--shadow-color);
-        }
-
-        .navbar.scrolled .navbar-brand {
-            margin-right: 1rem;
-        }
-
-        .navbar.scrolled .nav-link {
-            padding: 0.2rem 0.5rem;
-            font-size: 0.8rem;
-        }
-
-        .navbar.scrolled .nav-link i {
-            font-size: 0.8rem;
-        }
-
-        .navbar.scrolled .navbar-brand img {
-            height: 25px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .content-wrapper {
-            margin-top: 100px;
-            padding-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .content-wrapper.scrolled {
-            margin-top: 60px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            margin-top: 80px;
+            transition: var(--transition);
         }
 
         .card {
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
 
         .card-header {
-            background: rgba(255, 255, 255, 0.95);
-            border-bottom: 1px solid var(--secondary-color);
-            padding: 15px;
-            border-radius: 10px 10px 0 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            font-weight: 500;
         }
 
-        .card-body {
-            padding: 20px;
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
 
         .table {
-            margin-bottom: 0;
+            --bs-table-bg: transparent;
         }
 
         .table th {
-            width: 20%;
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary-color);
             font-weight: 600;
-            color: var(--primary-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
         }
 
-        .table td {
-            width: 80%;
+        .table-hover tbody tr {
+            transition: var(--transition);
         }
 
-        .btn-link {
-            color: var(--primary-color);
-            text-decoration: none;
+        .table-hover tbody tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+            transform: scale(1.005);
         }
 
-        .btn-link:hover {
-            color: var(--accent-color);
-            text-decoration: underline;
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box .form-control {
+            padding-left: 40px;
+            border-radius: 50px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animated {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Efecto de carga */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            min-height: 20px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
     </style>
 </head>
 
 <body>
     <!-- Barra de navegación superior -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="height: 56px; padding: 0.5rem 1rem;">
+    <nav class="navbar navbar-expand-lg navbar-dark glass-navbar fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 30px; width: auto;" class="img-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="../php/menu_principal.php">
+                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 30px;" class="me-2">
+                <span class="fw-bold">SIGEVU</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="padding: 0.25rem;">
-                <span class="navbar-toggler-icon" style="font-size: 1.2rem;"></span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="menu_principal.php" >Inicio</a>
+                        <a class="nav-link" href="../php/menu_principal.php">
+                            <i class="fas fa-home me-1"></i> Inicio
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Beneficiarios</a>
+                        <a class="nav-link active" href="../php/beneficiarios.php">
+                            <i class="fas fa-users me-1"></i> Beneficiarios
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Proyectos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Reportes</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Cerrar Sesión</a>
+                        <a class="nav-link" href="../php/reportes.php">
+                            <i class="fas fa-chart-bar me-1"></i> Reportes
+                        </a>
                     </li>
                 </ul>
-                <div class="nav-item ms-3">
-                    <a class="nav-link" href="#">
+                <div class="d-flex ms-3">
+                    <div class="user-avatar">
                         <i class="fas fa-user"></i>
+                    </div>
+                    <a class="nav-link ms-2" href="../index.php">
+                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
                     </a>
                 </div>
             </div>
         </div>
     </nav>
 
-
     <!-- Contenedor principal -->
-    <div class="content-wrapper">
-        <div class="container-fluid">
-            <!-- Título y botones de acción -->
-            <div class="row mb-4 align-items-center">
-                <div class="col-md-6">
-                    <h2 class="mb-0">Listado de Beneficiarios</h2>
+    <div class="container py-4">
+        <div class="content-wrapper animated">
+            <div class="container-fluid p-4">
+                <!-- Título y botones de acción -->
+                <div class="row mb-4 align-items-center">
+                    <div class="col-md-6">
+                        <h2 class="mb-0 fw-bold text-primary">
+                            <i class="fas fa-users me-2"></i> Listado de Beneficiarios
+                        </h2>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+                            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
+                        </button>
+                    </div>
                 </div>
-                <div class="col-md-6 text-end">
-                    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
-                        <i class="fas fa-plus me-2"></i>Nuevo Beneficiario
-                    </button>
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalImportar">
-                        <i class="fas fa-file-import me-2"></i>Importar Datos
-                    </button>
-                </div>
-            </div>
 
-            <!-- Tabla de beneficiarios -->
-            <div class="card">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Beneficiarios Registrados</h5>
-                        <div class="input-group input-group-sm">
+                <!-- Tabla de beneficiarios -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white">
+                            <i class="fas fa-list me-2"></i> Beneficiarios Registrados
+                        </h5>
+                        <div class="search-box" style="max-width: 300px;">
+                            <i class="fas fa-search search-icon"></i>
                             <input type="text" class="form-control" id="buscar" placeholder="Buscar beneficiario...">
-                            <button class="btn btn-outline-primary btn-sm" type="button" id="btnBuscar">
-                                <i class="fas fa-search"></i>
-                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">ID</th>
+                                        <th>Cédula</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Teléfono</th>
+                                        <th>Código Obra</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaBeneficiarios">
+                                    <?php if ($resultado && $resultado->num_rows > 0): ?>
+                                        <?php while ($row = $resultado->fetch_assoc()): ?>
+                                            <tr>
+                                                <td class="text-center fw-bold"><?= htmlspecialchars($row['id_beneficiario']) ?></td>
+                                                <td><?= htmlspecialchars($row['cedula']) ?></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="me-3">
+                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                                                <i class="fas fa-user"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div class="fw-medium"><?= htmlspecialchars($row['nombre_beneficiario']) ?></div>
+                                                            <small class="text-muted">ID: <?= htmlspecialchars($row['id_beneficiario']) ?></small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><?= htmlspecialchars($row['telefono']) ?></td>
+                                                <td>
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                        <?= htmlspecialchars($row['codigo_obra']) ?>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="datos_beneficiario.php?id=<?= $row['id_beneficiario'] ?>" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-eye me-1"></i> Detalles
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <i class="fas fa-users-slash text-muted mb-2" style="font-size: 2rem;"></i>
+                                                    <h5 class="text-muted">No hay beneficiarios registrados</h5>
+                                                    <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+                                                        <i class="fas fa-plus me-1"></i> Agregar Beneficiario
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; width: 50px;">ID</th>
-                                    <th class="text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; width: 120px;">Cédula</th>
-                                    <th class="text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; width: 300px;">Nombre Completo</th>
-                                    <th class="text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; width: 150px;">Teléfono</th>
-                                    <th class="text-center" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; width: 120px;">Ver más</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaBeneficiarios" class="text-center">
-                                <!-- Aquí se cargarán los datos de la base de datos -->
-                                <?php
-                                $sql = "SELECT * FROM beneficiario";
-                                $resultado = $conexion->query($sql);
-
-                                if ($resultado && $resultado->num_rows > 0) {
-                                    while ($row = $resultado->fetch_assoc()) {
-                                        echo "<tr style='border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px;'>";
-                                        echo "<td style='padding: 12px; border-right: 1px solid #dee2e6; border-radius: 4px 0 0 4px; width: 50px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>" . htmlspecialchars($row['id_beneficiario']) . "</td>";
-                                        echo "<td style='padding: 12px; border-right: 1px solid #dee2e6; width: 120px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>" . htmlspecialchars($row['cedula']) . "</td>";
-                                        echo "<td style='padding: 12px; border-right: 1px solid #dee2e6; width: 300px; text-align: left; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>" . htmlspecialchars($row['nombre_completo']) . "</td>";                           
-                                        echo "<td style='padding: 12px; border-right: 1px solid #dee2e6; width: 150px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>" . htmlspecialchars($row['telefono']) . "</td>";
-                                        echo "<td style='padding: 12px; border-radius: 0 4px 4px 0; width: 120px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'><a href='datos_beneficiario.php?id=" . $row['id_beneficiario'] . "' class='btn btn-primary btn-sm'><i class='fas fa-eye me-1'></i>Detalles</a></td>";
-                                        echo "</tr>";
-                                    }
-                                } else {
-                                    echo "<tr style='border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px;'><td colspan='4' style='padding: 12px;'>No hay beneficiarios registrados.</td></tr>";
-                                }
-
-        $conexion->close();
-        ?> 
-                            </tbody>
-                            <tr>
-                                <td colspan="4" class="text-center py-4" style="border: none !important;">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Cargando...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal Nuevo Beneficiario -->
-        <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">Nuevo Beneficiario</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="formNuevoBeneficiario">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="cedula" class="form-label">Cédula</label>
-                                    <input type="text" class="form-control" id="cedula" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="nombre" class="form-label">Nombre Completo</label>
-                                    <input type="text" class="form-control" id="nombre" required>
-                                </div>
+    <!-- Modal Nuevo Beneficiario -->
+    <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
+                        <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNuevoBeneficiario">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cedula" class="form-label">Cédula</label>
+                                <input type="text" class="form-control" id="cedula" required>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                                    <input type="date" class="form-control" id="fecha_nacimiento" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="estado_civil" class="form-label">Estado Civil</label>
-                                    <select class="form-select" id="estado_civil" required>
-                                        <option value="">Seleccione...</option>
-                                        <option value="soltero">Soltero</option>
-                                        <option value="casado">Casado</option>
-                                        <option value="divorciado">Divorciado</option>
-                                        <option value="viudo">Viudo</option>
-                                    </select>
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre" class="form-label">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombre" required>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="telefono" class="form-label">Teléfono</label>
-                                    <input type="tel" class="form-control" id="telefono" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Correo Electrónico</label>
-                                    <input type="email" class="form-control" id="email">
-                                </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="fecha_nacimiento" required>
                             </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" onclick="guardarBeneficiario()">Guardar</button>
-                    </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="telefono" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="guardarBeneficiario()">
+                        <i class="fas fa-save me-1"></i> Guardar
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <!-- Modal Importar -->
-        <div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="modalImportarLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalImportarLabel">Importar Datos</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="formImportar" enctype="multipart/form-data">
-                            <div class="mb-3">
-                                <label for="archivo" class="form-label">Seleccionar archivo CSV</label>
-                                <input type="file" class="form-control" id="archivo" name="archivo" accept=".csv" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-success" onclick="importarDatos()">Importar</button>
-                    </div>
-                </div>
-            </div>
-        
         </div>
     </div>
 
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- JS personalizado -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Manejar el scroll del navbar y el margen del contenido
+        // Manejar el scroll del navbar
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
-            const contentWrapper = document.querySelector('.content-wrapper');
-            
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-                contentWrapper.classList.add('scrolled');
+            if (window.scrollY > 10) {
+                navbar.classList.add('shadow-sm');
             } else {
-                navbar.classList.remove('scrolled');
-                contentWrapper.classList.remove('scrolled');
+                navbar.classList.remove('shadow-sm');
             }
         });
 
-        // Funciones para manejar la búsqueda
+        // Funcionalidad de búsqueda mejorada
         document.getElementById('buscar').addEventListener('input', function() {
             const texto = this.value.toLowerCase();
             const filas = document.querySelectorAll('#tablaBeneficiarios tr');
             
             filas.forEach(fila => {
-                const cedula = fila.cells[0].textContent.toLowerCase();
-                const nombre = fila.cells[1].textContent.toLowerCase();
-                const estadoCivil = fila.cells[2].textContent.toLowerCase();
-                const telefono = fila.cells[3].textContent.toLowerCase();
-                
-                if (cedula.includes(texto) || 
-                    nombre.includes(texto) || 
-                    estadoCivil.includes(texto) || 
-                    telefono.includes(texto)) {
-                    fila.style.display = '';
-                } else {
-                    fila.style.display = 'none';
+                const celdas = fila.querySelectorAll('td');
+                if (celdas.length > 0) {
+                    const nombre = celdas[2].textContent.toLowerCase();
+                    const cedula = celdas[1].textContent.toLowerCase();
+                    const telefono = celdas[3].textContent.toLowerCase();
+                    
+                    if (nombre.includes(texto) || cedula.includes(texto) || telefono.includes(texto)) {
+                        fila.style.display = '';
+                    } else {
+                        fila.style.display = 'none';
+                    }
                 }
             });
         });
 
-        // Función para el botón de búsqueda
-        document.getElementById('btnBuscar').addEventListener('click', function() {
-            document.getElementById('buscar').focus();
-        });
+        // Efecto de carga (puedes personalizarlo)
+        function simularCarga() {
+            const filas = document.querySelectorAll('#tablaBeneficiarios tr');
+            filas.forEach(fila => {
+                const celdas = fila.querySelectorAll('td');
+                celdas.forEach(celda => {
+                    celda.classList.add('skeleton');
+                    celda.innerHTML = '&nbsp;';
+                });
+            });
+            
+            setTimeout(() => {
+                filas.forEach(fila => {
+                    const celdas = fila.querySelectorAll('td');
+                    celdas.forEach(celda => {
+                        celda.classList.remove('skeleton');
+                    });
+                });
+            }, 1000);
+        }
+
+        // Si necesitas cargar datos dinámicamente
+        // simularCarga();
     </script>
 </body>
 </html>
+<?php
+// Cerrar conexión al final del documento
+if (isset($conexion)) {
+    $conexion->close();
+}
+?>

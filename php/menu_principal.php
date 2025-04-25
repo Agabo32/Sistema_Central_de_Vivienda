@@ -1,3 +1,26 @@
+<?php
+require_once '../php/conf/conexion.php';
+
+// Consulta para contar el total de beneficiarios
+$sql_total = "SELECT COUNT(*) as total FROM beneficiarios";
+$result_total = $conexion->query($sql_total);
+$total_beneficiarios = $result_total->fetch_assoc()['total'];
+
+// Consulta alternativa para "avance" - usando una columna que sí existe
+// Por ejemplo, podemos contar beneficiarios con teléfono registrado
+$sql_avance = "SELECT COUNT(*) as avance FROM beneficiarios WHERE telefono IS NOT NULL AND telefono != ''";
+$result_avance = $conexion->query($sql_avance);
+$avance = $result_avance->fetch_assoc()['avance'];
+
+// Calculamos el porcentaje de avance
+$porcentaje_avance = ($total_beneficiarios > 0) ? round(($avance / $total_beneficiarios) * 100) : 0;
+
+// Consulta para otro dato estadístico - por ejemplo, beneficiarios con cédula
+$sql_otros = "SELECT COUNT(*) as otros FROM beneficiarios WHERE cedula IS NOT NULL AND cedula != ''";
+$result_otros = $conexion->query($sql_otros);
+$otros_datos = $result_otros->fetch_assoc()['otros'];
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,6 +58,7 @@
             padding: 0;
             overflow-x: hidden;
             overflow-y: auto;
+            z-index: -1;
         }
 
         body::before {
@@ -48,6 +72,7 @@
             box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
             z-index: 1;
             pointer-events: none;
+            z-index: -1;
         }
 
         .navbar {
@@ -70,44 +95,38 @@
         }
 
         .navbar-brand {
-            margin-right: 1.5rem;
+            margin-right: 2rem;
             transition: all 0.3s ease;
         }
-
-        .nav-link {
-            color: white !important;
-            padding: 0.6rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
+        .nav-link
+        .nav-link:hover{
             border: 1px solid var(--border-color);
             background: rgba(80, 80, 80, 0.9);
         }
-
         .navbar.scrolled {
-            padding: 0.7rem 1.2rem;
+            padding: 0.4rem 1.5rem;
             background: rgba(21, 101, 192, 0.95);
-            height: 55px;
+            box-shadow: 0 2px 5px var(--shadow-color);
         }
 
         .navbar.scrolled .navbar-brand {
-            margin-right: 1.2rem;
+            margin-right: 1rem;
         }
 
         .navbar.scrolled .nav-link {
-            padding: 0.5rem 0.8rem;
-            font-size: 0.95rem;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
         }
 
         .navbar.scrolled .nav-link i {
-            font-size: 0.95rem;
+            font-size: 0.8rem;
         }
 
         .navbar.scrolled .navbar-brand img {
             height: 25px;
         }
+
+        
 
         .dropdown-menu {
             background: rgba(34, 7, 7, 0.9);
@@ -166,45 +185,36 @@
             border-radius: 15px;
         }
 
-        .stat-card {
+        .card {
             position: relative;
             z-index: 2;
-            background: rgba(255, 165, 0, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 1rem;
-            border: 2px solid var(--border-color);
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 10px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px var(--shadow-color);
         }
 
-        .stat-card:hover {
+        .card:hover {
             transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #FFA500;
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
-        .stat-label {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: white;
+        .card-body h3 {
+            font-weight: 700;
+            font-size: 1.8rem;
+           
         }
 
         .progress {
-            height: 20px;
-            background-color: rgba(255, 21, 4, 0.2);
             border-radius: 10px;
-            margin-top: 1rem;
-        }
-
-        .progress-bar {
-            background-color: var(--primary-color);
-            border-radius: 10px;
+            background-color: #f0f0f0;
         }
 
         @media (max-width: 768px) {
@@ -335,31 +345,65 @@
     </div>
 
     <!-- Tarjetas de estadísticas -->
-    <div class="container mt-5" style="z-index: 2; position: relative;">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Total Beneficiarios</div>
-                    <div class="stat-number" id="totalBeneficiarios">0</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Casas en Construcción</div>
-                    <div class="stat-number" id="casasEnConstruccion">0</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Avance General</div>
-                    <div class="stat-number" id="avanceGeneral">0%</div>
-                    <div class="progress">
-                        <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+   
+<div class="row mb-4">
+    <!-- Tarjeta 1: Total Beneficiarios -->
+    <div class="col-md-4 mb-3">
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center" href=../php/beneficiarios.php">
+                    <div>
+                        <h6 class="card-title text-muted mb-2" >Total Beneficiarios</h6>
+                        <h3 class="mb-0 text-primary"><?php echo $total_beneficiarios; ?></h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-users fa-2x text-primary"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Tarjeta 2: Avance -->
+    <div class="col-md-4 mb-3">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-muted mb-2">Avance Total</h6>
+                        <h3 class="mb-0 text-success"><?php echo $porcentaje_avance; ?>%</h3>
+                        <small class="text-muted"><?php echo $avance; ?> de <?php echo $total_beneficiarios; ?></small>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-chart-line fa-2x text-success"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo $porcentaje_avance; ?>%" 
+                         aria-valuenow="<?php echo $porcentaje_avance; ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta 3: Otros datos (ajusta según necesites) -->
+    <div class="col-md-4 mb-3">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-muted mb-2">Otros Datos</h6>
+                        <h3 class="mb-0 text-info"><?php echo $otros_datos; ?></h3>
+                        <small class="text-muted">Descripción breve</small>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-info-circle fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
