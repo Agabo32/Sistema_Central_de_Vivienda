@@ -272,7 +272,8 @@ $resultado = $conexion->query($sql);
 
     <!-- Contenedor principal -->
     <div class="container py-4">
-        <div class="content-wrapper animated">
+    
+    <div class="content-wrapper animated">
             <div class="container-fluid p-4">
                 <!-- Título y botones de acción -->
                 <div class="row mb-4 align-items-center">
@@ -367,105 +368,120 @@ $resultado = $conexion->query($sql);
     </div>
 
     <!-- Modal Nuevo Beneficiario -->
-    <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
-                        <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+<!-- Modal Nuevo Beneficiario -->
+<<div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
+                    <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formNuevoBeneficiario" action="../php/conf/guardar_beneficiario.php" method="POST">
                 <div class="modal-body">
-                    <form id="formNuevoBeneficiario">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="cedula" class="form-label">Cédula</label>
-                                <input type="text" class="form-control" id="cedula" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="nombre" class="form-label">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre" required>
-                            </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cedula" class="form-label">Cédula</label>
+                            <input type="text" class="form-control" id="cedula" name="cedula" required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" class="form-control" id="fecha_nacimiento" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="telefono" class="form-label">Teléfono</label>
-                                <input type="tel" class="form-control" id="telefono" required>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre Completo</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
                         </div>
-                    </form>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="codigo_obra" class="form-label">Código de Obra</label>
+                            <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i> Cancelar
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="guardarBeneficiario()">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i> Guardar
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
+</div>
 
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Manejar el scroll del navbar
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 10) {
-                navbar.classList.add('shadow-sm');
-            } else {
-                navbar.classList.remove('shadow-sm');
+       // Reemplaza el script existente por este
+<script>
+    // Manejar el scroll del navbar
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 10) {
+            navbar.classList.add('shadow-sm');
+        } else {
+            navbar.classList.remove('shadow-sm');
+        }
+    });
+
+    // Funcionalidad de búsqueda
+    document.getElementById('buscar').addEventListener('input', function() {
+        const texto = this.value.toLowerCase();
+        const filas = document.querySelectorAll('#tablaBeneficiarios tr');
+        
+        filas.forEach(fila => {
+            const celdas = fila.querySelectorAll('td');
+            if (celdas.length > 0) {
+                const nombre = celdas[2].textContent.toLowerCase();
+                const cedula = celdas[1].textContent.toLowerCase();
+                const telefono = celdas[3].textContent.toLowerCase();
+                
+                if (nombre.includes(texto) || cedula.includes(texto) || telefono.includes(texto)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
             }
         });
+    });
 
-        // Funcionalidad de búsqueda mejorada
-        document.getElementById('buscar').addEventListener('input', function() {
-            const texto = this.value.toLowerCase();
-            const filas = document.querySelectorAll('#tablaBeneficiarios tr');
-            
-            filas.forEach(fila => {
-                const celdas = fila.querySelectorAll('td');
-                if (celdas.length > 0) {
-                    const nombre = celdas[2].textContent.toLowerCase();
-                    const cedula = celdas[1].textContent.toLowerCase();
-                    const telefono = celdas[3].textContent.toLowerCase();
-                    
-                    if (nombre.includes(texto) || cedula.includes(texto) || telefono.includes(texto)) {
-                        fila.style.display = '';
-                    } else {
-                        fila.style.display = 'none';
-                    }
-                }
-            });
+    // Manejar el envío del formulario con AJAX
+    document.getElementById('formNuevoBeneficiario').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ocurrió un error al guardar el beneficiario');
         });
+    });
 
-        // Efecto de carga (puedes personalizarlo)
-        function simularCarga() {
-            const filas = document.querySelectorAll('#tablaBeneficiarios tr');
-            filas.forEach(fila => {
-                const celdas = fila.querySelectorAll('td');
-                celdas.forEach(celda => {
-                    celda.classList.add('skeleton');
-                    celda.innerHTML = '&nbsp;';
-                });
-            });
-            
-            setTimeout(() => {
-                filas.forEach(fila => {
-                    const celdas = fila.querySelectorAll('td');
-                    celdas.forEach(celda => {
-                        celda.classList.remove('skeleton');
-                    });
-                });
-            }, 1000);
-        }
+    // Limpiar el formulario cuando se cierra el modal
+    document.getElementById('modalNuevoBeneficiario').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('formNuevoBeneficiario').reset();
+    });
+</script>
 
         // Si necesitas cargar datos dinámicamente
         // simularCarga();

@@ -1,6 +1,9 @@
 <?php
 require_once '../php/conf/conexion.php';
 
+$query = "SELECT * FROM beneficiarios";
+$resultado = mysqli_query($conexion, $query);
+
 if (!isset($_GET['id'])) {
     echo "ID de beneficiario no especificado.";
     exit;
@@ -131,7 +134,9 @@ function formatProgressValue($value) {
     }
     return $value;
 }
+
 ?>
+
 
 <!DOCTYPE html>
 <html lang="es">
@@ -453,16 +458,136 @@ function formatProgressValue($value) {
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="mb-0" style="color: #ffffff;"><?php echo htmlspecialchars($data['nombre_beneficiario']); ?></h2>
                     <div>
-                        <button class="btn btn-primary btn-action me-2" data-bs-toggle="modal" data-bs-target="#modalActualizar">
-                            <i class="fas fa-edit me-1"></i> Actualizar
-                        </button>
-                        <button class="btn btn-outline-danger btn-action" data-bs-toggle="modal" data-bs-target="#modalEliminar">
-                            <i class="fas fa-trash me-1"></i> Eliminar
-                        </button>
+                    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#actualizarBeneficiarioModal">
+                <i class="fas fa-edit me-2"></i>Actualizar Beneficiario
+            </button>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminarBeneficiarioModal">
+                <i class="fas fa-trash me-2"></i>Eliminar Beneficiario
+            </button>
                     </div>
                 </div>
             </div>
         </div>
+
+          <!-- Modal Actualizar Beneficiario -->
+          <div class="modal fade" id="actualizarBeneficiarioModal" tabindex="-1" aria-labelledby="actualizarBeneficiarioModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="actualizarBeneficiarioModalLabel">Actualizar Beneficiario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="actualizarBeneficiarioForm">
+                            <input type="hidden" name="id_beneficiario" value="<?php echo $data['id_beneficiario']; ?>">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" value="<?php echo $data['nombre_beneficiario']; ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cedula" class="form-label">Cédula</label>
+                                <input type="text" class="form-control" id="cedula" name="cedula" value="<?php echo $data['cedula']; ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comunidad" class="form-label">Comunidad</label>
+                                <input type="text" class="form-control" id="comunidad" name="comunidad" value="<?php echo $data['comunidad']; ?>" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="actualizarBeneficiario()">Guardar Cambios</button>
+                        <script>
+                            function actualizarBeneficiario() {
+                                var form = document.getElementById('actualizarBeneficiarioForm');
+                                var formData = new FormData(form);
+
+                                // Log form data for debugging
+                                for (var pair of formData.entries()) {
+                                    console.log(pair[0] + ': ' + pair[1]); 
+                                }
+
+                                fetch('../php/conf/actualizar_beneficiario.php', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(response => response.text())
+                                .then(result => {
+                                    console.log('Server response:', result);
+                                    if (result === 'ok') {
+                                        alert('Beneficiario actualizado exitosamente');
+                                        location.reload();
+                                    } else {
+                                        alert('Error al actualizar el beneficiario: ' + result);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    alert('Error al actualizar el beneficiario');
+                                });
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar Beneficiario -->
+        <div class="modal fade" id="eliminarBeneficiarioModal" tabindex="-1" aria-labelledby="eliminarBeneficiarioModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="eliminarBeneficiarioModalLabel">Eliminar Beneficiario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>¿Está seguro que desea eliminar este beneficiario?</p>
+                        <p><strong>Nombre:</strong> <?php echo $data['nombre_beneficiario']; ?></p>
+                        <p><strong>Cédula:</strong> <?php echo $data['cedula']; ?></p>
+                        <p><strong>Comunidad:</strong> <?php echo $data['comunidad']; ?></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="eliminarBeneficiario()">Eliminar</button>
+                        <script>
+                        function eliminarBeneficiario() {
+                            console.log('ID a eliminar:', <?php echo $data['id_beneficiario']; ?>);
+                            var id = <?php echo $data['id_beneficiario']; ?>;
+    var formData = new FormData();
+    formData.append('id_beneficiario', id);
+
+    // Log form data before sending
+    for (var pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+    }
+
+    fetch('../php/conf/eliminar_beneficiario.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(result => {
+        console.log('ID a eliminar:', <?php echo $data['id_beneficiario']; ?>);
+        var id = <?php echo $data['id_beneficiario']; ?>;
+        if (result === 'ok') {
+            alert('Beneficiario eliminado exitosamente');
+            window.location.href = '../php/beneficiarios.php';
+        } else {
+            alert('Error al eliminar el beneficiario: ' + result);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch Error:', error);
+        alert('Error de conexión al eliminar el beneficiario');
+    });
+}
+            </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- Información Personal -->
         <div class="card">
