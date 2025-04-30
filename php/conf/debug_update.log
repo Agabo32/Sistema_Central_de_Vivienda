@@ -1,0 +1,63 @@
+Array
+(
+    [id_beneficiario] => 1
+    [nombre_beneficiario] => ISAMAR QUERO
+    [cedula] => 123456
+    [comunidad] => NO TE IMPORTA
+)
+Array
+(
+    [id_beneficiario] => 1
+    [status] => activo
+    [nombre_beneficiario] => ISAMAR QUERO
+    [cedula] => 123456
+    [comunidad] => NO TE IMPORTA
+)
+Array
+(
+    [id_beneficiario] => 1
+    [status] => activo
+    [nombre_beneficiario] => ISAMAR QUERO
+    [cedula] => 123456
+    [comunidad] => NO TE IMPORTA
+)
+Array
+(
+    [id_beneficiario] => 1
+    [status] => activo
+    [nombre_beneficiario] => ISAMAR QUERO
+    [cedula] => 12345
+    [comunidad] => NO TE IMPORTA
+)
+Array
+(
+    [id_beneficiario] => 1
+    [status] => inactivo
+    [nombre_beneficiario] => ISAMAR QUERO
+    [cedula] => 12345
+    [comunidad] => NO TE IMPORTA
+)
+Array
+(
+    [id_beneficiario] => 2
+    [status] => inactivo
+    [nombre_beneficiario] => BENEFICIARIO
+    [cedula] => CÉDULA
+    [comunidad] => COMUNIDAD
+)
+Array
+(
+    [id_beneficiario] => 20153
+    [status] => inactivo
+    [nombre_beneficiario] => esagf
+    [cedula] => 123
+    [comunidad] => 
+)
+Array
+(
+    [id_beneficiario] => 20153
+    [status] => inactivo
+    [nombre_beneficiario] => esagf
+    [cedula] => 123
+    [comunidad] => 
+)

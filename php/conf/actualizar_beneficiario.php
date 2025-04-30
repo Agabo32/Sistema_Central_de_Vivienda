@@ -9,13 +9,16 @@ ini_set('display_errors', 1);
 file_put_contents('debug_update.log', print_r($_POST, true), FILE_APPEND);
 
 // Check if all required fields are present
-if(!isset($_POST['id_beneficiario']) || !isset($_POST['nombre_beneficiario']) || !isset($_POST['cedula']) || !isset($_POST['comunidad'])) {
-    $missing_fields = [];
-    if(!isset($_POST['id_beneficiario'])) $missing_fields[] = 'id_beneficiario';
-    if(!isset($_POST['nombre_beneficiario'])) $missing_fields[] = 'nombre_beneficiario';
-    if(!isset($_POST['cedula'])) $missing_fields[] = 'cedula';
-    if(!isset($_POST['comunidad'])) $missing_fields[] = 'comunidad';
-    
+$required_fields = ['id_beneficiario', 'nombre_beneficiario', 'cedula', 'comunidad', 'status'];
+$missing_fields = [];
+
+foreach ($required_fields as $field) {
+    if(!isset($_POST[$field])) {
+        $missing_fields[] = $field;
+    }
+}
+
+if(!empty($missing_fields)) {
     echo 'error: Missing fields: ' . implode(', ', $missing_fields);
     exit;
 }
@@ -25,15 +28,17 @@ $id = intval($_POST['id_beneficiario']);
 $nombre = mysqli_real_escape_string($conexion, $_POST['nombre_beneficiario']);
 $cedula = mysqli_real_escape_string($conexion, $_POST['cedula']);
 $comunidad = mysqli_real_escape_string($conexion, $_POST['comunidad']);
+$status = in_array($_POST['status'], ['activo', 'inactivo']) ? $_POST['status'] : 'activo';
 
-// Start a transaction to ensure both updates happen or neither
+// Start a transaction to ensure all updates happen or none
 mysqli_begin_transaction($conexion);
 
 try {
-    // Update beneficiarios table
+    // Update beneficiarios table with status
     $query_beneficiario = "UPDATE beneficiarios SET 
         nombre_beneficiario = '$nombre', 
-        cedula = '$cedula' 
+        cedula = '$cedula',
+        status = '$status'
         WHERE id_beneficiario = $id";
     
     // Update ubicaciones table
@@ -54,16 +59,12 @@ try {
         mysqli_rollback($conexion);
         
         // Log the specific MySQL errors
-        $mysql_error_beneficiario = mysqli_error($conexion);
-        $mysql_error_ubicacion = mysqli_error($conexion);
+        $error_log = "Beneficiario Query Error: " . mysqli_error($conexion) . "\n" .
+                     "Ubicacion Query Error: " . mysqli_error($conexion) . "\n" .
+                     "Beneficiario Query: $query_beneficiario\n" .
+                     "Ubicacion Query: $query_ubicacion\n";
         
-        file_put_contents('debug_update.log', 
-            "Beneficiario Query Error: $mysql_error_beneficiario\n" .
-            "Ubicacion Query Error: $mysql_error_ubicacion\n" .
-            "Beneficiario Query: $query_beneficiario\n" .
-            "Ubicacion Query: $query_ubicacion\n", 
-            FILE_APPEND
-        );
+        file_put_contents('debug_update.log', $error_log, FILE_APPEND);
         
         echo 'error: No se pudieron actualizar todos los datos';
     }
