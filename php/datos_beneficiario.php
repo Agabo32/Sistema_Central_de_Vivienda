@@ -19,6 +19,7 @@ SELECT
     b.telefono, 
     b.codigo_obra, 
     b.fecha_actualizacion,
+    b.status,
     u.comunidad, 
     u.direccion_exacta, 
     u.utm_norte, 
@@ -460,10 +461,12 @@ function formatProgressValue($value) {
                     <div>
                     <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#actualizarBeneficiarioModal">
                 <i class="fas fa-edit me-2"></i>Actualizar Beneficiario
-            </button>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminarBeneficiarioModal">
-                <i class="fas fa-trash me-2"></i>Eliminar Beneficiario
-            </button>
+                    </button>
+                    <a href="generar_expediente.php?id=<?= $data['id_beneficiario'] ?>" 
+                    class="btn btn-danger btn-action" 
+                    target="_blank">
+                    <i class="fas fa-file-pdf me-1"></i> Generar Expediente
+                    </a>
                     </div>
                 </div>
             </div>
@@ -480,6 +483,13 @@ function formatProgressValue($value) {
                     <div class="modal-body">
                         <form id="actualizarBeneficiarioForm">
                             <input type="hidden" name="id_beneficiario" value="<?php echo $data['id_beneficiario']; ?>">
+                            <div class="mb-3">
+                            <label for="status" class="form-label">Estado</label>
+                                <select class="form-select" id="status" name="status" required>
+                                <option value="activo" <?= ($data['status'] ?? 'activo') == 'activo' ? 'selected' : '' ?>>Activo</option>
+                                <option value="inactivo" <?= ($data['status'] ?? 'activo') == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                                </select>
+                            </div>
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" value="<?php echo $data['nombre_beneficiario']; ?>" required>
@@ -531,63 +541,6 @@ function formatProgressValue($value) {
                 </div>
             </div>
         </div>
-
-        <!-- Modal Eliminar Beneficiario -->
-        <div class="modal fade" id="eliminarBeneficiarioModal" tabindex="-1" aria-labelledby="eliminarBeneficiarioModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="eliminarBeneficiarioModalLabel">Eliminar Beneficiario</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>¿Está seguro que desea eliminar este beneficiario?</p>
-                        <p><strong>Nombre:</strong> <?php echo $data['nombre_beneficiario']; ?></p>
-                        <p><strong>Cédula:</strong> <?php echo $data['cedula']; ?></p>
-                        <p><strong>Comunidad:</strong> <?php echo $data['comunidad']; ?></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" onclick="eliminarBeneficiario()">Eliminar</button>
-                        <script>
-                        function eliminarBeneficiario() {
-                            console.log('ID a eliminar:', <?php echo $data['id_beneficiario']; ?>);
-                            var id = <?php echo $data['id_beneficiario']; ?>;
-    var formData = new FormData();
-    formData.append('id_beneficiario', id);
-
-    // Log form data before sending
-    for (var pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-    }
-
-    fetch('../php/conf/eliminar_beneficiario.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.text())
-    .then(result => {
-        console.log('ID a eliminar:', <?php echo $data['id_beneficiario']; ?>);
-        var id = <?php echo $data['id_beneficiario']; ?>;
-        if (result === 'ok') {
-            alert('Beneficiario eliminado exitosamente');
-            window.location.href = '../php/beneficiarios.php';
-        } else {
-            alert('Error al eliminar el beneficiario: ' + result);
-        }
-    })
-    .catch(error => {
-        console.error('Fetch Error:', error);
-        alert('Error de conexión al eliminar el beneficiario');
-    });
-}
-            </script>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
 
         <!-- Información Personal -->
         <div class="card">
@@ -962,7 +915,61 @@ function formatProgressValue($value) {
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>   
+    <script>function actualizarBeneficiario() {
+    var form = document.getElementById('actualizarBeneficiarioForm');
+    var formData = new FormData(form);
+    
+    // Validación adicional
+    if (!formData.get('status') || !['activo', 'inactivo'].includes(formData.get('status'))) {
+        alert('Estado no válido');
+        return;
+    }
+
+    fetch('../php/conf/actualizar_beneficiario.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('HTTP error ' + response.status);
+        return response.text();
+    })
+    .then(result => {
+        if (result === 'ok') {
+            // Mostrar feedback visual mejorado
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 p-3';
+            toast.innerHTML = `
+                <div class="toast show" role="alert">
+                    <div class="toast-header bg-success text-white">
+                        <strong class="me-auto">Éxito</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Beneficiario actualizado correctamente
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Actualizar visualización sin recargar
+            document.querySelector('h2').textContent = formData.get('nombre_beneficiario');
+            
+            // Cerrar modal después de 2 segundos
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('actualizarBeneficiarioModal')).hide();
+                toast.remove();
+            }, 2000);
+        } else {
+            throw new Error(result || 'Error desconocido');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar: ' + error.message);
+    });
+}
+</script>    
 </body>
 </html>
 

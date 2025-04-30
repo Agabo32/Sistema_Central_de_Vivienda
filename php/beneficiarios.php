@@ -1,8 +1,71 @@
 <?php
 require_once '../php/conf/conexion.php';
-$sql = "SELECT * FROM beneficiarios";
-$resultado = $conexion->query($sql);
+$params = [];
+$types = '';
+$filtro_condiciones = '';
+
+// Default to show only active
+$show_inactive = $_GET['show_inactive'] ?? false;
+
+$sql = isset($_SESSION['admin']) && $_SESSION['admin'] 
+    ? "SELECT * FROM beneficiarios" 
+    : "SELECT * FROM beneficiarios WHERE status = 'activo'";
+
+$registros_por_pagina = 10; // Número de registros por página
+$pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
+$offset = ($pagina_actual - 1) * $registros_por_pagina;
+
+// Preparar consulta con posibles filtros
+$sql_base = "SELECT b.*, 
+    p.parroquia, 
+    m.municipio, 
+    e.estado 
+FROM Beneficiarios b
+LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
+LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
+LEFT JOIN estados e ON m.id_estado = e.id_estado
+WHERE 1=1 ";
+
+// Solo administradores pueden ver inactivos si lo solicitan explícitamente
+if (!(isset($_SESSION['admin']) && $_SESSION['admin'] && isset($_GET['show_inactive']) && $_GET['show_inactive'])) {
+    $sql_base .= " AND b.status = 'activo'";
+}
+
+// Aplicar filtros si existen
+if (!empty($_GET['estado'])) {
+    $sql_base .= " AND e.id_estado = ?";
+    $params[] = $_GET['estado'];
+    $types .= 'i';
+}
+
+// Consulta para contar total de registros
+$total_registros_query = $sql_base;
+$total_stmt = $conexion->prepare($total_registros_query);
+if (!empty($params)) {
+    $total_stmt->bind_param($types, ...$params);
+}
+$total_stmt->execute();
+$total_result = $total_stmt->get_result();
+$total_registros = $total_result->num_rows;
+
+// Calcular total de páginas
+$total_paginas = ceil($total_registros / $registros_por_pagina);
+
+// Añadir límite y offset a la consulta principal
+$sql_base .= " LIMIT ? OFFSET ?";
+$types .= 'ii';
+$params[] = $registros_por_pagina;
+$params[] = $offset;
+
+// Ejecutar consulta con paginación
+$stmt = $conexion->prepare($sql_base);
+$stmt->bind_param($types, ...$params);
+$stmt->execute();
+$result = $stmt->get_result();
+$beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="es">
@@ -314,11 +377,11 @@ $resultado = $conexion->query($sql);
                                     </tr>
                                 </thead>
                                 <tbody id="tablaBeneficiarios">
-                                    <?php if ($resultado && $resultado->num_rows > 0): ?>
-                                        <?php while ($row = $resultado->fetch_assoc()): ?>
+                                    <?php if ($beneficiarios && count($beneficiarios) > 0): ?>
+                                        <?php foreach ($beneficiarios as $beneficiario): ?>
                                             <tr>
-                                                <td class="text-center fw-bold"><?= htmlspecialchars($row['id_beneficiario']) ?></td>
-                                                <td><?= htmlspecialchars($row['cedula']) ?></td>
+                                                <td class="text-center fw-bold"><?= htmlspecialchars($beneficiario['id_beneficiario']) ?></td>
+                                                <td><?= htmlspecialchars($beneficiario['cedula']) ?></td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="me-3">
@@ -327,24 +390,24 @@ $resultado = $conexion->query($sql);
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <div class="fw-medium"><?= htmlspecialchars($row['nombre_beneficiario']) ?></div>
-                                                            <small class="text-muted">ID: <?= htmlspecialchars($row['id_beneficiario']) ?></small>
+                                                            <div class="fw-medium"><?= htmlspecialchars($beneficiario['nombre_beneficiario']) ?></div>
+                                                            <small class="text-muted">ID: <?= htmlspecialchars($beneficiario['id_beneficiario']) ?></small>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td><?= htmlspecialchars($row['telefono']) ?></td>
+                                                <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
                                                 <td>
                                                     <span class="badge bg-primary bg-opacity-10 text-primary">
-                                                        <?= htmlspecialchars($row['codigo_obra']) ?>
+                                                        <?= htmlspecialchars($beneficiario['codigo_obra']) ?>
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <a href="datos_beneficiario.php?id=<?= $row['id_beneficiario'] ?>" class="btn btn-sm btn-primary">
+                                                    <a href="datos_beneficiario.php?id=<?= $beneficiario['id_beneficiario'] ?>" class="btn btn-sm btn-primary">
                                                         <i class="fas fa-eye me-1"></i> Detalles
                                                     </a>
                                                 </td>
                                             </tr>
-                                        <?php endwhile; ?>
+                                        <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
                                             <td colspan="6" class="text-center py-4">
@@ -360,6 +423,54 @@ $resultado = $conexion->query($sql);
                                     <?php endif; ?>
                                 </tbody>
                             </table>
+                            <nav aria-label="Paginación de Beneficiarios">
+    <ul class="pagination justify-content-center">
+        <?php if ($pagina_actual > 1): ?>
+            <li class="page-item">
+                <a class="page-link" href="?pagina=<?= $pagina_actual - 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Anterior</a>
+            </li>
+        <?php endif; ?>
+
+        <?php 
+        // Mostrar páginas cercanas
+        $rango = 2; // Número de páginas a mostrar antes y después de la página actual
+        $inicio = max(1, $pagina_actual - $rango);
+        $fin = min($total_paginas, $pagina_actual + $rango);
+
+        // Mostrar primera página si no está en el rango inicial
+        if ($inicio > 1) {
+            echo '<li class="page-item"><a class="page-link" href="?pagina=1">1</a></li>';
+            if ($inicio > 2) {
+                echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+        }
+
+        // Mostrar páginas en el rango
+        for ($i = $inicio; $i <= $fin; $i++): 
+            $active = $i == $pagina_actual ? 'active' : '';
+        ?>
+            <li class="page-item <?= $active ?>">
+                <a class="page-link" href="?pagina=<?= $i ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>"><?= $i ?></a>
+            </li>
+            <?php endfor; ?>
+
+<?php if ($fin < $total_paginas): ?>
+    <li class="page-item disabled"><span class="page-link">...</span></li>
+    
+    <li class="page-item">
+        <a class="page-link" href="?pagina=<?= $total_paginas ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">
+            <?= $total_paginas ?>
+        </a>
+    </li>
+<?php endif; ?>
+
+<?php if ($pagina_actual < $total_paginas): ?>
+    <li class="page-item">
+        <a class="page-link" href="?pagina=<?= $pagina_actual + 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Siguiente</a>
+    </li>
+<?php endif; ?>
+    </ul>
+</nav>          
                         </div>
                     </div>
                 </div>
@@ -367,55 +478,60 @@ $resultado = $conexion->query($sql);
         </div>
     </div>
 
+
     <!-- Modal Nuevo Beneficiario -->
-<!-- Modal Nuevo Beneficiario -->
-<<div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+    <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
                     <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="formNuevoBeneficiario" action="../php/conf/guardar_beneficiario.php" method="POST">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="cedula" class="form-label">Cédula</label>
-                            <input type="text" class="form-control" id="cedula" name="cedula" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="nombre" class="form-label">Nombre Completo</label>
-                            <input type="text" class="form-control" id="nombre" name="nombre" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="telefono" class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="codigo_obra" class="form-label">Código de Obra</label>
-                            <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i> Guardar
-                    </button>
-                </div>
-            </form>
+            <form id="agregarBeneficiarioForm" method="POST" action="../php/conf/guardar_beneficiario.php">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="nombre" class="form-label">Nombre Completo</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="cedula" class="form-label">Cédula</label>
+            <input type="text" class="form-control" id="cedula" name="cedula" required>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="telefono" class="form-label">Teléfono</label>
+            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="codigo_obra" class="form-label">Código de Obra</label>
+            <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="comunidad" class="form-label">Comunidad</label>
+            <input type="text" class="form-control" id="comunidad" name="comunidad" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="status" class="form-label">Estado</label>
+            <select class="form-select" id="status" name="status" required>
+                <option value="activo" selected>Activo</option>
+                <option value="inactivo">Inactivo</option>
+            </select>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i> Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i> Guardar
+        </button>
+    </div>
+</form>
         </div>
     </div>
 </div>
@@ -424,7 +540,6 @@ $resultado = $conexion->query($sql);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
        // Reemplaza el script existente por este
-<script>
     // Manejar el scroll del navbar
     window.addEventListener('scroll', function() {
         const navbar = document.querySelector('.navbar');
@@ -456,35 +571,53 @@ $resultado = $conexion->query($sql);
         });
     });
 
-    // Manejar el envío del formulario con AJAX
-    document.getElementById('formNuevoBeneficiario').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Ocurrió un error al guardar el beneficiario');
+    document.addEventListener('DOMContentLoaded', function() {
+    const paginationLinks = document.querySelectorAll('.pagination .page-link');
+    paginationLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Capturar los parámetros de filtro actuales
+            const filtros = new URLSearchParams(window.location.search);
+            const nuevaUrl = new URL(this.href);
+            
+            // Copiar todos los filtros a la nueva URL
+            filtros.forEach((valor, clave) => {
+                if (clave !== 'pagina') {
+                    nuevaUrl.searchParams.set(clave, valor);
+                }
+            });
+
+            window.location.href = nuevaUrl.toString();
+            e.preventDefault();
         });
     });
+});
 
-    // Limpiar el formulario cuando se cierra el modal
-    document.getElementById('modalNuevoBeneficiario').addEventListener('hidden.bs.modal', function () {
-        document.getElementById('formNuevoBeneficiario').reset();
+    document.getElementById('agregarBeneficiarioForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('../php/conf/guardar_beneficiario.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(result => {
+        if (result === 'ok') {
+            // Mostrar mensaje de éxito
+            alert('Beneficiario agregado exitosamente');
+            // Recargar la página para mostrar el nuevo beneficiario
+            window.location.reload();
+        } else {
+            // Mostrar mensaje de error
+            alert('Error: ' + result);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al agregar beneficiario');
     });
-</script>
-
-        // Si necesitas cargar datos dinámicamente
-        // simularCarga();
+});
     </script>
 </body>
 </html>

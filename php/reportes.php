@@ -1,42 +1,50 @@
 <?php
 require_once '../php/conf/conexion.php';
 
-// Obtener parámetros de filtro (si existen)
+// Retrieve filter parameters
+$id_estado = $_GET['estados'] ?? null;
 $id_municipio = $_GET['municipios'] ?? null;
 $id_parroquia = $_GET['parroquias'] ?? null;
-$tipo_avance = $_GET['tipo_avance'] ?? 'avance_fisico'; // Valor por defecto
-$columnas_validas = ['avance_fisico', 'cerramiento', 'pintura']; // agrega las que tengas
+$estado_beneficiario = $_GET['estado'] ?? null;
+$tipo_avance = $_GET['tipo_avance'] ?? 'avance_fisico';
 
 function getProgressClass($valor) {
     if ($valor >= 100) return 'complete';
-    if ($valor >= 50) return 'medium';
-    return 'low';
+    if ($valor > 0) return 'in-progress';
+    return 'not-started';
 }
 
 // Consulta SQL dinámica según filtros
-$sql = "
-    SELECT 
-        m.id_municipio,
-    m.municipio AS municipio,  
+$sql = "SELECT 
+    e.id_estado,
+    e.estado AS nombre_estado,
+    m.id_municipio,
+    m.municipio,
     p.id_parroquia,
-    p.parroquia AS parroquia, 
-        COUNT(b.id_beneficiario) AS total_viviendas,
-        AVG(dc.$tipo_avance) AS avance_promedio,
-        SUM(CASE WHEN dc.$tipo_avance >= 100 THEN 1 ELSE 0 END) AS completadas,
-        SUM(CASE WHEN dc.$tipo_avance > 0 AND dc.$tipo_avance < 100 THEN 1 ELSE 0 END) AS en_progreso,
-        SUM(CASE WHEN dc.$tipo_avance = 0 OR dc.$tipo_avance IS NULL THEN 1 ELSE 0 END) AS no_iniciadas
-    FROM Beneficiarios b
-    LEFT JOIN Ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-    LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
-    LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-    LEFT JOIN Datos_de_Construccion dc ON b.id_beneficiario = dc.id_beneficiario
-    WHERE 1=1
-";
+    p.parroquia,
+    COUNT(b.id_beneficiario) AS total_viviendas,
+    AVG(dc.$tipo_avance) AS avance_promedio,
+    SUM(CASE WHEN dc.$tipo_avance >= 100 THEN 1 ELSE 0 END) AS completadas,
+    SUM(CASE WHEN dc.$tipo_avance > 0 AND dc.$tipo_avance < 100 THEN 1 ELSE 0 END) AS en_progreso,
+    SUM(CASE WHEN dc.$tipo_avance = 0 OR dc.$tipo_avance IS NULL THEN 1 ELSE 0 END) AS no_iniciadas
+FROM estados e
+LEFT JOIN municipios m ON e.id_estado = m.id_estado
+LEFT JOIN parroquias p ON m.id_municipio = p.id_municipio
+LEFT JOIN ubicaciones u ON p.id_parroquia = u.id_parroquia
+LEFT JOIN Beneficiarios b ON u.id_ubicacion = b.id_ubicacion
+LEFT JOIN Datos_de_Construccion dc ON b.id_beneficiario = dc.id_beneficiario
+WHERE 1=1";
 
 $types = "";
 $params = [];
 
-// Aplicar filtros
+// Aplicar filtros jerárquicos
+if ($id_estado) {
+    $sql .= " AND e.id_estado = ?";
+    $types .= "i";
+    $params[] = $id_estado;
+}
+
 if ($id_municipio) {
     $sql .= " AND m.id_municipio = ?";
     $types .= "i";
@@ -49,7 +57,14 @@ if ($id_parroquia) {
     $params[] = $id_parroquia;
 }
 
-$sql .= " GROUP BY m.id_municipio, p.id_parroquia";
+// Filtro por estado del beneficiario
+if ($estado_beneficiario) {
+    $sql .= " AND b.status = ?";
+    $types .= "s";
+    $params[] = $estado_beneficiario;
+}
+
+$sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia";
 
 // Preparar la consulta
 $stmt = $conexion->prepare($sql);
@@ -62,14 +77,12 @@ if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
 }
 
-if (!in_array($tipo_avance, $columnas_validas)) {
-    $tipo_avance = 'avance_fisico'; // fallback seguro
-}
-
+// Ejecutar consulta
 $stmt->execute();
 $result = $stmt->get_result();
 $reportes = $result->fetch_all(MYSQLI_ASSOC);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="es">
@@ -97,6 +110,48 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
             --progress-low: #F44336;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        body {
+            background: url('../imagenes/fondo1.jpg') no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            position: relative;
+            color: var(--text-color);
+            height: 100vh;
+            min-height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            z-index: -1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .complete {
+    background-color: var(--progress-complete);
+}
+
+.in-progress {
+    background-color: var(--progress-medium);
+}
+
+.not-started {
+    background-color: var(--progress-low);
+}
 
         body {
             background-color: #f5f7fa;
@@ -304,6 +359,10 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
             transform: translateY(-2px);
         }
 
+        .form-label{
+            color: #e9ecef;
+        }
+
         @media (max-width: 768px) {
             .info-grid {
                 grid-template-columns: 1fr;
@@ -361,55 +420,70 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
     <div class="container container-main">
         <h1 class="page-title text-center">Reportes de Avance Constructivo</h1>
         
-        <!-- Filtros -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h3><i class="fas fa-filter me-2"></i>Filtros</h3>
+        <!-- Filtros actualizados -->
+        <form id="filterForm" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select name="estados" id="estadoSelect" class="form-select">
+                    <option value="">Todos</option>
+                    <?php
+                    $estados = $conexion->query("SELECT id_estado, estado FROM estados");
+                    while ($row = $estados->fetch_assoc()) {
+                        echo "<option value='{$row['id_estado']}' " . ($row['id_estado'] == $id_estado ? 'selected' : '') . ">{$row['estado']}</option>";
+                    }
+                    ?>
+                </select>
             </div>
-            <div class="card-body">
-                <form method="GET" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Municipio</label>
-                    <select name="municipio" class="form-select">
-                        <option value="">Todos</option>
-                        <?php
-                        $municipios = $conexion->query("SELECT id_municipio, nombre FROM municipio");
+            <div class="col-md-3">
+                <label class="form-label">Municipio</label>
+                <select name="municipios" id="municipioSelect" class="form-select" <?= !$id_estado ? 'disabled' : '' ?>>
+                    <option value="">Todos</option>
+                    <?php
+                    if ($id_estado) {
+                        $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = $id_estado");
                         while ($row = $municipios->fetch_assoc()) {
-            echo "<option value='{$row['municipio']}' " . ($row['municipio'] == $id_municipio ? 'selected' : '') . ">{$row['id_municipio']}</option>";
-        }
-        ?>
-    </select>
-</div>
-<div class="col-md-4">
-    <label class="form-label">Parroquia</label>
-    <select name="parroquia" class="form-select">
-        <option value="">Todas</option>
-        <?php
-        $where = $id_municipio ? "WHERE id_municipio = $id_municipio" : "";
-        $parroquias = $conexion->query("SELECT id_parroquia, nombre FROM parroquia $where");
-        while ($row = $parroquias->fetch_assoc()) {
-            echo "<option value='{$row['id_parroquia']}' " . ($row['id_parroquia'] == $id_parroquia ? 'selected' : '') . ">{$row['id_parroquia']}</option>";
-        }
-        ?>
-    </select>
-</div>
-                    <div class="col-md-4">
-                        <label class="form-label">Tipo de Avance</label>
-                        <select name="tipo_avance" class="form-select" required>
-                            <option value="avance_fisico" <?= $tipo_avance == 'avance_fisico' ? 'selected' : '' ?>>Avance Físico General</option>
-                            <option value="cerramiento" <?= $tipo_avance == 'cerramiento' ? 'selected' : '' ?>>Cerramiento</option>
-                            <option value="pintura" <?= $tipo_avance == 'pintura' ? 'selected' : '' ?>>Pintura</option>
-                            <!-- Agrega más opciones según las columnas de Datos_de_Construccion -->
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary btn-action">
-                            <i class="fas fa-search me-1"></i> Generar Reporte
-                        </button>
-                    </div>
-                </form>
+                            echo "<option value='{$row['id_municipio']}' " . ($row['id_municipio'] == $id_municipio ? 'selected' : '') . ">{$row['municipio']}</option>";
+                        }
+                    }
+                    ?>
+                </select>
             </div>
-        </div>
+            <div class="col-md-3">
+                <label class="form-label">Parroquia</label>
+                <select name="parroquias" id="parroquiaSelect" class="form-select" <?= !$id_municipio ? 'disabled' : '' ?>>
+                    <option value="">Todas</option>
+                    <?php
+                    if ($id_municipio) {
+                        $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = $id_municipio");
+                        while ($row = $parroquias->fetch_assoc()) {
+                            echo "<option value='{$row['id_parroquia']}' " . ($row['id_parroquia'] == $id_parroquia ? 'selected' : '') . ">{$row['parroquia']}</option>";
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado Beneficiario</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="activo" <?= $estado_beneficiario == 'activo' ? 'selected' : '' ?>>Activo</option>
+                    <option value="inactivo" <?= $estado_beneficiario == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Avance</label>
+                <select name="tipo_avance" class="form-select" required>
+                    <option value="avance_fisico" <?= $tipo_avance == 'avance_fisico' ? 'selected' : '' ?>>Avance Físico General</option>
+                    <option value="cerramiento" <?= $tipo_avance == 'cerramiento' ? 'selected' : '' ?>>Cerramiento</option>
+                    <option value="pintura" <?= $tipo_avance == 'pintura' ? 'selected' : '' ?>>Pintura</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-action">
+                    <i class="fas fa-search me-1"></i> Generar Reporte
+                </button>
+            </div>
+        </form>
 
         <!-- Resultados -->
         <div class="card">
@@ -420,45 +494,47 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
                 </button>
             </div>
             <div class="card-body">
-                <?php if (empty($reportes)): ?>
-                    <div class="alert alert-info">No hay datos con los filtros seleccionados.</div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Municipio</th>
-                                    <th>Parroquia</th>
-                                    <th>Total Viviendas</th>
-                                    <th>Avance Promedio</th>
-                                    <th>Completadas</th>
-                                    <th>En Progreso</th>
-                                    <th>No Iniciadas</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($reportes as $reporte): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($reporte['municipio']) ?></td>
-                                    <td><?= htmlspecialchars($reporte['parroquia']) ?></td>
-                                    <td><?= $reporte['total_viviendas'] ?></td>
-                                    <td>
-                                        <div class="progress-container">
-                                            <div class="progress-bar <?= getProgressClass($reporte['avance_promedio']) ?>" 
-                                                 style="width: <?= $reporte['avance_promedio'] ?>%">
-                                                <?= number_format($reporte['avance_promedio'], 2) ?>%
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-success"><?= $reporte['completadas'] ?></span></td>
-                                    <td><span class="badge bg-warning"><?= $reporte['en_progreso'] ?></span></td>
-                                    <td><span class="badge bg-danger"><?= $reporte['no_iniciadas'] ?></span></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+            <?php if (!empty($reportes)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Estado</th>
+                                <th>Municipio</th>
+                                <th>Parroquia</th>
+                                <th>Total Viviendas</th>
+                                <th>Avance Promedio</th>
+                                <th>Completadas</th>
+                                <th>En Progreso</th>
+                                <th>No Iniciadas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($reportes as $reporte): ?>
+                <tr>
+                    <td><?= htmlspecialchars($reporte['nombre_estado']) ?></td>
+                    <td><?= htmlspecialchars($reporte['municipio'] ?? 'N/A') ?></td>
+                    <td><?= htmlspecialchars($reporte['parroquia'] ?? 'N/A') ?></td>
+                    <td><?= $reporte['total_viviendas'] ?? 0 ?></td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-bar <?= getProgressClass($reporte['avance_promedio']) ?>" 
+                                 style="width: <?= $reporte['avance_promedio'] ?>%">
+                                <?= number_format($reporte['avance_promedio'], 2) ?>%
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-success"><?= $reporte['completadas'] ?? 0 ?></span></td>
+                    <td><span class="badge bg-warning"><?= $reporte['en_progreso'] ?? 0 ?></span></td>
+                    <td><span class="badge bg-danger"><?= $reporte['no_iniciadas'] ?? 0 ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+<?php else: ?>
+    <div class="alert alert-warning">No se encontraron resultados con los filtros seleccionados.</div>
+<?php endif; ?>
             </div>
         </div>
     </div>
@@ -466,23 +542,72 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Actualizar opciones de parroquias según municipio seleccionado
-document.querySelector('select[name="municipio"]').addEventListener('change', function() {
-    const id_municipio = this.value;
-    fetch(`get_parroquias.php?id_municipio=${id_municipio}`)
-        .then(response => response.json())
-        .then(data => {
-            const parroquiaSelect = document.querySelector('select[name="parroquia"]');
-            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-            data.forEach(parroquia => {
-                parroquiaSelect.innerHTML += `<option value="${parroquia.id_parroquia}">${parroquia.parroquia}</option>`;
-            });
+   document.addEventListener('DOMContentLoaded', function() {
+        const estadoSelect = document.getElementById('estadoSelect');
+        const municipioSelect = document.getElementById('municipioSelect');
+        const parroquiaSelect = document.getElementById('parroquiaSelect');
+        
+        // Cargar municipios cuando se selecciona un estado
+        estadoSelect.addEventListener('change', function() {
+            const idEstado = this.value;
+            
+            if (idEstado) {
+                // Habilitar y cargar municipios
+                municipioSelect.disabled = false;
+                fetch(`../php/ajax/get_municipios.php?estado_id=${idEstado}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        municipioSelect.innerHTML = '<option value="">Todos</option>';
+                        data.forEach(municipio => {
+                            const option = document.createElement('option');
+                            option.value = municipio.id_municipio;
+                            option.textContent = municipio.municipio;
+                            municipioSelect.appendChild(option);
+                        });
+                    });
+                
+                // Resetear parroquias
+                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                parroquiaSelect.disabled = true;
+            } else {
+                // Deshabilitar ambos selects si no hay estado seleccionado
+                municipioSelect.innerHTML = '<option value="">Todos</option>';
+                municipioSelect.disabled = true;
+                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                parroquiaSelect.disabled = true;
+            }
         });
-});
+        
+        // Cargar parroquias cuando se selecciona un municipio
+        municipioSelect.addEventListener('change', function() {
+            const idMunicipio = this.value;
+            
+            if (idMunicipio) {
+                // Habilitar y cargar parroquias
+                parroquiaSelect.disabled = false;
+                fetch(`../php/ajax/get_parroquias.php?municipio_id=${idMunicipio}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                        data.forEach(parroquia => {
+                            const option = document.createElement('option');
+                            option.value = parroquia.id_parroquia;
+                            option.textContent = parroquia.parroquia;
+                            parroquiaSelect.appendChild(option);
+                        });
+                    });
+            } else {
+                // Deshabilitar parroquias si no hay municipio seleccionado
+                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                parroquiaSelect.disabled = true;
+            }
+        });
+    });
     </script>
 </body>
 </html>
 <?php
+
 $stmt->close();
 $conexion->close();
 ?>
