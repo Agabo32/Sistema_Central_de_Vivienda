@@ -3,6 +3,9 @@ require_once '../php/conf/conexion.php';
 $params = [];
 $types = '';
 $filtro_condiciones = '';
+$lara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+$id_lara = $lara['id_estado'];
+
 
 // Default to show only active
 $show_inactive = $_GET['show_inactive'] ?? false;
@@ -25,7 +28,7 @@ LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
 LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
 LEFT JOIN estados e ON m.id_estado = e.id_estado
-WHERE 1=1 ";
+WHERE e.id_estado = $id_lara "; // Forzar filtro por Lara
 
 // Solo administradores pueden ver inactivos si lo solicitan explícitamente
 if (!(isset($_SESSION['admin']) && $_SESSION['admin'] && isset($_GET['show_inactive']) && $_GET['show_inactive'])) {
@@ -37,6 +40,24 @@ if (!empty($_GET['estado'])) {
     $sql_base .= " AND e.id_estado = ?";
     $params[] = $_GET['estado'];
     $types .= 'i';
+}
+if (!empty($_GET['municipio'])) {
+    $sql_base .= " AND m.id_municipio = ?";
+    $params[] = $_GET['municipio'];
+    $types .= 'i';
+}
+
+if (!empty($_GET['parroquia'])) {
+    $sql_base .= " AND p.id_parroquia = ?";
+    $params[] = $_GET['parroquia'];
+    $types .= 'i';
+}
+
+// Después de los otros filtros, añade:
+if (!empty($_GET['codigo_obra'])) {
+    $sql_base .= " AND b.codigo_obra LIKE ?";
+    $params[] = '%'.$_GET['codigo_obra'].'%';
+    $types .= 's';
 }
 
 // Consulta para contar total de registros
@@ -334,8 +355,71 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     </nav>
 
     <!-- Contenedor principal -->
-    <div class="container py-4">
-    
+    <div class="container-fluid py-5">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white text-center">
+                    <i class="fas fa-filter me-2"></i> Filtros de Búsqueda
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <select name="estado" id="estadoSelect" class="form-select" disabled>
+                                <?php
+                                // Forzar solo el estado Lara
+                                $lara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+                                echo "<option value='{$lara['id_estado']}' selected>{$lara['estado']}</option>";
+                                ?>
+                            </select>
+                        </div>
+<div class="col-md-4">
+    <label class="form-label">Municipio</label>
+    <select name="municipio" id="municipioSelect" class="form-select">
+        <option value="">Todos</option>
+        <?php
+        // Cargar solo municipios de Lara
+        $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']}");
+        while ($row = $municipios->fetch_assoc()) {
+            $selected = (isset($_GET['municipio']) && $_GET['municipio'] == $row['id_municipio']) ? 'selected' : '';
+            echo "<option value='{$row['id_municipio']}' $selected>{$row['municipio']}</option>";
+        }
+        ?>
+    </select>
+</div>
+            <div class="col-md-4">
+                <label class="form-label">Parroquia</label>
+                <select name="parroquia" id="parroquiaSelect" class="form-select" <?= !isset($_GET['municipio']) ? 'disabled' : '' ?>>
+                    <option value="">Todas</option>
+                    <?php
+                    if (isset($_GET['municipio'])) {
+                        $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = ".intval($_GET['municipio']));
+                        while ($row = $parroquias->fetch_assoc()) {
+                            echo "<option value='{$row['id_parroquia']}' ".(isset($_GET['parroquia']) && $_GET['parroquia'] == $row['id_parroquia'] ? 'selected' : '').">{$row['parroquia']}</option>";
+                        }
+                    }
+                    ?>
+                </select>
+                <div class="col-md-6">
+                    <label class="form-label">Código de Obra</label>
+                    <input type="text" class="form-control" name="codigo_obra" 
+                        value="<?= htmlspecialchars($_GET['codigo_obra'] ?? '') ?>" 
+                        placeholder="Filtrar por código">
+                </div>
+            </div>
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i> Filtrar
+                </button>
+                <a href="beneficiarios.php" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i> Limpiar
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
     <div class="content-wrapper animated">
             <div class="container-fluid p-4">
                 <!-- Título y botones de acción -->
@@ -539,7 +623,38 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-       // Reemplaza el script existente por este
+       document.addEventListener('DOMContentLoaded', function() {
+    const estadoSelect = document.getElementById('estadoSelect');
+    const municipioSelect = document.getElementById('municipioSelect');
+    const parroquiaSelect = document.getElementById('parroquiaSelect');
+    
+    municipioSelect.addEventListener('change', function() {
+        const municipioId = this.value;
+        
+        if (municipioId) {
+            parroquiaSelect.disabled = false;
+            fetch(`../php/ajax/get_parroquias.php?municipio_id=${municipioId}`)
+                .then(response => response.json())
+                .then(data => {
+                    parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                    data.forEach(parroquia => {
+                        const option = document.createElement('option');
+                        option.value = parroquia.id_parroquia;
+                        option.textContent = parroquia.parroquia;
+                        parroquiaSelect.appendChild(option);
+                    });
+                });
+        } else {
+            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+            parroquiaSelect.disabled = true;
+        }
+    });
+    
+    // Cargar parroquias si ya hay un municipio seleccionado
+    if (municipioSelect.value) {
+        municipioSelect.dispatchEvent(new Event('change'));
+    }
+});
     // Manejar el scroll del navbar
     window.addEventListener('scroll', function() {
         const navbar = document.querySelector('.navbar');

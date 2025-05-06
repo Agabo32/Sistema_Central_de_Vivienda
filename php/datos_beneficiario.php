@@ -70,7 +70,7 @@ FROM Beneficiarios b
 LEFT JOIN Ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN Obras o ON b.codigo_obra = o.codigo_obra
+LEFT JOIN Obras o ON b.codigo_obra = b.codigo_obra
 LEFT JOIN Fiscalizadores f ON b.id_fiscalizador = f.id_fiscalizador
 LEFT JOIN Datos_de_Construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE b.id_beneficiario = ?
@@ -473,74 +473,274 @@ function formatProgressValue($value) {
         </div>
 
           <!-- Modal Actualizar Beneficiario -->
-          <div class="modal fade" id="actualizarBeneficiarioModal" tabindex="-1" aria-labelledby="actualizarBeneficiarioModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="actualizarBeneficiarioModalLabel">Actualizar Beneficiario</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="actualizarBeneficiarioForm">
-                            <input type="hidden" name="id_beneficiario" value="<?php echo $data['id_beneficiario']; ?>">
+<div class="modal fade" id="actualizarBeneficiarioModal" tabindex="-1" aria-labelledby="actualizarBeneficiarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actualizarBeneficiarioModalLabel">Actualizar Beneficiario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="actualizarBeneficiarioForm">
+                    <input type="hidden" name="id_beneficiario" value="<?php echo $data['id_beneficiario']; ?>">
+                    
+                    <div class="row">
+                        <!-- Columna 1 -->
+                        <div class="col-md-6">
                             <div class="mb-3">
-                            <label for="status" class="form-label">Estado</label>
+                                <label for="status" class="form-label">Estado</label>
                                 <select class="form-select" id="status" name="status" required>
-                                <option value="activo" <?= ($data['status'] ?? 'activo') == 'activo' ? 'selected' : '' ?>>Activo</option>
-                                <option value="inactivo" <?= ($data['status'] ?? 'activo') == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                                    <option value="activo" <?= ($data['status'] ?? 'activo') == 'activo' ? 'selected' : '' ?>>Activo</option>
+                                    <option value="inactivo" <?= ($data['status'] ?? 'activo') == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
                                 </select>
                             </div>
+                            
                             <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre</label>
+                                <label for="nombre_beneficiario" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" value="<?php echo $data['nombre_beneficiario']; ?>" required>
                             </div>
+                            
                             <div class="mb-3">
                                 <label for="cedula" class="form-label">Cédula</label>
                                 <input type="text" class="form-control" id="cedula" name="cedula" value="<?php echo $data['cedula']; ?>" required>
                             </div>
+                            
+                            <div class="mb-3">
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="telefono" name="telefono" value="<?php echo $data['telefono']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="codigo_obra" class="form-label">Código de Obra</label>
+                                <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" value="<?php echo $data['codigo_obra']; ?>">
+                            </div>
+                            
                             <div class="mb-3">
                                 <label for="comunidad" class="form-label">Comunidad</label>
-                                <input type="text" class="form-control" id="comunidad" name="comunidad" value="<?php echo $data['comunidad']; ?>" required>
+                                <input type="text" class="form-control" id="comunidad" name="comunidad" value="<?php echo $data['comunidad']; ?>">
                             </div>
-                        </form>
+                            
+                            <div class="mb-3">
+                                <label for="direccion_exacta" class="form-label">Dirección Exacta</label>
+                                <input type="text" class="form-control" id="direccion_exacta" name="direccion_exacta" value="<?php echo $data['direccion_exacta']; ?>">
+                            </div>
+                        </div>
+                        
+                        <!-- Columna 2 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="utm_norte" class="form-label">UTM Norte</label>
+                                <input type="text" class="form-control" id="utm_norte" name="utm_norte" value="<?php echo $data['utm_norte']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="utm_este" class="form-label">UTM Este</label>
+                                <input type="text" class="form-control" id="utm_este" name="utm_este" value="<?php echo $data['utm_este']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="municipio" class="form-label">Municipio</label>
+                                <input type="text" class="form-control" id="municipio" name="municipio" value="<?php echo $data['municipio']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="parroquia" class="form-label">Parroquia</label>
+                                <input type="text" class="form-control" id="parroquia" name="parroquia" value="<?php echo $data['parroquia']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="modelo_constructivo" class="form-label">Modelo Constructivo</label>
+                                <input type="text" class="form-control" id="modelo_constructivo" name="modelo_constructivo" value="<?php echo $data['modelo_constructivo']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="metodo_constructivo" class="form-label">Método Constructivo</label>
+                                <input type="text" class="form-control" id="metodo_constructivo" name="metodo_constructivo" value="<?php echo $data['metodo_constructivo']; ?>">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="avance_fisico" class="form-label">Avance Físico (%)</label>
+                                <input type="number" class="form-control" id="avance_fisico" name="avance_fisico" min="0" max="100" value="<?php echo $data['avance_fisico'] ?? 0; ?>">
+                            </div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" onclick="actualizarBeneficiario()">Guardar Cambios</button>
-                        <script>
-                            function actualizarBeneficiario() {
-                                var form = document.getElementById('actualizarBeneficiarioForm');
-                                var formData = new FormData(form);
-
-                                // Log form data for debugging
-                                for (var pair of formData.entries()) {
-                                    console.log(pair[0] + ': ' + pair[1]); 
-                                }
-
-                                fetch('../php/conf/actualizar_beneficiario.php', {
-                                    method: 'POST',
-                                    body: formData
-                                })
-                                .then(response => response.text())
-                                .then(result => {
-                                    console.log('Server response:', result);
-                                    if (result === 'ok') {
-                                        alert('Beneficiario actualizado exitosamente');
-                                        location.reload();
-                                    } else {
-                                        alert('Error al actualizar el beneficiario: ' + result);
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    alert('Error al actualizar el beneficiario');
-                                });
-                            }
-                        </script>
+                    
+                    <!-- Sección de Datos de Construcción -->
+                    <h5 class="mt-4 mb-3">Datos de Construcción</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="limpieza" class="form-label">Limpieza</label>
+                                <input type="number" class="form-control" id="limpieza" name="limpieza" min="0" max="100" value="<?php echo $data['limpieza'] ?? 0; ?>">
+                            </div>
+                            
+                            <!-- Agrega más campos de construcción según sea necesario -->
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="replanteo" class="form-label">Replanteo</label>
+                                <input type="number" class="form-control" id="replanteo" name="replanteo" min="0" max="100" value="<?php echo $data['replanteo'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="excavacion" class="form-label">Excavacion</label>
+                                <input type="number" class="form-control" id="excavacion" name="excavacion" min="0" max="100" value="<?php echo $data['excavacion'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="acero_vigas_riostra" class="form-label">Acero en Vigas de Riostra</label>
+                                <input type="number" class="form-control" id="acero_vigas_riostra" name="acero_vigas_riostra" min="0" max="100" value="<?php echo $data['acero_vigas_riostra'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="encofrado_malla" class="form-label">Encofrado y Colocación de Malla</label>
+                                <input type="number" class="form-control" id="encofrado_malla" name="encofrado_malla" min="0" max="100" value="<?php echo $data['encofrado_malla'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instalaciones_electricas_sanitarias" class="form-label">Instalaciones Eléctricas y Sanitarias</label>
+                                <input type="number" class="form-control" id="instalaciones_electricas_sanitarias" name="instalaciones_electricas_sanitarias" min="0" max="100" value="<?php echo $data['instalaciones_electricas_sanitarias'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vaciado_losa_anclajes" class="form-label">Vaciado de Losa y Colocación de Anclajes</label>
+                                <input type="number" class="form-control" id="vaciado_losa_anclajes" name="vaciado_losa_anclajes" min="0" max="100" value="<?php echo $data['vaciado_losa_anclajes'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="armado_columnas" class="form-label">Armado de Columnas</label>
+                                <input type="number" class="form-control" id="armado_columnas" name="armado_columnas" min="0" max="100" value="<?php echo $data['armado_columnas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vaciado_columnas" class="form-label">Vaciado de Columnas</label>
+                                <input type="number" class="form-control" id="vaciado_columnas" name="vaciado_columnas" min="0" max="100" value="<?php echo $data['vaciado_columnas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vaciado_columnas" class="form-label">Armado de Vigas</label>
+                                <input type="number" class="form-control" id="armado_vigas" name="armado_vigas" min="0" max="100" value="<?php echo $data['armado_vigas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vaciado_vigas" class="form-label">Vaciado de Vigas</label>
+                                <input type="number" class="form-control" id="vaciado_vigas" name="vaciado_vigas" min="0" max="100" value="<?php echo $data['vaciado_vigas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bloqueado" class="form-label">Bloqueado</label>
+                                <input type="number" class="form-control" id="bloqueado" name="bloqueado" min="0" max="100" value="<?php echo $data['bloqueado'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_correas" class="form-label">Colocación de Correas</label>
+                                <input type="number" class="form-control" id="colocacion_correas" name="colocacion_correas" min="0" max="100" value="<?php echo $data['colocacion_correas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_techo" class="form-label">Colocación de Techo</label>
+                                <input type="number" class="form-control" id="colocacion_techo" name="colocacion_techo" min="0" max="100" value="<?php echo $data['colocacion_techo'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_techo" class="form-label">Colocación de Ventanas</label>
+                                <input type="number" class="form-control" id="colocacion_ventanas" name="colocacion_ventanas" min="0" max="100" value="<?php echo $data['colocacion_ventanas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_techo" class="form-label">Colocación de Puertas Principales</label>
+                                <input type="number" class="form-control" id="colocacion_puertas_principales" name="colocacion_puertas_principales" min="0" max="100" value="<?php echo $data['colocacion_puertas_principales'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_techo" class="form-label">Instalaciones Eléctricas y Sanitarias en Paredes</label>
+                                <input type="number" class="form-control" id="instalaciones_electricas_sanitarias_paredes" name="instalaciones_electricas_sanitarias_paredes" min="0" max="100" value="<?php echo $data['instalaciones_electricas_sanitarias_paredes'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="frisos" class="form-label">Frisos</label>
+                                <input type="number" class="form-control" id="frisos" name="frisos" min="0" max="100" value="<?php echo $data['frisos'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sobrepiso" class="form-label">Sobre-piso</label>
+                                <input type="number" class="form-control" id="sobrepiso" name="sobrepiso" min="0" max="100" value="<?php echo $data['sobrepiso'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ceramica_bano" class="form-label">Cerámica en Baño</label>
+                                <input type="number" class="form-control" id="ceramica_bano" name="ceramica_bano" min="0" max="100" value="<?php echo $data['ceramica_bano'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_puertas_internas" class="form-label">Colocación de Puertas Internas</label>
+                                <input type="number" class="form-control" id="colocacion_puertas_internas" name="colocacion_puertas_internas" min="0" max="100" value="<?php echo $data['colocacion_puertas_internas'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="equipos_accesorios_electricos" class="form-label">Equipos y Accesorios Eléctricos</label>
+                                <input type="number" class="form-control" id="equipos_accesorios_electricos" name="equipos_accesorios_electricos" min="0" max="100" value="<?php echo $data['equipos_accesorios_electricos'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="equipos_accesorios_sanitarios" class="form-label">Equipos y Accesorios Sanitarios</label>
+                                <input type="number" class="form-control" id="equipos_accesorios_sanitarios" name="equipos_accesorios_sanitarios" min="0" max="100" value="<?php echo $data['equipos_accesorios_sanitarios'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colocacion_lavaplatos" class="form-label">Colocación de Lavaplatos</label>
+                                <input type="number" class="form-control" id="colocacion_lavaplatos" name="colocacion_lavaplatos" min="0" max="100" value="<?php echo $data['colocacion_lavaplatos'] ?? 0; ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="pintura" class="form-label">Pintura</label>
+                                <input type="number" class="form-control" id="pintura" name="pintura" min="0" max="100" value="<?php echo $data['pintura'] ?? 0; ?>">
+                            </div>
+                        </div>
                     </div>
-                </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="mb-3">
+                        <label for="observaciones_responsables_control" class="form-label">Observaciones Responsables</label>
+                        <textarea class="form-control" id="observaciones_responsables_control" name="observaciones_responsables_control" rows="3"><?php echo $data['observaciones_responsables_control'] ?? ''; ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observaciones_fiscalizadores" class="form-label">Observaciones Fiscalizadores</label>
+                        <textarea class="form-control" id="observaciones_fiscalizadores" name="observaciones_fiscalizadores" rows="3"><?php echo $data['observaciones_fiscalizadores'] ?? ''; ?></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="actualizarBeneficiario()">Guardar Cambios</button>
             </div>
         </div>
+    </div>
+</div>
 
         <!-- Información Personal -->
         <div class="card">
@@ -916,59 +1116,70 @@ function formatProgressValue($value) {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>   
-    <script>function actualizarBeneficiario() {
+    <script>
+    function actualizarBeneficiario() {
     var form = document.getElementById('actualizarBeneficiarioForm');
     var formData = new FormData(form);
     
-    // Validación adicional
-    if (!formData.get('status') || !['activo', 'inactivo'].includes(formData.get('status'))) {
-        alert('Estado no válido');
-        return;
-    }
+    // Mostrar loading
+    var submitBtn = document.querySelector('#actualizarBeneficiarioModal .btn-primary');
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+    submitBtn.disabled = true;
 
     fetch('../php/conf/actualizar_beneficiario.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => {
-        if (!response.ok) throw new Error('HTTP error ' + response.status);
-        return response.text();
-    })
+    .then(response => response.text())
     .then(result => {
         if (result === 'ok') {
-            // Mostrar feedback visual mejorado
-            const toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 end-0 p-3';
-            toast.innerHTML = `
-                <div class="toast show" role="alert">
-                    <div class="toast-header bg-success text-white">
-                        <strong class="me-auto">Éxito</strong>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                    </div>
-                    <div class="toast-body">
-                        Beneficiario actualizado correctamente
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            
-            // Actualizar visualización sin recargar
-            document.querySelector('h2').textContent = formData.get('nombre_beneficiario');
-            
-            // Cerrar modal después de 2 segundos
-            setTimeout(() => {
-                bootstrap.Modal.getInstance(document.getElementById('actualizarBeneficiarioModal')).hide();
-                toast.remove();
-            }, 2000);
+            // Mostrar alerta de éxito
+            alert('Beneficiario actualizado exitosamente');
+            // Recargar la página para ver cambios
+            location.reload();
         } else {
-            throw new Error(result || 'Error desconocido');
+            // Mostrar error
+            alert(result);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al actualizar: ' + error.message);
+        alert('Error al actualizar el beneficiario');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = 'Guardar Cambios';
+        submitBtn.disabled = false;
     });
 }
+function showToast(type, message) {
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+    toastContainer.style.zIndex = '9999';
+    
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-white bg-${type}`;
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    document.body.appendChild(toastContainer);
+    
+    // Eliminar el toast después de 5 segundos
+    setTimeout(() => {
+        toastContainer.remove();
+    }, 5000);
+}
+
 </script>    
 </body>
 </html>
