@@ -2,7 +2,8 @@
 require_once '../php/conf/conexion.php';
 
 // Retrieve filter parameters
-$id_estado = $_GET['estados'] ?? null;
+$estadoLara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+$id_lara = $estadoLara['id_estado'];
 $id_municipio = $_GET['municipios'] ?? null;
 $id_parroquia = $_GET['parroquias'] ?? null;
 $estado_beneficiario = $_GET['estado'] ?? null;
@@ -33,17 +34,12 @@ LEFT JOIN parroquias p ON m.id_municipio = p.id_municipio
 LEFT JOIN ubicaciones u ON p.id_parroquia = u.id_parroquia
 LEFT JOIN Beneficiarios b ON u.id_ubicacion = b.id_ubicacion
 LEFT JOIN Datos_de_Construccion dc ON b.id_beneficiario = dc.id_beneficiario
-WHERE 1=1";
+WHERE e.id_estado = $id_lara";
 
 $types = "";
 $params = [];
 
 // Aplicar filtros jerárquicos
-if ($id_estado) {
-    $sql .= " AND e.id_estado = ?";
-    $types .= "i";
-    $params[] = $id_estado;
-}
 
 if ($id_municipio) {
     $sql .= " AND m.id_municipio = ?";
@@ -422,32 +418,32 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
         
         <!-- Filtros actualizados -->
         <form id="filterForm" method="GET" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Estado</label>
-                <select name="estados" id="estadoSelect" class="form-select">
-                    <option value="">Todos</option>
-                    <?php
-                    $estados = $conexion->query("SELECT id_estado, estado FROM estados");
-                    while ($row = $estados->fetch_assoc()) {
-                        echo "<option value='{$row['id_estado']}' " . ($row['id_estado'] == $id_estado ? 'selected' : '') . ">{$row['estado']}</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Municipio</label>
-                <select name="municipios" id="municipioSelect" class="form-select" <?= !$id_estado ? 'disabled' : '' ?>>
-                    <option value="">Todos</option>
-                    <?php
-                    if ($id_estado) {
-                        $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = $id_estado");
-                        while ($row = $municipios->fetch_assoc()) {
-                            echo "<option value='{$row['id_municipio']}' " . ($row['id_municipio'] == $id_municipio ? 'selected' : '') . ">{$row['municipio']}</option>";
-                        }
-                    }
-                    ?>
-                </select>
-            </div>
+        <div class="col-md-3">
+    <label class="form-label">Estado</label>
+    <select name="estados" id="estadoSelect" class="form-select">
+        <?php
+        // Forzar solo Lara (asumiendo que su id_estado es conocido, ej: 12)
+        $estadoLara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+        echo "<option value='{$estadoLara['id_estado']}' selected>{$estadoLara['estado']}</option>";
+        ?>
+    </select>
+</div>
+
+<div class="col-md-3">
+    <label class="form-label">Municipio</label>
+    <select name="municipios" id="municipioSelect" class="form-select"> <!-- Quitamos disabled -->
+        <option value="">Todos</option>
+        <?php
+        // Cargar municipios de Lara automáticamente (evita depender solo de JS)
+        if ($estadoLara) {
+            $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$estadoLara['id_estado']}");
+            while ($row = $municipios->fetch_assoc()) {
+                echo "<option value='{$row['id_municipio']}' " . ($row['id_municipio'] == ($_GET['municipios'] ?? '') ? 'selected' : '') . ">{$row['municipio']}</option>";
+            }
+        }
+        ?>
+    </select>
+</div>
             <div class="col-md-3">
                 <label class="form-label">Parroquia</label>
                 <select name="parroquias" id="parroquiaSelect" class="form-select" <?= !$id_municipio ? 'disabled' : '' ?>>
@@ -543,66 +539,49 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
    document.addEventListener('DOMContentLoaded', function() {
-        const estadoSelect = document.getElementById('estadoSelect');
-        const municipioSelect = document.getElementById('municipioSelect');
-        const parroquiaSelect = document.getElementById('parroquiaSelect');
-        
-        // Cargar municipios cuando se selecciona un estado
-        estadoSelect.addEventListener('change', function() {
-            const idEstado = this.value;
-            
-            if (idEstado) {
-                // Habilitar y cargar municipios
-                municipioSelect.disabled = false;
-                fetch(`../php/ajax/get_municipios.php?estado_id=${idEstado}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        municipioSelect.innerHTML = '<option value="">Todos</option>';
-                        data.forEach(municipio => {
-                            const option = document.createElement('option');
-                            option.value = municipio.id_municipio;
-                            option.textContent = municipio.municipio;
-                            municipioSelect.appendChild(option);
-                        });
-                    });
-                
-                // Resetear parroquias
-                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                parroquiaSelect.disabled = true;
-            } else {
-                // Deshabilitar ambos selects si no hay estado seleccionado
-                municipioSelect.innerHTML = '<option value="">Todos</option>';
-                municipioSelect.disabled = true;
-                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                parroquiaSelect.disabled = true;
-            }
-        });
-        
-        // Cargar parroquias cuando se selecciona un municipio
-        municipioSelect.addEventListener('change', function() {
-            const idMunicipio = this.value;
-            
-            if (idMunicipio) {
-                // Habilitar y cargar parroquias
-                parroquiaSelect.disabled = false;
-                fetch(`../php/ajax/get_parroquias.php?municipio_id=${idMunicipio}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                        data.forEach(parroquia => {
-                            const option = document.createElement('option');
-                            option.value = parroquia.id_parroquia;
-                            option.textContent = parroquia.parroquia;
-                            parroquiaSelect.appendChild(option);
-                        });
-                    });
-            } else {
-                // Deshabilitar parroquias si no hay municipio seleccionado
-                parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                parroquiaSelect.disabled = true;
-            }
-        });
+    const estadoSelect = document.getElementById('estadoSelect');
+    const municipioSelect = document.getElementById('municipioSelect');
+    const parroquiaSelect = document.getElementById('parroquiaSelect');
+
+    // Cargar municipios de Lara automáticamente al inicio
+    loadMunicipios();
+
+    function loadMunicipios() {
+        const idEstado = estadoSelect.value;
+        if (!idEstado) return;
+
+        fetch(`../php/ajax/get_municipios.php?estado_id=${idEstado}`)
+            .then(response => response.json())
+            .then(data => {
+                let municipiosHTML = '<option value="">Todos</option>';
+                data.forEach(municipio => {
+                    municipiosHTML += `<option value="${municipio.id_municipio}">${municipio.municipio}</option>`;
+                });
+                municipioSelect.innerHTML = municipiosHTML;
+            });
+    }
+
+    // Cargar parroquias al seleccionar municipio (opcional)
+    municipioSelect.addEventListener('change', function() {
+        const idMunicipio = this.value;
+        if (!idMunicipio) {
+            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+            parroquiaSelect.disabled = true;
+            return;
+        }
+
+        parroquiaSelect.disabled = false;
+        fetch(`../php/ajax/get_parroquias.php?municipio_id=${idMunicipio}`)
+            .then(response => response.json())
+            .then(data => {
+                let parroquiasHTML = '<option value="">Todas</option>';
+                data.forEach(parroquia => {
+                    parroquiasHTML += `<option value="${parroquia.id_parroquia}">${parroquia.parroquia}</option>`;
+                });
+                parroquiaSelect.innerHTML = parroquiasHTML;
+            });
     });
+});
     </script>
 </body>
 </html>
