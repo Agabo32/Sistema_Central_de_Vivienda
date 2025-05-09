@@ -61,3 +61,443 @@ Array
     [cedula] => 123
     [comunidad] => 
 )
+Array
+(
+    [id_beneficiario] => 20155
+    [status] => inactivo
+    [nombre_beneficiario] => Lourdes Escalona
+    [cedula] => 123
+    [comunidad] => 
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío ' 
+        WHERE id_ubicacion = 3' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío ' 
+        WHERE id_ubicacion = 3' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 1
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío 1' 
+        WHERE id_ubicacion = 3' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 1
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío 1' 
+        WHERE id_ubicacion = 3' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío 1
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [fiscalizador] => ROSANGELA ESCALONA
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío 1' 
+        WHERE id_ubicacion = 3' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 
+    [comunidad] => Pío 1
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [fiscalizador] => ROSANGELA ESCALONA
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío Tamayo' 
+        municipio= 'Andrés Eloy Blanco' 
+      ...' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 
+    [comunidad] => Pío 1
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [fiscalizador] => ROSANGELA ESCALONA
+)
+Exception: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'parroquia = 'Pío Tamayo' 
+        municipio= 'Andrés Eloy Blanco' 
+      ...' at line 3
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [nombre_fiscalizador] => ROSANGELA ESCALONA
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [nombre_fiscalizador] => 4
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [nombre_fiscalizador] => 4
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => okjhkjjio
+    [nombre_fiscalizador] => 4
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => okjhkjjio
+    [nombre_fiscalizador] => 7
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => okjhkjjio
+    [id_fiscalizador] => 7
+)
+Exception: Unknown column 'metodo_constructivo' in 'field list'
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => okjhkjjio
+    [id_fiscalizador] => 7
+)
+Exception: Unknown column 'metodo_constructivo' in 'field list'
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => okjhkjjio
+    [id_fiscalizador] => 7
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [id_fiscalizador] => 7
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [id_fiscalizador] => 1
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [comunidad] => UIhuiHDIHH
+    [parroquia] => Pío Tamayo
+    [municipio] => Andrés Eloy Blanco
+    [direccion_exacta] => NAN
+    [codigo_obra] => 14337
+    [metodo_constructivo] => 
+    [modelo_constructivo] => 
+    [id_fiscalizador] => 1
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [comunidad] => UIhuiHDIHH
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [codigo_obra] => 14337
+    [comunidad] => UIhuiHDIHH
+    [direccion_exacta] => NAN
+    [utm_norte] => 0.000000
+    [utm_este] => 0.000000
+    [municipio] => Andrés Eloy Blanco
+    [parroquia] => Pío Tamayo
+    [modelo_constructivo] => 
+    [metodo_constructivo] => 
+    [avance_fisico] => 100
+    [limpieza] => 100
+    [replanteo] => 100
+    [observaciones_responsables_control] => NAN
+    [observaciones_fiscalizadores] => 0
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [codigo_obra] => 14337
+    [comunidad] => UIhuiHDIHH
+    [direccion_exacta] => NAN
+    [utm_norte] => 0.000000
+    [utm_este] => 0.000000
+    [municipio] => Andrés Eloy Blanco
+    [parroquia] => Pío Tamayo
+    [modelo_constructivo] => 
+    [metodo_constructivo] => 
+    [avance_fisico] => 00
+    [limpieza] => 100
+    [replanteo] => 100
+    [observaciones_responsables_control] => NAN
+    [observaciones_fiscalizadores] => 0
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [codigo_obra] => 14337
+    [comunidad] => UIhuiHDIHH
+    [direccion_exacta] => NAN
+    [utm_norte] => 0.000000
+    [utm_este] => 0.000000
+    [municipio] => Andrés Eloy Blanco
+    [parroquia] => Pío Tamayo
+    [modelo_constructivo] => 
+    [metodo_constructivo] => 
+    [avance_fisico] => 00
+    [limpieza] => 100
+    [replanteo] => 100
+    [observaciones_responsables_control] => NAN
+    [observaciones_fiscalizadores] => 0
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [codigo_obra] => 14337
+    [comunidad] => UIhuiHDIHH
+    [direccion_exacta] => NAN
+    [utm_norte] => 0.000000
+    [utm_este] => 0.000000
+    [municipio] => Andrés Eloy Blanco
+    [parroquia] => Pío Tamayo
+    [modelo_constructivo] => 
+    [metodo_constructivo] => 
+    [avance_fisico] => 95
+    [limpieza] => 100
+    [replanteo] => 100
+    [observaciones_responsables_control] => NAN
+    [observaciones_fiscalizadores] => 0
+)
+Array
+(
+    [id_beneficiario] => 3
+    [status] => activo
+    [nombre_beneficiario] => DINEXA JOSEFINA HERNANDEZ SUAREZ
+    [cedula] => 9629111
+    [telefono] => 0424-5017505 / 0426-
+    [codigo_obra] => 14337
+    [comunidad] => UIhuiHDIHH
+    [direccion_exacta] => NAN
+    [utm_norte] => 0.000000
+    [utm_este] => 0.000000
+    [municipio] => Andrés Eloy Blanco
+    [parroquia] => Pío Tamayo
+    [modelo_constructivo] => 
+    [metodo_constructivo] => 
+    [avance_fisico] => 25
+    [limpieza] => 100
+    [replanteo] => 100
+    [observaciones_responsables_control] => NAN
+    [observaciones_fiscalizadores] => 0
+)
