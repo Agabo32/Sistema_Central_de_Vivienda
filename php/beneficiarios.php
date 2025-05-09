@@ -401,12 +401,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     }
                     ?>
                 </select>
-                <div class="col-md-6">
-                    <label class="form-label">Código de Obra</label>
-                    <input type="text" class="form-control" name="codigo_obra" 
-                        value="<?= htmlspecialchars($_GET['codigo_obra'] ?? '') ?>" 
-                        placeholder="Filtrar por código">
-                </div>
             </div>
             <div class="col-12 text-end">
                 <button type="submit" class="btn btn-primary me-2">
@@ -574,38 +568,62 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="agregarBeneficiarioForm" method="POST" action="../php/conf/guardar_beneficiario.php">
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="nombre" class="form-label">Nombre Completo</label>
-            <input type="text" class="form-control" id="nombre" name="nombre" required>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="nombre" class="form-label">Nombre Completo</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="cedula" class="form-label">Cédula</label>
+                <input type="text" class="form-control" id="cedula" name="cedula" required>
+            </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <label for="cedula" class="form-label">Cédula</label>
-            <input type="text" class="form-control" id="cedula" name="cedula" required>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="telefono" class="form-label">Teléfono</label>
+                <input type="tel" class="form-control" id="telefono" name="telefono" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="codigo_obra" class="form-label">Código de Obra</label>
+                <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
+            </div>
         </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="comunidad" class="form-label">Comunidad</label>
+                <input type="text" class="form-control" id="comunidad" name="comunidad" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="status" class="form-label">Estado</label>
+                <select class="form-select" id="status" name="status" required>
+                    <option value="activo" selected>Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                </select>
+            </div>
+        </div>
+        <!-- Nuevos campos para municipio y parroquia -->
+        <div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="modalMunicipio" class="form-label">Municipio</label>
+        <select name="municipio" id="modalMunicipio" class="form-select" required>
+            <option value="">Seleccione un municipio</option>
+            <?php
+            // Cargar municipios de Lara
+            $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = $id_lara ORDER BY municipio ASC");
+            while ($row = $municipios->fetch_assoc()) {
+                echo "<option value='{$row['id_municipio']}'>{$row['municipio']}</option>";
+            }
+            ?>
+        </select>
     </div>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="telefono" class="form-label">Teléfono</label>
-            <input type="tel" class="form-control" id="telefono" name="telefono" required>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="codigo_obra" class="form-label">Código de Obra</label>
-            <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
-        </div>
+    <div class="col-md-6 mb-3">
+        <label for="modalParroquia" class="form-label">Parroquia</label>
+        <select name="parroquia" id="modalParroquia" class="form-select" required disabled>
+            <option value="">Primero seleccione un municipio</option>
+        </select>
     </div>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="comunidad" class="form-label">Comunidad</label>
-            <input type="text" class="form-control" id="comunidad" name="comunidad" required>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="status" class="form-label">Estado</label>
-            <select class="form-select" id="status" name="status" required>
-                <option value="activo" selected>Activo</option>
-                <option value="inactivo">Inactivo</option>
-            </select>
-        </div>
+</div>
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -666,26 +684,106 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     });
 
     // Funcionalidad de búsqueda
-    document.getElementById('buscar').addEventListener('input', function() {
-        const texto = this.value.toLowerCase();
-        const filas = document.querySelectorAll('#tablaBeneficiarios tr');
+    document.addEventListener('DOMContentLoaded', function() {
+    const inputBuscar = document.getElementById('buscar');
+    const tablaBeneficiarios = document.getElementById('tablaBeneficiarios');
+    const filas = tablaBeneficiarios.querySelectorAll('tbody tr');
+    const paginationContainer = document.querySelector('.pagination');
+
+    // Función de búsqueda avanzada con mejoras en búsqueda de cédulas
+    function busquedaAvanzada(termino) {
+        termino = termino.trim().toLowerCase();
+        let resultadosEncontrados = 0;
         
         filas.forEach(fila => {
-            const celdas = fila.querySelectorAll('td');
-            if (celdas.length > 0) {
-                const nombre = celdas[2].textContent.toLowerCase();
-                const cedula = celdas[1].textContent.toLowerCase();
-                const telefono = celdas[3].textContent.toLowerCase();
-                
-                if (nombre.includes(texto) || cedula.includes(texto) || telefono.includes(texto)) {
-                    fila.style.display = '';
-                } else {
-                    fila.style.display = 'none';
-                }
+            const celdas = fila.getElementsByTagName('td');
+            const cedula = celdas[1].textContent.toLowerCase().replace(/\D/g, ''); // Eliminar caracteres no numéricos
+            const nombre = celdas[2].textContent.toLowerCase();
+            const codigoObra = celdas[4].textContent.toLowerCase();
+            
+            // Búsqueda más flexible
+            const terminoLimpio = termino.replace(/\D/g, ''); // Eliminar caracteres no numéricos del término de búsqueda
+            
+            const coincide = 
+                cedula.includes(terminoLimpio) || // Búsqueda parcial de cédula
+                nombre.includes(termino) || 
+                codigoObra.includes(termino);
+            
+            if (coincide) {
+                fila.style.display = '';
+                resultadosEncontrados++;
+            } else {
+                fila.style.display = 'none';
             }
         });
+
+        // Gestionar visibilidad de paginación
+        gestionarPaginacion(resultadosEncontrados);
+    }
+
+    // Función para gestionar la paginación
+    function gestionarPaginacion(resultadosEncontrados) {
+        if (paginationContainer) {
+            if (resultadosEncontrados === 0) {
+                paginationContainer.style.display = 'none';
+            } else {
+                paginationContainer.style.display = 'flex';
+            }
+        }
+    }
+
+    // Implementación de debounce
+    function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+    }
+
+    const busquedaOptimizada = debounce(busquedaAvanzada);
+
+    // Evento de búsqueda
+    inputBuscar.addEventListener('input', function() {
+        busquedaOptimizada(this.value);
     });
 
+    // Función para limpiar búsqueda
+    function limpiarBusqueda() {
+        inputBuscar.value = '';
+        filas.forEach(fila => {
+            fila.style.display = '';
+        });
+
+        // Restaurar paginación
+        if (paginationContainer) {
+            paginationContainer.style.display = 'flex';
+        }
+    }
+
+    // Botón de limpieza
+    const botonLimpiar = document.createElement('button');
+    botonLimpiar.innerHTML = '<i class="fas fa-times"></i>';
+    botonLimpiar.classList.add('btn', 'btn-link', 'position-absolute', 'end-0', 'top-50', 'translate-middle-y');
+    botonLimpiar.style.zIndex = '10';
+    
+    inputBuscar.parentNode.style.position = 'relative';
+    inputBuscar.parentNode.appendChild(botonLimpiar);
+    
+    botonLimpiar.addEventListener('click', limpiarBusqueda);
+
+    // Manejar paginación
+    const paginationLinks = document.querySelectorAll('.pagination .page-link');
+    paginationLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Restablecer búsqueda al cambiar de página
+            inputBuscar.value = '';
+            filas.forEach(fila => {
+                fila.style.display = '';
+            });
+        });
+    });
+});
     document.addEventListener('DOMContentLoaded', function() {
     const paginationLinks = document.querySelectorAll('.pagination .page-link');
     paginationLinks.forEach(link => {
@@ -707,7 +805,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     });
 });
 
-    document.getElementById('agregarBeneficiarioForm').addEventListener('submit', function(e) {
+document.getElementById('agregarBeneficiarioForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
@@ -716,16 +814,21 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
         method: 'POST',
         body: formData
     })
-    .then(response => response.text())
+    .then(response => response.json())
     .then(result => {
-        if (result === 'ok') {
-            // Mostrar mensaje de éxito
-            alert('Beneficiario agregado exitosamente');
+        if (result.status === 'ok') {
+            // Mostrar mensaje de éxito con detalles del beneficiario
+            alert(`Beneficiario agregado exitosamente\n
+Nombre: ${result.beneficiario.nombre_beneficiario}\n
+Cédula: ${result.beneficiario.cedula}\n
+Municipio: ${result.beneficiario.municipio}\n
+Parroquia: ${result.beneficiario.parroquia}`);
+            
             // Recargar la página para mostrar el nuevo beneficiario
             window.location.reload();
         } else {
             // Mostrar mensaje de error
-            alert('Error: ' + result);
+            alert('Error: ' + result.message);
         }
     })
     .catch(error => {
@@ -733,6 +836,126 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
         alert('Error al agregar beneficiario');
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modalMunicipio = document.getElementById('modalMunicipio');
+    const modalParroquia = document.getElementById('modalParroquia');
+    
+    modalMunicipio.addEventListener('change', async function() {
+        const municipioId = this.value;
+        
+        // Resetear el selector
+        modalParroquia.innerHTML = '<option value="">Cargando parroquias...</option>';
+        modalParroquia.disabled = true;
+        
+        if (!municipioId) {
+            modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success === false) {
+                throw new Error(data.message);
+            }
+
+            // Llenar el select con las opciones
+            modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
+            
+            data.forEach(parroquia => {
+                const option = new Option(parroquia.parroquia, parroquia.id_parroquia);
+                modalParroquia.add(option);
+            });
+            
+            modalParroquia.disabled = false;
+            
+        } catch (error) {
+            console.error('Error al cargar parroquias:', error);
+            modalParroquia.innerHTML = `<option value="">Error: ${error.message}</option>`;
+        }
+    });
+});
+document.getElementById('formularioBeneficiario').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('../php/conf/guardar_beneficiario.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            // Limpiar el formulario
+            this.reset();
+            
+            // Crear una nueva fila para la tabla de beneficiarios
+            const tabla = document.getElementById('tablaBeneficiarios').getElementsByTagName('tbody')[0];
+            const nuevaFila = tabla.insertRow(0);
+            
+            // Insertar celdas con los datos del nuevo beneficiario
+            const celdas = [
+                data.beneficiario.id_beneficiario,
+                data.beneficiario.cedula,
+                data.beneficiario.nombre_beneficiario,
+                data.beneficiario.telefono,
+                data.beneficiario.codigo_obra,
+                data.ubicacion.municipio,
+                data.ubicacion.parroquia,
+                data.beneficiario.status
+            ];
+            
+            celdas.forEach((valor, index) => {
+                const celda = nuevaFila.insertCell(index);
+                celda.textContent = valor || 'N/A';
+            });
+            
+            // Agregar botones de acciones
+            const celdaAcciones = nuevaFila.insertCell(celdas.length);
+            celdaAcciones.innerHTML = `
+                <div class="btn-group" role="group">
+                    <a href="datos_beneficiario.php?id=${data.beneficiario.id_beneficiario}" class="btn btn-info btn-sm">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="#" class="btn btn-warning btn-sm editar-beneficiario" data-id="${data.beneficiario.id_beneficiario}">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+            `;
+            
+            // Mostrar mensaje de éxito
+            Swal.fire({
+                icon: 'success',
+                title: 'Beneficiario Agregado',
+                text: data.message
+            });
+        } else {
+            // Mostrar mensaje de error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Conexión',
+            text: 'No se pudo agregar el beneficiario'
+        });
+    });
+});
+
     </script>
 </body>
 </html>

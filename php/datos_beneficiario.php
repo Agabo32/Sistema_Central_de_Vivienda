@@ -538,15 +538,42 @@ function formatProgressValue($value) {
                                 <input type="text" class="form-control" id="utm_este" name="utm_este" value="<?php echo $data['utm_este']; ?>">
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="municipio" class="form-label">Municipio</label>
-                                <input type="text" class="form-control" id="municipio" name="municipio" value="<?php echo $data['municipio']; ?>">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="parroquia" class="form-label">Parroquia</label>
-                                <input type="text" class="form-control" id="parroquia" name="parroquia" value="<?php echo $data['parroquia']; ?>">
-                            </div>
+                            <div class="col-md-6">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="municipio" class="form-label">Municipio</label>
+                <select class="form-select" id="municipioSelect" name="id_municipio" required>
+                    <option value="">Seleccione un municipio</option>
+                    <?php
+                    $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios");
+                    while ($row = $municipios->fetch_assoc()) {
+                        $selected = ($row['id_municipio'] == $data['id_municipio']) ? 'selected' : '';
+                        echo "<option value='{$row['id_municipio']}' $selected>{$row['municipio']}</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="parroquia" class="form-label">Parroquia</label>
+                <select class="form-select" id="parroquiaSelect" name="id_parroquia" required>
+                    <option value="">Seleccione una parroquia</option>
+                    <?php
+                    if (!empty($data['id_municipio'])) {
+                        $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = {$data['id_municipio']}");
+                        while ($row = $parroquias->fetch_assoc()) {
+                            $selected = ($row['id_parroquia'] == $data['id_parroquia']) ? 'selected' : '';
+                            echo "<option value='{$row['id_parroquia']}' $selected>{$row['parroquia']}</option>";
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
                             
                             <div class="mb-3">
                                 <label for="modelo_constructivo" class="form-label">Modelo Constructivo</label>
@@ -1179,6 +1206,33 @@ function showToast(type, message) {
         toastContainer.remove();
     }, 5000);
 }
+document.getElementById('municipioSelect').addEventListener('change', function() {
+    const municipioId = this.value;
+    const parroquiaSelect = document.getElementById('parroquiaSelect');
+    
+    if (municipioId) {
+        fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
+            .then(response => response.json())
+            .then(data => {
+                parroquiaSelect.innerHTML = '<option value="">Seleccione una parroquia</option>';
+                data.forEach(parroquia => {
+                    const option = document.createElement('option');
+                    option.value = parroquia.id_parroquia;
+                    option.textContent = parroquia.parroquia;
+                    parroquiaSelect.appendChild(option);
+                });
+                parroquiaSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error al cargar parroquias:', error);
+                parroquiaSelect.innerHTML = '<option value="">Error al cargar parroquias</option>';
+            });
+    } else {
+        parroquiaSelect.innerHTML = '<option value="">Seleccione una parroquia</option>';
+        parroquiaSelect.disabled = true;
+    }
+});
+
 
 </script>    
 </body>

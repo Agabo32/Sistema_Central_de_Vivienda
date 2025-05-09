@@ -422,7 +422,7 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
     <label class="form-label">Estado</label>
     <select name="estados" id="estadoSelect" class="form-select">
         <?php
-        // Forzar solo Lara (asumiendo que su id_estado es conocido, ej: 12)
+     
         $estadoLara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
         echo "<option value='{$estadoLara['id_estado']}' selected>{$estadoLara['estado']}</option>";
         ?>
@@ -469,9 +469,38 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
             <div class="col-md-3">
                 <label class="form-label">Tipo de Avance</label>
                 <select name="tipo_avance" class="form-select" required>
-                    <option value="avance_fisico" <?= $tipo_avance == 'avance_fisico' ? 'selected' : '' ?>>Avance Físico General</option>
                     <option value="cerramiento" <?= $tipo_avance == 'cerramiento' ? 'selected' : '' ?>>Cerramiento</option>
-                    <option value="pintura" <?= $tipo_avance == 'pintura' ? 'selected' : '' ?>>Pintura</option>
+                    <option value="acondicionamiento" <?= $tipo_avance == 'acondicionamiento' ? 'selected' : '' ?>>Acondicionamiento</option>
+                    <option value="limpieza" <?= $tipo_avance == 'limpieza' ? 'selected' : '' ?>>Limpieza</option>
+        <option value="replanteo" <?= $tipo_avance == 'replanteo' ? 'selected' : '' ?>>Replanteo</option>
+        <option value="fundacion" <?= $tipo_avance == 'fundacion' ? 'selected' : '' ?>>Fundación</option>
+        <option value="excavacion" <?= $tipo_avance == 'excavacion' ? 'selected' : '' ?>>Excavación</option>
+        <option value="acero_vigas_riostra" <?= $tipo_avance == 'acero_vigas_riostra' ? 'selected' : '' ?>>Acero Vigas Riostra</option>
+        <option value="encofrado_malla" <?= $tipo_avance == 'encofrado_malla' ? 'selected' : '' ?>>Encofrado Malla</option>
+        <option value="instalaciones_electricas_sanitarias" <?= $tipo_avance == 'instalaciones_electricas_sanitarias' ? 'selected' : '' ?>>Instalaciones Eléctricas/Sanitarias</option>
+        <option value="vaciado_losa_anclajes" <?= $tipo_avance == 'vaciado_losa_anclajes' ? 'selected' : '' ?>>Vaciado Losa/Anclajes</option>
+        <option value="estructura" <?= $tipo_avance == 'estructura' ? 'selected' : '' ?>>Estructura</option>
+        <option value="armado_columnas" <?= $tipo_avance == 'armado_columnas' ? 'selected' : '' ?>>Armado Columnas</option>
+        <option value="vaciado_columnas" <?= $tipo_avance == 'vaciado_columnas' ? 'selected' : '' ?>>Vaciado Columnas</option>
+        <option value="armado_vigas" <?= $tipo_avance == 'armado_vigas' ? 'selected' : '' ?>>Armado Vigas</option>
+        <option value="vaciado_vigas" <?= $tipo_avance == 'vaciado_vigas' ? 'selected' : '' ?>>Vaciado Vigas</option>
+        <option value="cerramiento" <?= $tipo_avance == 'cerramiento' ? 'selected' : '' ?>>Cerramiento</option>
+        <option value="bloqueado" <?= $tipo_avance == 'bloqueado' ? 'selected' : '' ?>>Bloqueado</option>
+        <option value="colocacion_correas" <?= $tipo_avance == 'colocacion_correas' ? 'selected' : '' ?>>Colocación Correas</option>
+        <option value="colocacion_techo" <?= $tipo_avance == 'colocacion_techo' ? 'selected' : '' ?>>Colocación Techo</option>
+        <option value="acabado" <?= $tipo_avance == 'acabado' ? 'selected' : '' ?>>Acabado</option>
+        <option value="colocacion_ventanas" <?= $tipo_avance == 'colocacion_ventanas' ? 'selected' : '' ?>>Colocación Ventanas</option>
+        <option value="colocacion_puertas_principales" <?= $tipo_avance == 'colocacion_puertas_principales' ? 'selected' : '' ?>>Colocación Puertas Principales</option>
+        <option value="instalaciones_electricas_sanitarias_paredes" <?= $tipo_avance == 'instalaciones_electricas_sanitarias_paredes' ? 'selected' : '' ?>>Instalaciones Eléctricas/Sanitarias Paredes</option>
+        <option value="frisos" <?= $tipo_avance == 'frisos' ? 'selected' : '' ?>>Frisos</option>
+        <option value="sobrepiso" <?= $tipo_avance == 'sobrepiso' ? 'selected' : '' ?>>Sobrepiso</option>
+        <option value="ceramica_bano" <?= $tipo_avance == 'ceramica_bano' ? 'selected' : '' ?>>Cerámica Baño</option>
+        <option value="colocacion_puertas_internas" <?= $tipo_avance == 'colocacion_puertas_internas' ? 'selected' : '' ?>>Colocación Puertas Internas</option>
+        <option value="equipos_accesorios_electricos" <?= $tipo_avance == 'equipos_accesorios_electricos' ? 'selected' : '' ?>>Equipos/Accesorios Eléctricos</option>
+        <option value="equipos_accesorios_sanitarios" <?= $tipo_avance == 'equipos_accesorios_sanitarios' ? 'selected' : '' ?>>Equipos/Accesorios Sanitarios</option>
+        <option value="colocacion_lavaplatos" <?= $tipo_avance == 'colocacion_lavaplatos' ? 'selected' : '' ?>>Colocación Lavaplatos</option>
+        <option value="pintura" <?= $tipo_avance == 'pintura' ? 'selected' : '' ?>>Pintura</option>
+        <option value="avance_fisico" <?= $tipo_avance == 'avance_fisico' ? 'selected' : '' ?>>Avance Físico General</option>
                 </select>
             </div>
             <div class="col-12">
