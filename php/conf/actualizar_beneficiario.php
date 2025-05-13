@@ -1,5 +1,13 @@
 <?php
+session_start();
 require_once __DIR__ . '/conexion.php';
+if (!isset($_SESSION['user']['rol']) || $_SESSION['user']['rol'] !== 'admin') {
+    die(json_encode([
+        'status' => 'error',
+        'message' => 'Acceso no autorizado'
+    ]));
+}
+
 
 
 
