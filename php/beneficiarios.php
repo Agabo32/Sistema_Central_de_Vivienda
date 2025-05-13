@@ -1,5 +1,10 @@
 <?php
+session_start();
 require_once '../php/conf/conexion.php';
+
+// Verificación robusta de sesión y rol
+$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
+$_SESSION['rol'] === 'admin';
 $params = [];
 $types = '';
 $filtro_condiciones = '';
@@ -424,10 +429,12 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         </h2>
                     </div>
                     <div class="col-md-6 text-end">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
-                            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
-                        </button>
-                    </div>
+    <?php if ($esAdmin): ?>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
+        </button>
+    <?php endif; ?>
+</div>
                 </div>
 
                 <!-- Tabla de beneficiarios -->
@@ -561,12 +568,13 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
-                    <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+            <div class="col-md-6 text-end">
+    <?php if ($esAdmin): ?>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
+        </button>
+    <?php endif; ?>
+</div>
             <form id="agregarBeneficiarioForm" method="POST" action="../php/conf/guardar_beneficiario.php">
     <div class="modal-body">
         <div class="row">
@@ -604,15 +612,28 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
         </div>
         <!-- Nuevos campos para municipio y parroquia -->
         <div class="row">
+        <div class="col-md-6 mb-3">
+        <label for="modalEstado" class="form-label">Estado</label>
+        <select name="estado" id="modalEstado" class="form-select" required>
+            <option value="">Seleccione un estado</option>
+            <?php
+            // Obtener solo el estado Lara
+            $estado = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'");
+            if ($row = $estado->fetch_assoc()) {
+                echo "<option value='{$row['id_estado']}' selected>{$row['estado']}</option>";
+            }
+            ?>
+        </select>
+    </div>
     <div class="col-md-6 mb-3">
         <label for="modalMunicipio" class="form-label">Municipio</label>
         <select name="municipio" id="modalMunicipio" class="form-select" required>
             <option value="">Seleccione un municipio</option>
             <?php
             // Cargar municipios de Lara
-            $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = $id_lara ORDER BY municipio ASC");
-            while ($row = $municipios->fetch_assoc()) {
-                echo "<option value='{$row['id_municipio']}'>{$row['municipio']}</option>";
+            $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$row['id_estado']} ORDER BY municipio ASC");
+            while ($mun = $municipios->fetch_assoc()) {
+                echo "<option value='{$mun['id_municipio']}'>{$mun['municipio']}</option>";
             }
             ?>
         </select>
@@ -805,80 +826,67 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     });
 });
 
-document.getElementById('agregarBeneficiarioForm').addEventListener('submit', function(e) {
+document.getElementById('agregarBeneficiarioForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const formData = new FormData(this);
-    
-    fetch('../php/conf/guardar_beneficiario.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.status === 'ok') {
-            // Mostrar mensaje de éxito con detalles del beneficiario
-            alert(`Beneficiario agregado exitosamente\n
-Nombre: ${result.beneficiario.nombre_beneficiario}\n
-Cédula: ${result.beneficiario.cedula}\n
-Municipio: ${result.beneficiario.municipio}\n
-Parroquia: ${result.beneficiario.parroquia}`);
-            
-            // Recargar la página para mostrar el nuevo beneficiario
+    try {
+        // Verificar rol primero
+        const rolResponse = await fetch('../php/conf/verificar_rol.php');
+        const rolData = await rolResponse.json();
+        
+        if (!rolData.autorizado) {
+            alert('Error: Solo administradores pueden agregar beneficiarios');
             window.location.reload();
-        } else {
-            // Mostrar mensaje de error
-            alert('Error: ' + result.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al agregar beneficiario');
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const modalMunicipio = document.getElementById('modalMunicipio');
-    const modalParroquia = document.getElementById('modalParroquia');
-    
-    modalMunicipio.addEventListener('change', async function() {
-        const municipioId = this.value;
-        
-        // Resetear el selector
-        modalParroquia.innerHTML = '<option value="">Cargando parroquias...</option>';
-        modalParroquia.disabled = true;
-        
-        if (!municipioId) {
-            modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
             return;
         }
 
-        try {
-            const response = await fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`);
-            
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success === false) {
-                throw new Error(data.message);
-            }
+        // Si es admin, proceder con el envío
+        const formData = new FormData(this);
+        const response = await fetch('../php/conf/guardar_beneficiario.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'ok') {
+            alert(`Beneficiario agregado:\n${result.beneficiario.nombre_beneficiario}`);
+            window.location.reload();
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(`Error al guardar: ${error.message}`);
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEstado = document.getElementById('modalEstado');
+    const modalMunicipio = document.getElementById('modalMunicipio');
+    const modalParroquia = document.getElementById('modalParroquia');
+    
+    // Deshabilitar cambios en el estado (siempre será Lara)
+    modalEstado.disabled = true;
 
-            // Llenar el select con las opciones
-            modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
-            
-            data.forEach(parroquia => {
-                const option = new Option(parroquia.parroquia, parroquia.id_parroquia);
-                modalParroquia.add(option);
-            });
-            
-            modalParroquia.disabled = false;
-            
-        } catch (error) {
-            console.error('Error al cargar parroquias:', error);
-            modalParroquia.innerHTML = `<option value="">Error: ${error.message}</option>`;
+    // Cargar parroquias al seleccionar municipio
+    modalMunicipio.addEventListener('change', function() {
+        const municipioId = this.value;
+        modalParroquia.innerHTML = '<option value="">Cargando...</option>';
+        
+        if (municipioId) {
+            fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
+                .then(response => response.json())
+                .then(data => {
+                    modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
+                    data.forEach(parroquia => {
+                        const option = new Option(parroquia.parroquia, parroquia.id_parroquia);
+                        modalParroquia.add(option);
+                    });
+                    modalParroquia.disabled = false;
+                });
+        } else {
+            modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
+            modalParroquia.disabled = true;
         }
     });
 });

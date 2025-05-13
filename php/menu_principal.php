@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../php/conf/conexion.php';
 
 // Consulta para contar el total de beneficiarios
@@ -75,25 +76,24 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
             z-index: -1;
         }
 
-        .navbar {
-            background: var(--primary-color);
+        .glass-navbar {
+            background: rgba(67, 97, 238, 0.9);
             backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--secondary-color);
-            padding: 1rem 1.5rem;
-            transition: all 0.3s ease;
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 3;
-            height: 60px;
-            display: flex;
-            align-items: center;
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-
+        .content-wrapper {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            margin-top: 80px;
+            transition: var(--transition);
+        }
         .navbar-brand {
             margin-right: 2rem;
             transition: all 0.3s ease;
@@ -264,10 +264,11 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
 </head>
 <body>
     <!-- Barra de navegación superior -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 40px;">
+    <nav class="navbar navbar-expand-lg navbar-dark glass-navbar fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="../php/menu_principal.php">
+                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 30px;" class="me-2">
+                <span class="fw-bold">SIGEVU</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -275,24 +276,32 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../php/beneficiarios.php">Beneficiarios</a>
+                        <a class="nav-link" href="../php/menu_principal.php">
+                            <i class="fas fa-home me-1"></i> Inicio
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Reportes</a>
+                        <a class="nav-link active" href="../php/beneficiarios.php">
+                            <i class="fas fa-users me-1"></i> Beneficiarios
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Cerrar Sesión</a>
+                        <a class="nav-link" href="../php/reportes.php">
+                            <i class="fas fa-chart-bar me-1"></i> Reportes
+                        </a>
                     </li>
                 </ul>
-                <div class="nav-item ms-3">
-                    <a class="nav-link" href="#">
+                <div class="d-flex ms-3">
+                    <div class="user-avatar">
                         <i class="fas fa-user"></i>
+                    </div>
+                    <a class="nav-link ms-2" href="../index.php">
+                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
                     </a>
                 </div>
             </div>
         </div>
     </nav>
-
     <!-- Carrusel de imágenes -->
     <div class="main-content">
         <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">

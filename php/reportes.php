@@ -1,5 +1,9 @@
 <?php
+session_start();
 require_once '../php/conf/conexion.php';
+
+// Verificación robusta de sesión y rol
+$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
 
 // Retrieve filter parameters
 $estadoLara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
@@ -369,7 +373,88 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
                 padding: 0 15px;
             }
         }
-       
+        @media print {
+    /* Resetear estilos para impresión */
+    body * {
+        visibility: hidden;
+        background: white !important;
+        color: black !important;
+    }
+    
+    /* Mostrar solo los elementos que queremos imprimir */
+    .container-main, 
+    .container-main * {
+        visibility: visible;
+    }
+    
+    /* Posicionar el contenido al inicio */
+    .container-main {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ocultar elementos no deseados */
+    .glass-navbar,
+    #filterForm,
+    .btn-action,
+    .card-header .btn-primary,
+    .user-avatar,
+    .navbar-brand {
+        display: none !important;
+    }
+    
+    /* Estilos para la tabla */
+    .table {
+        width: 100% !important;
+        border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+    
+    .table th {
+        background-color: #f2f2f2 !important;
+        color: black !important;
+    }
+    
+    /* Ajustar barras de progreso para impresión */
+    .progress-container {
+        border: 1px solid #ddd;
+    }
+    
+    .progress-bar {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    /* Evitar saltos de página en medio de filas */
+    table tr {
+        page-break-inside: avoid;
+    }
+    
+    /* Encabezado para cada página */
+    @page {
+        size: auto;
+        margin: 10mm;
+        
+        @top-center {
+            content: "Reporte de Avance Constructivo";
+            font-size: 14pt;
+        }
+        
+        @bottom-right {
+            content: "Página " counter(page) " de " counter(pages);
+            font-size: 10pt;
+        }
+    }
+}
     </style>
 </head>
 <body>
@@ -511,14 +596,16 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
         </form>
 
         <!-- Resultados -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resultados</h3>
-                <button class="btn btn-primary btn-action" onclick="window.print()">
-                    <i class="fas fa-print me-1"></i> Imprimir
-                </button>
-            </div>
-            <div class="card-body">
+    <div class="card">  <!-- Este div falta -->
+        <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resultados</h3>
+        <?php if ($esAdmin): ?>
+            <button class="btn btn-primary btn-action" onclick="imprimirReporte()">
+                <i class="fas fa-print me-1"></i> Imprimir
+            </button>
+        <?php endif; ?>
+        </div>
+        <div class="card-body">
             <?php if (!empty($reportes)): ?>
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -555,18 +642,20 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
                 </tr>
                 <?php endforeach; ?>
             </tbody>
-        </table>
-    </div>
-<?php else: ?>
-    <div class="alert alert-warning">No se encontraron resultados con los filtros seleccionados.</div>
-<?php endif; ?>
+                </table>
             </div>
+            <?php else: ?>
+            <div class="alert alert-warning">No se encontraron resultados con los filtros seleccionados.</div>
+            <?php endif; ?>
         </div>
     </div>
+</div>
+   
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+
    document.addEventListener('DOMContentLoaded', function() {
     const estadoSelect = document.getElementById('estadoSelect');
     const municipioSelect = document.getElementById('municipioSelect');
@@ -579,7 +668,7 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
         const idEstado = estadoSelect.value;
         if (!idEstado) return;
 
-        fetch(`../php/ajax/get_municipios.php?estado_id=${idEstado}`)
+        fetch(`../php/conf/get_municipios.php?estado_id=${idEstado}`)
             .then(response => response.json())
             .then(data => {
                 let municipiosHTML = '<option value="">Todos</option>';
@@ -600,7 +689,7 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
         }
 
         parroquiaSelect.disabled = false;
-        fetch(`../php/ajax/get_parroquias.php?municipio_id=${idMunicipio}`)
+        fetch(`../php/conf/get_parroquias.php?municipio_id=${idMunicipio}`)
             .then(response => response.json())
             .then(data => {
                 let parroquiasHTML = '<option value="">Todas</option>';
@@ -611,10 +700,62 @@ $reportes = $result->fetch_all(MYSQLI_ASSOC);
             });
     });
 });
+
+
+function imprimirReporte() {
+            <?php if (!$esAdmin): ?>
+                alert('No tienes permisos para realizar esta acción');
+                return false;
+            <?php endif; ?>
+
+            // Crear un clon del contenido a imprimir (ahora seleccionando correctamente el .card)
+            const contenido = document.querySelector('.card').cloneNode(true);
+            
+            // Ocultar botones en el clon
+            const botones = contenido.querySelectorAll('.btn-action');
+            botones.forEach(boton => boton.style.display = 'none');
+            
+            // Abrir una nueva ventana para imprimir
+            const ventanaImpresion = window.open('', '_blank');
+            ventanaImpresion.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Reporte de Avance Constructivo</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                        h1 { color: #1565C0; text-align: center; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .progress-container { border: 1px solid #ddd; height: 20px; }
+                        .progress-bar { height: 100%; background-color: #4CAF50; }
+                        .badge { padding: 3px 8px; border-radius: 4px; color: white; }
+                        .bg-success { background-color: #4CAF50; }
+                        .bg-warning { background-color: #FFC107; }
+                        .bg-danger { background-color: #F44336; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Reporte de Avance Constructivo</h1>
+                    ${contenido.innerHTML}
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.close();
+                            }, 100);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            ventanaImpresion.document.close();
+        }
     </script>
 </body>
 </html>
-<?php
+<?
 
 $stmt->close();
 $conexion->close();
