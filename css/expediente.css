@@ -1,0 +1,149 @@
+:root {
+    --primary-color: #1565C0;
+    --secondary-color: #0523AA;
+    --accent-color: #E53935;
+    --text-color: #333333;
+    --text-light: #FFFFFF;
+    --warning-color: #FFC107;
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    background: url('../imagenes/fondo1.jpg') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    position: relative;
+    color: var(--text-color);
+    height: 100vh;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    z-index: -1;
+    min-height: 100vh;
+    color: #333;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+    z-index: 1;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.header-institution {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 0;
+    margin-bottom: 30px;
+    border-bottom: 5px solid var(--secondary-color);
+}
+
+.expediente-container {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.section-title {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 8px;
+    margin: 25px 0 15px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.info-value {
+    font-size: 1rem;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.missing-data {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.progress-container {
+    width: 100%;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    margin-top: 10px;
+    height: 20px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 20px;
+    text-align: center;
+    line-height: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 0.65rem;
+    transition: width 0.6s ease;
+}
+
+.complete {
+    background-color: #4CAF50;
+}
+
+.medium {
+    background-color: var(--warning-color);
+}
+
+.low {
+    background-color: var(--accent-color);
+}
+
+.table-details {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-details td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.table-details tr:last-child td {
+    border-bottom: none;
+}
+
+.btn-print {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-print:hover {
+    background-color: #041c8a;
+    color: white;
+}
+
+.ref-badge {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
