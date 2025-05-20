@@ -4,7 +4,6 @@ require_once '../php/conf/conexion.php';
 
 // Verificación robusta de sesión y rol
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
-$_SESSION['rol'] === 'admin';
 $params = [];
 $types = '';
 $filtro_condiciones = '';
@@ -107,215 +106,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- CSS personalizado -->
-    <style>
-        :root {
-            --primary-color: #0D36EEFF;
-            --primary-hover: #0523AAFF;
-            --secondary-color: #0523AAFF;
-            --accent-color: #0523AAFF;
-            --dark-color: #1a1a2e;
-            --light-color: #f8f9fa;
-            --success-color: #4cc9f0;
-            --warning-color: #f8961e;
-            --danger-color: #ef233c;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        * {
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background: url('../imagenes/fondo1.jpg') no-repeat center center;
-            background-size: cover;
-            background-attachment: fixed;
-            position: relative;
-            color: var(--text-color);
-            height: 100vh;
-            min-height: 100vh;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
-            z-index: -1;
-            min-height: 100vh;
-            color: #333;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
-            z-index: 1;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .glass-navbar {
-            background: rgba(67, 97, 238, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .content-wrapper {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--card-shadow);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            overflow: hidden;
-            margin-top: 80px;
-            transition: var(--transition);
-        }
-
-        .card {
-            border: none;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-            border-color: var(--primary-hover);
-        }
-
-        .btn-outline-primary {
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .btn-outline-primary:hover {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .table {
-            --bs-table-bg: transparent;
-        }
-
-        .table th {
-            background-color: rgba(67, 97, 238, 0.1);
-            color: var(--primary-color);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-
-        .table-hover tbody tr {
-            transition: var(--transition);
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(67, 97, 238, 0.05);
-            transform: scale(1.005);
-        }
-
-        .badge {
-            font-weight: 500;
-            padding: 0.35em 0.65em;
-        }
-
-        .search-box {
-            position: relative;
-        }
-
-        .search-box .form-control {
-            padding-left: 40px;
-            border-radius: 50px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .search-box .search-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            border: none;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-        }
-
-        /* Animaciones */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animated {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        /* Efecto de carga */
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 4px;
-            min-height: 20px;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-    </style>
+    <link rel="stylesheet" href="../css/beneficiarios.css">
 </head>
 
 <body>
@@ -351,8 +142,8 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="../index.php">
-                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+                    <a class="nav-link ms-2" href="../index.php" style="color : #f8f9fa">
+                        <i class="fas fa-sign-out-alt me-1" style="color : #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>
             </div>
@@ -420,13 +211,14 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
     <div class="content-wrapper animated">
-            <div class="container-fluid p-4">
+            <div class="container-fluid p-4" style="color: #000000;">
                 <!-- Título y botones de acción -->
-                <div class="row mb-4 align-items-center">
-                    <div class="col-md-6">
-                        <h2 class="mb-0 fw-bold text-primary">
-                            <i class="fas fa-users me-2"></i> Listado de Beneficiarios
-                        </h2>
+                <div class="row mb-4 align-items-center" style="color: #000000;">
+                    <div class="col-md-6" style="color: #000000;">
+                    <h2 class="mb-0 fw-bold" style="color: #000000;">
+        <i class="fas fa-users me-2" style="color: #000000;"></i> 
+        Listado de Beneficiarios
+    </h2>
                     </div>
                     <div class="col-md-6 text-end">
     <?php if ($esAdmin): ?>
@@ -453,12 +245,12 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="text-center">ID</th>
-                                        <th>Cédula</th>
-                                        <th>Nombre Completo</th>
-                                        <th>Teléfono</th>
-                                        <th>Código Obra</th>
-                                        <th class="text-center">Acciones</th>
+                                        <th class="text-center" id="titulos" style="color: #000000;">ID</th>
+                                        <th style="color: #000000;">Cédula</th>
+                                        <th style="color: #000000;">Nombre Completo</th>
+                                        <th style="color: #000000;">Teléfono</th>
+                                        <th style="color: #000000;">Código Obra</th>
+                                        <th class="text-center" style="color: #000000;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaBeneficiarios">
@@ -468,9 +260,9 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                 <td class="text-center fw-bold"><?= htmlspecialchars($beneficiario['id_beneficiario']) ?></td>
                                                 <td><?= htmlspecialchars($beneficiario['cedula']) ?></td>
                                                 <td>
-                                                    <div class="d-flex align-items-center">
+                                                    <div class="d-flex align-items-center" >
                                                         <div class="me-3">
-                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #000000; color: #ffffff;" >
                                                                 <i class="fas fa-user"></i>
                                                             </div>
                                                         </div>
@@ -482,7 +274,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                 </td>
                                                 <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
                                                 <td>
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary " style="color: #e30016;">
                                                         <?= htmlspecialchars($beneficiario['codigo_obra']) ?>
                                                     </span>
                                                 </td>

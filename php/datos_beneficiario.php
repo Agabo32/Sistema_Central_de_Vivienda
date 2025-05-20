@@ -155,265 +155,7 @@ function formatProgressValue($value) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #1565C0;
-            --secondary-color: #0523AAFF;
-            --accent-color: #E53935;
-            --background-dark: #1A237E;
-            --background-light: #1565C0;
-            --text-color: #333333;
-            --text-light: #FFFFFF;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --progress-complete: #4CAF50;
-            --progress-medium: #FFC107;
-            --progress-low: #F44336;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        body {
-            background: url('../imagenes/fondo1.jpg') no-repeat center center;
-            background-size: cover;
-            background-attachment: fixed;
-            position: relative;
-            color: var(--text-color);
-            height: 100vh;
-            min-height: 100vh;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
-            z-index: -1;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text-color);
-            line-height: 1.6;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
-            z-index: 1;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-
-        .glass-navbar {
-    background: rgba(67, 97, 238, 0.9);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-        .container-main {
-            margin-top: 80px;
-            padding-bottom: 40px;
-        }
-
-        .page-title {
-            color: var(--primary-color);
-            font-weight: 700;
-            margin-bottom: 30px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-        }
-
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            overflow: hidden;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: var(--text-light);
-            font-weight: 600;
-            border-bottom: none;
-            padding: 15px 20px;
-        }
-
-        .card-header h3 {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-
-        .card-body {
-            padding: 25px;
-        }
-
-        .section-title {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 8px;
-            margin: 20px 0 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .info-item {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 4px solid var(--primary-color);
-            transition: all 0.3s ease;
-        }
-
-        .info-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .info-value {
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--text-color);
-        }
-
-        .progress-container {
-            width: 100%;
-            background-color: #e9ecef;
-            border-radius: 20px;
-            margin-top: 10px;
-            height: 20px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            border-radius: 20px;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-            font-weight: bold;
-            font-size: 0.65rem;
-            transition: width 0.6s ease;
-        }
-
-        .complete {
-            background-color: var(--progress-complete);
-        }
-
-        .medium {
-            background-color: var(--progress-medium);
-        }
-
-        .low {
-            background-color: var(--progress-low);
-        }
-
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: white;
-            display: inline-block;
-        }
-
-        .bg-success {
-            background-color: var(--progress-complete);
-        }
-
-        .bg-warning {
-            background-color: var(--progress-medium);
-        }
-
-        .bg-danger {
-            background-color: var(--progress-low);
-        }
-
-        .alert {
-            border-radius: 8px;
-            border-left: 4px solid;
-        }
-
-        .alert-info {
-            border-left-color: var(--primary-color);
-        }
-
-        .alert-warning {
-            border-left-color: var(--progress-medium);
-        }
-
-        .btn-action {
-            border-radius: 50px;
-            padding: 8px 20px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .btn-primary:hover {
-            background-color: #0d47a1;
-            border-color: #0d47a1;
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-danger {
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-
-        .btn-outline-danger:hover {
-            background-color: var(--accent-color);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        @media (max-width: 768px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container-main {
-                margin-top: 60px;
-                padding: 0 15px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="..//css/datos_beneficiarios.css">
 </head>
 <body>
     <!-- Barra de navegación -->
@@ -496,7 +238,7 @@ function formatProgressValue($value) {
                             <div class="col-md-6">
                                 <div class="card mb-3">
                                     <div class="card-header bg-light">
-                                        <h6 class="mb-0">Información Básica</h6>
+                                        <h6 class="mb-0" style="color: #ffffff;">Información Básica</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-3">
@@ -696,7 +438,7 @@ function formatProgressValue($value) {
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
+                                            <div class="col-md-6" styles="color= ">
                                                 <div class="mb-3">
                                                     <label for="vaciado_vigas" class="form-label">Vaciado de Vigas</label>
                                                     <input type="number" class="form-control" id="vaciado_vigas" name="vaciado_vigas" min="0" max="100" value="<?php echo $data['vaciado_vigas'] ?? 0; ?>">
@@ -1213,10 +955,7 @@ function actualizarBeneficiario() {
     fetch('../php/conf/verificar_rol.php')
         .then(response => response.json())
         .then(data => {
-            if (!data.autorizado) {
-                alert('Error: Solo administradores pueden actualizar beneficiarios');
-                return;
-            }
+           
 
             var form = document.getElementById('actualizarBeneficiarioForm');
             var formData = new FormData(form);
