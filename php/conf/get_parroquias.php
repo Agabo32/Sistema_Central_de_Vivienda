@@ -1,35 +1,33 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
+header('Content-Type: application/json');
 
-require_once '../conf/conexion.php';
+// Incluir archivo de conexión
+require_once 'conexion.php';
 
 try {
-    // Verificar si se recibió el parámetro
-    if (!isset($_GET['municipio_id'])) {
-        throw new Exception("Parámetro municipio_id no proporcionado");
+    // Verificar que se envió el parámetro municipio_id
+    if (!isset($_GET['municipio_id']) || empty($_GET['municipio_id'])) {
+        throw new Exception('ID de municipio no proporcionado');
     }
 
-    // Validar que sea un número entero positivo
-    $municipio_id = filter_var($_GET['municipio_id'], FILTER_VALIDATE_INT);
-    if ($municipio_id === false || $municipio_id <= 0) {
-        throw new Exception("ID de municipio no válido");
+    $municipio_id = intval($_GET['municipio_id']);
+
+    if ($municipio_id <= 0) {
+        throw new Exception('ID de municipio no válido');
     }
 
-    // Preparar consulta SQL
-    $query = "SELECT id_parroquia, parroquia FROM parroquias 
-              WHERE id_municipio = ? 
-              ORDER BY parroquia ASC";
-    
+    // Consultar parroquias del municipio
+    $query = "SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = ? ORDER BY parroquia ASC";
     $stmt = $conexion->prepare($query);
+    
     if (!$stmt) {
-        throw new Exception("Error al preparar la consulta: " . $conexion->error);
+        throw new Exception('Error al preparar consulta: ' . $conexion->error);
     }
 
     $stmt->bind_param("i", $municipio_id);
     
     if (!$stmt->execute()) {
-        throw new Exception("Error al ejecutar la consulta: " . $stmt->error);
+        throw new Exception('Error al ejecutar consulta: ' . $stmt->error);
     }
 
     $result = $stmt->get_result();
@@ -37,26 +35,24 @@ try {
 
     while ($row = $result->fetch_assoc()) {
         $parroquias[] = [
-            'id_parroquia' => (int)$row['id_parroquia'],
-            'parroquia' => htmlspecialchars($row['parroquia'], ENT_QUOTES, 'UTF-8')
+            'id_parroquia' => $row['id_parroquia'],
+            'parroquia' => $row['parroquia']
         ];
     }
 
-    if (empty($parroquias)) {
-        throw new Exception("No se encontraron parroquias para este municipio");
-    }
+    $stmt->close();
+    $conexion->close();
 
+    // Devolver respuesta JSON
     echo json_encode($parroquias);
 
 } catch (Exception $e) {
-    http_response_code(400);
+    // En caso de error, devolver array vacío con mensaje de error
+    http_response_code(500);
     echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
+        'error' => true,
+        'message' => $e->getMessage(),
+        'parroquias' => []
     ]);
-} finally {
-    // Cerrar conexiones
-    if (isset($stmt)) $stmt->close();
-    if (isset($conexion)) $conexion->close();
 }
 ?>
