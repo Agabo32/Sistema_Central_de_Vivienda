@@ -10,7 +10,6 @@ $filtro_condiciones = '';
 $lara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
 $id_lara = $lara['id_estado'];
 
-
 // Default to show only active
 $show_inactive = $_GET['show_inactive'] ?? false;
 
@@ -91,7 +90,6 @@ $result = $stmt->get_result();
 $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -107,6 +105,27 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <!-- CSS personalizado -->
     <link rel="stylesheet" href="../css/beneficiarios.css">
+    <style>
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.modal-body .form-label {
+    font-weight: 500;
+}
+
+.modal-body .form-label:after {
+    content: " *";
+    color: #dc3545;
+}
+
+.modal-body .form-label[for="direccion_exacta"]:after,
+.modal-body .form-label[for="utm_norte"]:after,
+.modal-body .form-label[for="utm_este"]:after {
+    content: "";
+}
+</style>
 </head>
 
 <body>
@@ -152,613 +171,572 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
     <!-- Contenedor principal -->
     <div class="container-fluid py-5">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-8">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-primary text-white text-center">
-                    <i class="fas fa-filter me-2"></i> Filtros de Búsqueda
-                </div>
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Estado</label>
-                            <select name="estado" id="estadoSelect" class="form-select" disabled>
-                                <?php
-                                // Forzar solo el estado Lara
-                                $lara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
-                                echo "<option value='{$lara['id_estado']}' selected>{$lara['estado']}</option>";
-                                ?>
-                            </select>
-                        </div>
-<div class="col-md-4">
-    <label class="form-label">Municipio</label>
-    <select name="municipio" id="municipioSelect" class="form-select">
-        <option value="">Todos</option>
-        <?php
-        // Cargar solo municipios de Lara
-        $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']}");
-        while ($row = $municipios->fetch_assoc()) {
-            $selected = (isset($_GET['municipio']) && $_GET['municipio'] == $row['id_municipio']) ? 'selected' : '';
-            echo "<option value='{$row['id_municipio']}' $selected>{$row['municipio']}</option>";
-        }
-        ?>
-    </select>
-</div>
-            <div class="col-md-4">
-                <label class="form-label">Parroquia</label>
-                <select name="parroquia" id="parroquiaSelect" class="form-select" <?= !isset($_GET['municipio']) ? 'disabled' : '' ?>>
-                    <option value="">Todas</option>
-                    <?php
-                    if (isset($_GET['municipio'])) {
-                        $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = ".intval($_GET['municipio']));
-                        while ($row = $parroquias->fetch_assoc()) {
-                            echo "<option value='{$row['id_parroquia']}' ".(isset($_GET['parroquia']) && $_GET['parroquia'] == $row['id_parroquia'] ? 'selected' : '').">{$row['parroquia']}</option>";
-                        }
-                    }
-                    ?>
-                </select>
-            </div>
-            <div class="col-12 text-end">
-                <button type="submit" class="btn btn-primary me-2">
-                    <i class="fas fa-search me-1"></i> Filtrar
-                </button>
-                <a href="beneficiarios.php" class="btn btn-outline-secondary">
-                    <i class="fas fa-times me-1"></i> Limpiar
-                </a>
-            </div>
-
-        </form>
-    </div>
-</div>
-    <div class="content-wrapper animated">
-            <div class="container-fluid p-4" style="color: #000000;">
-                <!-- Título y botones de acción -->
-                <div class="row mb-4 align-items-center" style="color: #000000;">
-                    <div class="col-md-6" style="color: #000000;">
-                    <h2 class="mb-0 fw-bold" style="color: #000000;">
-        <i class="fas fa-users me-2" style="color: #000000;"></i> 
-        Listado de Beneficiarios
-    </h2>
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-8">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white text-center">
+                        <i class="fas fa-filter me-2"></i> Filtros de Búsqueda
                     </div>
-                    <div class="col-md-6 text-end">
-    <?php if ($esAdmin): ?>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
-            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
-        </button>
-    <?php endif; ?>
-</div>
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Estado</label>
+                                <select name="estado" id="estadoSelect" class="form-select" disabled>
+                                    <?php
+                                    // Forzar solo el estado Lara
+                                    $lara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+                                    echo "<option value='{$lara['id_estado']}' selected>{$lara['estado']}</option>";
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Municipio</label>
+                                <select name="municipio" id="municipioSelect" class="form-select">
+                                    <option value="">Todos</option>
+                                    <?php
+                                    // Cargar solo municipios de Lara
+                                    $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']}");
+                                    while ($row = $municipios->fetch_assoc()) {
+                                        $selected = (isset($_GET['municipio']) && $_GET['municipio'] == $row['id_municipio']) ? 'selected' : '';
+                                        echo "<option value='{$row['id_municipio']}' $selected>{$row['municipio']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Parroquia</label>
+                                <select name="parroquia" id="parroquiaSelect" class="form-select" <?= !isset($_GET['municipio']) ? 'disabled' : '' ?>>
+                                    <option value="">Todas</option>
+                                    <?php
+                                    if (isset($_GET['municipio'])) {
+                                        $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = ".intval($_GET['municipio']));
+                                        while ($row = $parroquias->fetch_assoc()) {
+                                            echo "<option value='{$row['id_parroquia']}' ".(isset($_GET['parroquia']) && $_GET['parroquia'] == $row['id_parroquia'] ? 'selected' : '').">{$row['parroquia']}</option>";
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-search me-1"></i> Filtrar
+                                </button>
+                                <a href="beneficiarios.php" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> Limpiar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- Tabla de beneficiarios -->
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 text-white">
-                            <i class="fas fa-list me-2"></i> Beneficiarios Registrados
-                        </h5>
-                        <div class="search-box" style="max-width: 300px;">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="form-control" id="buscar" placeholder="Buscar beneficiario...">
+                <div class="content-wrapper animated">
+                    <div class="container-fluid p-4" style="color: #000000;">
+                        <!-- Título y botones de acción -->
+                        <div class="row mb-4 align-items-center" style="color: #000000;">
+                            <div class="col-md-6" style="color: #000000;">
+                                <h2 class="mb-0 fw-bold" style="color: #000000;">
+                                    <i class="fas fa-users me-2" style="color: #000000;"></i> 
+                                    Listado de Beneficiarios
+                                </h2>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <?php if ($esAdmin): ?>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+                                        <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center" id="titulos" style="color: #000000;">ID</th>
-                                        <th style="color: #000000;">Cédula</th>
-                                        <th style="color: #000000;">Nombre Completo</th>
-                                        <th style="color: #000000;">Teléfono</th>
-                                        <th style="color: #000000;">Código Obra</th>
-                                        <th class="text-center" style="color: #000000;">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaBeneficiarios">
-                                    <?php if ($beneficiarios && count($beneficiarios) > 0): ?>
-                                        <?php foreach ($beneficiarios as $beneficiario): ?>
+
+                        <!-- Tabla de beneficiarios -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 text-white">
+                                    <i class="fas fa-list me-2"></i> Beneficiarios Registrados
+                                </h5>
+                                <div class="search-box" style="max-width: 300px;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="form-control" id="buscar" placeholder="Buscar beneficiario...">
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
                                             <tr>
-                                                <td class="text-center fw-bold"><?= htmlspecialchars($beneficiario['id_beneficiario']) ?></td>
-                                                <td><?= htmlspecialchars($beneficiario['cedula']) ?></td>
-                                                <td>
-                                                    <div class="d-flex align-items-center" >
-                                                        <div class="me-3">
-                                                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #000000; color: #ffffff;" >
-                                                                <i class="fas fa-user"></i>
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div class="fw-medium"><?= htmlspecialchars($beneficiario['nombre_beneficiario']) ?></div>
-                                                            <small class="text-muted">ID: <?= htmlspecialchars($beneficiario['id_beneficiario']) ?></small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
-                                                <td>
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary " style="color: #e30016;">
-                                                        <?= htmlspecialchars($beneficiario['codigo_obra']) ?>
-                                                    </span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <a href="datos_beneficiario.php?id=<?= $beneficiario['id_beneficiario'] ?>" class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-eye me-1"></i> Detalles
-                                                    </a>
-                                                </td>
+                                                <th class="text-center" id="titulos" style="color: #000000;">ID</th>
+                                                <th style="color: #000000;">Cédula</th>
+                                                <th style="color: #000000;">Nombre Completo</th>
+                                                <th style="color: #000000;">Teléfono</th>
+                                                <th style="color: #000000;">Código Obra</th>
+                                                <th class="text-center" style="color: #000000;">Acciones</th>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="6" class="text-center py-4">
-                                                <div class="d-flex flex-column align-items-center">
-                                                    <i class="fas fa-users-slash text-muted mb-2" style="font-size: 2rem;"></i>
-                                                    <h5 class="text-muted">No hay beneficiarios registrados</h5>
-                                                    <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
-                                                        <i class="fas fa-plus me-1"></i> Agregar Beneficiario
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                            <nav aria-label="Paginación de Beneficiarios">
-    <ul class="pagination justify-content-center">
-        <?php if ($pagina_actual > 1): ?>
-            <li class="page-item">
-                <a class="page-link" href="?pagina=<?= $pagina_actual - 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Anterior</a>
-            </li>
-        <?php endif; ?>
+                                        </thead>
+                                        <tbody id="tablaBeneficiarios">
+                                            <?php if ($beneficiarios && count($beneficiarios) > 0): ?>
+                                                <?php foreach ($beneficiarios as $beneficiario): ?>
+                                                    <tr>
+                                                        <td class="text-center fw-bold"><?= htmlspecialchars($beneficiario['id_beneficiario']) ?></td>
+                                                        <td><?= htmlspecialchars($beneficiario['cedula']) ?></td>
+                                                        <td>
+                                                            <div class="d-flex align-items-center" >
+                                                                <div class="me-3">
+                                                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #000000; color: #ffffff;" >
+                                                                        <i class="fas fa-user"></i>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="fw-medium"><?= htmlspecialchars($beneficiario['nombre_beneficiario']) ?></div>
+                                                                    <small class="text-muted">ID: <?= htmlspecialchars($beneficiario['id_beneficiario']) ?></small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
+                                                        <td>
+                                                            <span class="badge bg-primary bg-opacity-10 text-primary " style="color: #e30016;">
+                                                                <?= htmlspecialchars($beneficiario['codigo_obra']) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a href="datos_beneficiario.php?id=<?= $beneficiario['id_beneficiario'] ?>" class="btn btn-sm btn-primary">
+                                                                <i class="fas fa-eye me-1"></i> Detalles
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-4">
+                                                        <div class="d-flex flex-column align-items-center">
+                                                            <i class="fas fa-users-slash text-muted mb-2" style="font-size: 2rem;"></i>
+                                                            <h5 class="text-muted">No hay beneficiarios registrados</h5>
+                                                            <?php if ($esAdmin): ?>
+                                                                <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
+                                                                    <i class="fas fa-plus me-1"></i> Agregar Beneficiario
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                    
+                                    <!-- Paginación -->
+                                    <nav aria-label="Paginación de Beneficiarios">
+                                        <ul class="pagination justify-content-center">
+                                            <?php if ($pagina_actual > 1): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?pagina=<?= $pagina_actual - 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Anterior</a>
+                                                </li>
+                                            <?php endif; ?>
 
-        <?php 
-        // Mostrar páginas cercanas
-        $rango = 2; // Número de páginas a mostrar antes y después de la página actual
-        $inicio = max(1, $pagina_actual - $rango);
-        $fin = min($total_paginas, $pagina_actual + $rango);
+                                            <?php 
+                                            // Mostrar páginas cercanas
+                                            $rango = 2; // Número de páginas a mostrar antes y después de la página actual
+                                            $inicio = max(1, $pagina_actual - $rango);
+                                            $fin = min($total_paginas, $pagina_actual + $rango);
 
-        // Mostrar primera página si no está en el rango inicial
-        if ($inicio > 1) {
-            echo '<li class="page-item"><a class="page-link" href="?pagina=1">1</a></li>';
-            if ($inicio > 2) {
-                echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-            }
-        }
+                                            // Mostrar primera página si no está en el rango inicial
+                                            if ($inicio > 1) {
+                                                echo '<li class="page-item"><a class="page-link" href="?pagina=1">1</a></li>';
+                                                if ($inicio > 2) {
+                                                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                                                }
+                                            }
 
-        // Mostrar páginas en el rango
-        for ($i = $inicio; $i <= $fin; $i++): 
-            $active = $i == $pagina_actual ? 'active' : '';
-        ?>
-            <li class="page-item <?= $active ?>">
-                <a class="page-link" href="?pagina=<?= $i ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>"><?= $i ?></a>
-            </li>
-            <?php endfor; ?>
+                                            // Mostrar páginas en el rango
+                                            for ($i = $inicio; $i <= $fin; $i++): 
+                                                $active = $i == $pagina_actual ? 'active' : '';
+                                            ?>
+                                                <li class="page-item <?= $active ?>">
+                                                    <a class="page-link" href="?pagina=<?= $i ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>"><?= $i ?></a>
+                                                </li>
+                                            <?php endfor; ?>
 
-<?php if ($fin < $total_paginas): ?>
-    <li class="page-item disabled"><span class="page-link">...</span></li>
-    
-    <li class="page-item">
-        <a class="page-link" href="?pagina=<?= $total_paginas ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">
-            <?= $total_paginas ?>
-        </a>
-    </li>
-<?php endif; ?>
+                                            <?php if ($fin < $total_paginas): ?>
+                                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?pagina=<?= $total_paginas ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">
+                                                        <?= $total_paginas ?>
+                                                    </a>
+                                                </li>
+                                            <?php endif; ?>
 
-<?php if ($pagina_actual < $total_paginas): ?>
-    <li class="page-item">
-        <a class="page-link" href="?pagina=<?= $pagina_actual + 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Siguiente</a>
-    </li>
-<?php endif; ?>
-    </ul>
-</nav>          
+                                            <?php if ($pagina_actual < $total_paginas): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?pagina=<?= $pagina_actual + 1 ?><?= !empty($_GET['estado']) ? '&estado='.$_GET['estado'] : '' ?>">Siguiente</a>
+                                                </li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </nav>          
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 
     <!-- Modal Nuevo Beneficiario -->
     <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-            <div class="col-md-6 text-end">
-    <?php if ($esAdmin): ?>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoBeneficiario">
-            <i class="fas fa-plus me-2"></i> Nuevo Beneficiario
-        </button>
-    <?php endif; ?>
-</div>
-            <form id="agregarBeneficiarioForm" method="POST" action="../php/conf/guardar_beneficiario.php">
-    <div class="modal-body">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="nombre" class="form-label">Nombre Completo</label>
-                <input type="text" class="form-control" id="nombre" name="nombre" required>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="cedula" class="form-label">Cédula</label>
-                <input type="text" class="form-control" id="cedula" name="cedula" required>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
+                        <i class="fas fa-user-plus me-2"></i> Nuevo Beneficiario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formNuevoBeneficiario" method="POST" action="../php/conf/guardar_beneficiario.php">
+                    <div class="modal-body">
+                        <!-- Información Personal -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre_beneficiario" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cedula" class="form-label">Cédula *</label>
+                                <input type="text" class="form-control" id="cedula" name="cedula" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="telefono" class="form-label">Teléfono *</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="codigo_obra" class="form-label">Código de Obra *</label>
+                                <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
+                            </div>
+                        </div>
+
+                        <!-- Información de Ubicación -->
+                        <hr>
+                        <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Información de Ubicación</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="comunidad" class="form-label">Comunidad *</label>
+                                <input type="text" class="form-control" id="comunidad" name="comunidad" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="direccion_exacta" class="form-label">Dirección Exacta</label>
+                                <input type="text" class="form-control" id="direccion_exacta" name="direccion_exacta">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="modalEstado" class="form-label">Estado *</label>
+                                <select name="estado" id="modalEstado" class="form-select" required>
+                                    <?php
+                                    // Forzar solo el estado Lara
+                                    $estado = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'");
+                                    if ($row = $estado->fetch_assoc()) {
+                                        echo "<option value='{$row['id_estado']}' selected>{$row['estado']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="modalMunicipio" class="form-label">Municipio *</label>
+                                <select name="municipio" id="modalMunicipio" class="form-select" required>
+                                    <option value="">Seleccione un municipio</option>
+                                    <?php
+                                    // Cargar municipios de Lara
+                                    $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']} ORDER BY municipio ASC");
+                                    while ($mun = $municipios->fetch_assoc()) {
+                                        echo "<option value='{$mun['id_municipio']}'>{$mun['municipio']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="modalParroquia" class="form-label">Parroquia *</label>
+                                <select name="parroquia" id="modalParroquia" class="form-select" required disabled>
+                                    <option value="">Primero seleccione un municipio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Coordenadas UTM -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="utm_norte" class="form-label">UTM Norte</label>
+                                <input type="text" class="form-control" id="utm_norte" name="utm_norte" placeholder="Ej: 1234567.89">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="utm_este" class="form-label">UTM Este</label>
+                                <input type="text" class="form-control" id="utm_este" name="utm_este" placeholder="Ej: 987654.32">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Estado *</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="activo" selected>Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar Beneficiario
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="telefono" class="form-label">Teléfono</label>
-                <input type="tel" class="form-control" id="telefono" name="telefono" required>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="codigo_obra" class="form-label">Código de Obra</label>
-                <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="comunidad" class="form-label">Comunidad</label>
-                <input type="text" class="form-control" id="comunidad" name="comunidad" required>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="status" class="form-label">Estado</label>
-                <select class="form-select" id="status" name="status" required>
-                    <option value="activo" selected>Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                </select>
-            </div>
-        </div>
-        <!-- Nuevos campos para municipio y parroquia -->
-        <div class="row">
-        <div class="col-md-6 mb-3">
-        <label for="modalEstado" class="form-label">Estado</label>
-        <select name="estado" id="modalEstado" class="form-select" required>
-            <option value="">Seleccione un estado</option>
-            <?php
-            // Obtener solo el estado Lara
-            $estado = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'");
-            if ($row = $estado->fetch_assoc()) {
-                echo "<option value='{$row['id_estado']}' selected>{$row['estado']}</option>";
-            }
-            ?>
-        </select>
     </div>
-    <div class="col-md-6 mb-3">
-        <label for="modalMunicipio" class="form-label">Municipio</label>
-        <select name="municipio" id="modalMunicipio" class="form-select" required>
-            <option value="">Seleccione un municipio</option>
-            <?php
-            // Cargar municipios de Lara
-            $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$row['id_estado']} ORDER BY municipio ASC");
-            while ($mun = $municipios->fetch_assoc()) {
-                echo "<option value='{$mun['id_municipio']}'>{$mun['municipio']}</option>";
-            }
-            ?>
-        </select>
-    </div>
-    <div class="col-md-6 mb-3">
-        <label for="modalParroquia" class="form-label">Parroquia</label>
-        <select name="parroquia" id="modalParroquia" class="form-select" required disabled>
-            <option value="">Primero seleccione un municipio</option>
-        </select>
-    </div>
-</div>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="fas fa-times me-1"></i> Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-1"></i> Guardar
-        </button>
-    </div>
-</form>
-        </div>
-    </div>
-</div>
 
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-       document.addEventListener('DOMContentLoaded', function() {
-    const estadoSelect = document.getElementById('estadoSelect');
-    const municipioSelect = document.getElementById('municipioSelect');
-    const parroquiaSelect = document.getElementById('parroquiaSelect');
-    
-    municipioSelect.addEventListener('change', function() {
-        const municipioId = this.value;
-        
-        if (municipioId) {
-            parroquiaSelect.disabled = false;
-            fetch(`../php/ajax/get_parroquias.php?municipio_id=${municipioId}`)
-                .then(response => response.json())
-                .then(data => {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Funcionalidad de filtros en la página principal
+            const estadoSelect = document.getElementById('estadoSelect');
+            const municipioSelect = document.getElementById('municipioSelect');
+            const parroquiaSelect = document.getElementById('parroquiaSelect');
+            
+            municipioSelect.addEventListener('change', function() {
+                const municipioId = this.value;
+                
+                if (municipioId) {
+                    parroquiaSelect.disabled = false;
+                    fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                            data.forEach(parroquia => {
+                                const option = document.createElement('option');
+                                option.value = parroquia.id_parroquia;
+                                option.textContent = parroquia.parroquia;
+                                parroquiaSelect.appendChild(option);
+                            });
+                        });
+                } else {
                     parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                    data.forEach(parroquia => {
-                        const option = document.createElement('option');
-                        option.value = parroquia.id_parroquia;
-                        option.textContent = parroquia.parroquia;
-                        parroquiaSelect.appendChild(option);
-                    });
-                });
-        } else {
-            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-            parroquiaSelect.disabled = true;
-        }
-    });
-    
-    // Cargar parroquias si ya hay un municipio seleccionado
-    if (municipioSelect.value) {
-        municipioSelect.dispatchEvent(new Event('change'));
-    }
-});
-    // Manejar el scroll del navbar
-    window.addEventListener('scroll', function() {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 10) {
-            navbar.classList.add('shadow-sm');
-        } else {
-            navbar.classList.remove('shadow-sm');
-        }
-    });
-
-    // Funcionalidad de búsqueda
-    document.addEventListener('DOMContentLoaded', function() {
-    const inputBuscar = document.getElementById('buscar');
-    const tablaBeneficiarios = document.getElementById('tablaBeneficiarios');
-    const filas = tablaBeneficiarios.querySelectorAll('tbody tr');
-    const paginationContainer = document.querySelector('.pagination');
-
-    // Función de búsqueda avanzada con mejoras en búsqueda de cédulas
-    function busquedaAvanzada(termino) {
-        termino = termino.trim().toLowerCase();
-        let resultadosEncontrados = 0;
-        
-        filas.forEach(fila => {
-            const celdas = fila.getElementsByTagName('td');
-            const cedula = celdas[1].textContent.toLowerCase().replace(/\D/g, ''); // Eliminar caracteres no numéricos
-            const nombre = celdas[2].textContent.toLowerCase();
-            const codigoObra = celdas[4].textContent.toLowerCase();
-            
-            // Búsqueda más flexible
-            const terminoLimpio = termino.replace(/\D/g, ''); // Eliminar caracteres no numéricos del término de búsqueda
-            
-            const coincide = 
-                cedula.includes(terminoLimpio) || // Búsqueda parcial de cédula
-                nombre.includes(termino) || 
-                codigoObra.includes(termino);
-            
-            if (coincide) {
-                fila.style.display = '';
-                resultadosEncontrados++;
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-
-        // Gestionar visibilidad de paginación
-        gestionarPaginacion(resultadosEncontrados);
-    }
-
-    // Función para gestionar la paginación
-    function gestionarPaginacion(resultadosEncontrados) {
-        if (paginationContainer) {
-            if (resultadosEncontrados === 0) {
-                paginationContainer.style.display = 'none';
-            } else {
-                paginationContainer.style.display = 'flex';
-            }
-        }
-    }
-
-    // Implementación de debounce
-    function debounce(func, timeout = 300) {
-        let timer;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => { func.apply(this, args); }, timeout);
-        };
-    }
-
-    const busquedaOptimizada = debounce(busquedaAvanzada);
-
-    // Evento de búsqueda
-    inputBuscar.addEventListener('input', function() {
-        busquedaOptimizada(this.value);
-    });
-
-    // Función para limpiar búsqueda
-    function limpiarBusqueda() {
-        inputBuscar.value = '';
-        filas.forEach(fila => {
-            fila.style.display = '';
-        });
-
-        // Restaurar paginación
-        if (paginationContainer) {
-            paginationContainer.style.display = 'flex';
-        }
-    }
-
-    // Botón de limpieza
-    const botonLimpiar = document.createElement('button');
-    botonLimpiar.innerHTML = '<i class="fas fa-times"></i>';
-    botonLimpiar.classList.add('btn', 'btn-link', 'position-absolute', 'end-0', 'top-50', 'translate-middle-y');
-    botonLimpiar.style.zIndex = '10';
-    
-    inputBuscar.parentNode.style.position = 'relative';
-    inputBuscar.parentNode.appendChild(botonLimpiar);
-    
-    botonLimpiar.addEventListener('click', limpiarBusqueda);
-
-    // Manejar paginación
-    const paginationLinks = document.querySelectorAll('.pagination .page-link');
-    paginationLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Restablecer búsqueda al cambiar de página
-            inputBuscar.value = '';
-            filas.forEach(fila => {
-                fila.style.display = '';
+                    parroquiaSelect.disabled = true;
+                }
             });
-        });
-    });
-});
-    document.addEventListener('DOMContentLoaded', function() {
-    const paginationLinks = document.querySelectorAll('.pagination .page-link');
-    paginationLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Capturar los parámetros de filtro actuales
-            const filtros = new URLSearchParams(window.location.search);
-            const nuevaUrl = new URL(this.href);
             
-            // Copiar todos los filtros a la nueva URL
-            filtros.forEach((valor, clave) => {
-                if (clave !== 'pagina') {
-                    nuevaUrl.searchParams.set(clave, valor);
+            // Cargar parroquias si ya hay un municipio seleccionado
+            if (municipioSelect.value) {
+                municipioSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Funcionalidad del modal
+            const modalEstado = document.getElementById('modalEstado');
+            const modalMunicipio = document.getElementById('modalMunicipio');
+            const modalParroquia = document.getElementById('modalParroquia');
+            
+            // Deshabilitar cambios en el estado (siempre será Lara)
+            modalEstado.disabled = true;
+
+            // Cargar parroquias al seleccionar municipio en el modal
+            modalMunicipio.addEventListener('change', function() {
+                const municipioId = this.value;
+                modalParroquia.innerHTML = '<option value="">Cargando...</option>';
+                modalParroquia.disabled = true;
+                
+                if (municipioId) {
+                    fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
+                            data.forEach(parroquia => {
+                                const option = document.createElement('option');
+                                option.value = parroquia.id_parroquia;
+                                option.textContent = parroquia.parroquia;
+                                modalParroquia.appendChild(option);
+                            });
+                            modalParroquia.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            modalParroquia.innerHTML = '<option value="">Error al cargar parroquias</option>';
+                        });
+                } else {
+                    modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
                 }
             });
 
-            window.location.href = nuevaUrl.toString();
-            e.preventDefault();
-        });
-    });
-});
-
-document.getElementById('agregarBeneficiarioForm').addEventListener('submit', async function(e) {
+            // Manejar envío del formulario
+            const formNuevoBeneficiario = document.getElementById('formNuevoBeneficiario');
+formNuevoBeneficiario.addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    try {
-        // Verificar rol primero
-        const rolResponse = await fetch('../php/conf/verificar_rol.php');
-        const rolData = await rolResponse.json();
-        
-        if (!rolData.autorizado) {
-            alert('Error: Solo administradores pueden agregar beneficiarios');
-            window.location.reload();
-            return;
+    // Validar campos requeridos con los IDs correctos del modal
+    const camposRequeridos = [
+        { id: 'nombre_beneficiario', nombre: 'Nombre Completo' },
+        { id: 'cedula', nombre: 'Cédula' },
+        { id: 'telefono', nombre: 'Teléfono' },
+        { id: 'codigo_obra', nombre: 'Código de Obra' },
+        { id: 'comunidad', nombre: 'Comunidad' },
+        { id: 'modalMunicipio', nombre: 'Municipio' },
+        { id: 'modalParroquia', nombre: 'Parroquia' }
+    ];
+    
+    let camposFaltantes = [];
+    
+    camposRequeridos.forEach(campo => {
+        const elemento = document.getElementById(campo.id);
+        if (!elemento || !elemento.value.trim()) {
+            camposFaltantes.push(campo.nombre);
         }
-
-        // Si es admin, proceder con el envío
+    });
+    
+    if (camposFaltantes.length > 0) {
+        alert('Por favor complete todos los campos requeridos:\n• ' + camposFaltantes.join('\n• '));
+        
+        // Enfocar el primer campo faltante
+        const primerCampoFaltante = camposRequeridos.find(campo => {
+            const elemento = document.getElementById(campo.id);
+            return !elemento || !elemento.value.trim();
+        });
+        
+        if (primerCampoFaltante) {
+            const elemento = document.getElementById(primerCampoFaltante.id);
+            if (elemento) {
+                elemento.focus();
+                elemento.classList.add('is-invalid');
+                setTimeout(() => elemento.classList.remove('is-invalid'), 3000);
+            }
+        }
+        return;
+    }
+    
+    // Obtener referencia al botón antes del try
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    try {
         const formData = new FormData(this);
+        
+        // Mostrar indicador de carga
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+        submitBtn.disabled = true;
+        
         const response = await fetch('../php/conf/guardar_beneficiario.php', {
             method: 'POST',
             body: formData
         });
         
-        const result = await response.json();
+        let result;
         
-        if (result.status === 'ok') {
-            alert(`Beneficiario agregado:\n${result.beneficiario.nombre_beneficiario}`);
-            window.location.reload();
-        } else {
-            throw new Error(result.message || 'Error desconocido');
+        try {
+            const text = await response.text();
+            try {
+                result = JSON.parse(text);
+            } catch (jsonError) {
+                console.error('Error al parsear JSON:', text);
+                throw new Error('Respuesta del servidor no es JSON válido. Revise los logs para más detalles.');
+            }
+        } catch (textError) {
+            console.error('Error al obtener texto de respuesta:', textError);
+            throw new Error('No se pudo leer la respuesta del servidor');
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert(`Error al guardar: ${error.message}`);
-    }
-});
-document.addEventListener('DOMContentLoaded', function() {
-    const modalEstado = document.getElementById('modalEstado');
-    const modalMunicipio = document.getElementById('modalMunicipio');
-    const modalParroquia = document.getElementById('modalParroquia');
-    
-    // Deshabilitar cambios en el estado (siempre será Lara)
-    modalEstado.disabled = true;
-
-    // Cargar parroquias al seleccionar municipio
-    modalMunicipio.addEventListener('change', function() {
-        const municipioId = this.value;
-        modalParroquia.innerHTML = '<option value="">Cargando...</option>';
         
-        if (municipioId) {
-            fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
-                .then(response => response.json())
-                .then(data => {
-                    modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
-                    data.forEach(parroquia => {
-                        const option = new Option(parroquia.parroquia, parroquia.id_parroquia);
-                        modalParroquia.add(option);
-                    });
-                    modalParroquia.disabled = false;
-                });
-        } else {
-            modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
-            modalParroquia.disabled = true;
-        }
-    });
-});
-document.getElementById('formularioBeneficiario').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    
-    fetch('../php/conf/guardar_beneficiario.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'ok') {
-            // Limpiar el formulario
+        if (result.status === 'success' || result.status === 'ok') {
+            alert('✅ Beneficiario agregado exitosamente:\n' + (result.beneficiario?.nombre_beneficiario || 'Beneficiario'));
+            
+            // Cerrar modal y recargar página
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Limpiar formulario
             this.reset();
             
-            // Crear una nueva fila para la tabla de beneficiarios
-            const tabla = document.getElementById('tablaBeneficiarios').getElementsByTagName('tbody')[0];
-            const nuevaFila = tabla.insertRow(0);
-            
-            // Insertar celdas con los datos del nuevo beneficiario
-            const celdas = [
-                data.beneficiario.id_beneficiario,
-                data.beneficiario.cedula,
-                data.beneficiario.nombre_beneficiario,
-                data.beneficiario.telefono,
-                data.beneficiario.codigo_obra,
-                data.ubicacion.municipio,
-                data.ubicacion.parroquia,
-                data.beneficiario.status
-            ];
-            
-            celdas.forEach((valor, index) => {
-                const celda = nuevaFila.insertCell(index);
-                celda.textContent = valor || 'N/A';
-            });
-            
-            // Agregar botones de acciones
-            const celdaAcciones = nuevaFila.insertCell(celdas.length);
-            celdaAcciones.innerHTML = `
-                <div class="btn-group" role="group">
-                    <a href="datos_beneficiario.php?id=${data.beneficiario.id_beneficiario}" class="btn btn-info btn-sm">
-                        <i class="fas fa-eye"></i>
-                    </a>
-                    <a href="#" class="btn btn-warning btn-sm editar-beneficiario" data-id="${data.beneficiario.id_beneficiario}">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                </div>
-            `;
-            
-            // Mostrar mensaje de éxito
-            Swal.fire({
-                icon: 'success',
-                title: 'Beneficiario Agregado',
-                text: data.message
-            });
+            // Recargar página después de un breve delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } else {
-            // Mostrar mensaje de error
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message
-            });
+            throw new Error(result.message || 'Error desconocido al guardar');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error de Conexión',
-            text: 'No se pudo agregar el beneficiario'
-        });
-    });
+    } catch (error) {
+        console.error('Error completo:', error);
+        alert('❌ Error al guardar beneficiario:\n' + error.message);
+    } finally {
+        // Restaurar botón
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+    }
 });
 
+            // Funcionalidad de búsqueda
+            const inputBuscar = document.getElementById('buscar');
+            const tablaBeneficiarios = document.getElementById('tablaBeneficiarios');
+            const filas = tablaBeneficiarios.querySelectorAll('tr');
+            const paginationContainer = document.querySelector('.pagination');
+
+            function busquedaAvanzada(termino) {
+                termino = termino.trim().toLowerCase();
+                let resultadosEncontrados = 0;
+                
+                filas.forEach(fila => {
+                    const celdas = fila.getElementsByTagName('td');
+                    if (celdas.length > 0) {
+                        const cedula = celdas[1].textContent.toLowerCase().replace(/\D/g, '');
+                        const nombre = celdas[2].textContent.toLowerCase();
+                        const codigoObra = celdas[4].textContent.toLowerCase();
+                        
+                        const terminoLimpio = termino.replace(/\D/g, '');
+                        
+                        const coincide = 
+                            cedula.includes(terminoLimpio) || 
+                            nombre.includes(termino) || 
+                            codigoObra.includes(termino);
+                        
+                        if (coincide) {
+                            fila.style.display = '';
+                            resultadosEncontrados++;
+                        } else {
+                            fila = 'none';
+                        }
+                    }
+                });
+
+                if (paginationContainer) {
+                    paginationContainer.style.display = resultadosEncontrados === 0 ? 'none' : 'flex';
+                }
+            }
+
+            function debounce(func, timeout = 300) {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+                };
+            }
+
+            const busquedaOptimizada = debounce(busquedaAvanzada);
+            inputBuscar.addEventListener('input', function() {
+                busquedaOptimizada(this.value);
+            });
+
+            // Manejar el scroll del navbar
+            window.addEventListener('scroll', function() {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 10) {
+                    navbar.classList.add('shadow-sm');
+                } else {
+                    navbar.classList.remove('shadow-sm');
+                }
+            });
+        });
     </script>
 </body>
 </html>
+
 <?php
 // Cerrar conexión al final del documento
 if (isset($conexion)) {
