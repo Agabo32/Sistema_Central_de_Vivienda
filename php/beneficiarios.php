@@ -13,10 +13,6 @@ $id_lara = $lara['id_estado'];
 // Default to show only active
 $show_inactive = $_GET['show_inactive'] ?? false;
 
-$sql = isset($_SESSION['admin']) && $_SESSION['admin'] 
-    ? "SELECT * FROM beneficiarios" 
-    : "SELECT * FROM beneficiarios WHERE status = 'activo'";
-
 $registros_por_pagina = 10; // Número de registros por página
 $pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
@@ -26,7 +22,7 @@ $sql_base = "SELECT b.*,
     p.parroquia, 
     m.municipio, 
     e.estado 
-FROM Beneficiarios b
+FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
 LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
@@ -77,7 +73,7 @@ $total_registros = $total_result->num_rows;
 $total_paginas = ceil($total_registros / $registros_por_pagina);
 
 // Añadir límite y offset a la consulta principal
-$sql_base .= " LIMIT ? OFFSET ?";
+$sql_base .= " ORDER BY b.id_beneficiario DESC LIMIT ? OFFSET ?";
 $types .= 'ii';
 $params[] = $registros_por_pagina;
 $params[] = $offset;
@@ -124,6 +120,18 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 .modal-body .form-label[for="utm_norte"]:after,
 .modal-body .form-label[for="utm_este"]:after {
     content: "";
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
 }
 </style>
 </head>
@@ -247,6 +255,9 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                 <?php endif; ?>
                             </div>
                         </div>
+
+                        <!-- Alertas -->
+                        <div id="alertContainer"></div>
 
                         <!-- Tabla de beneficiarios -->
                         <div class="card">
@@ -389,7 +400,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="formNuevoBeneficiario" method="POST" action="../php/conf/guardar_beneficiario.php">
+                <form id="formNuevoBeneficiario" method="POST">
                     <div class="modal-body">
                         <!-- Información Personal -->
                         <div class="row">
@@ -498,6 +509,31 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <!-- Bootstrap JS Bundle con Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Función para mostrar alertas
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas ${iconClass} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML = alertHtml;
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Funcionalidad de filtros en la página principal
             const estadoSelect = document.getElementById('estadoSelect');
@@ -569,108 +605,108 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
             // Manejar envío del formulario
             const formNuevoBeneficiario = document.getElementById('formNuevoBeneficiario');
-formNuevoBeneficiario.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    // Validar campos requeridos con los IDs correctos del modal
-    const camposRequeridos = [
-        { id: 'nombre_beneficiario', nombre: 'Nombre Completo' },
-        { id: 'cedula', nombre: 'Cédula' },
-        { id: 'telefono', nombre: 'Teléfono' },
-        { id: 'codigo_obra', nombre: 'Código de Obra' },
-        { id: 'comunidad', nombre: 'Comunidad' },
-        { id: 'modalMunicipio', nombre: 'Municipio' },
-        { id: 'modalParroquia', nombre: 'Parroquia' }
-    ];
-    
-    let camposFaltantes = [];
-    
-    camposRequeridos.forEach(campo => {
-        const elemento = document.getElementById(campo.id);
-        if (!elemento || !elemento.value.trim()) {
-            camposFaltantes.push(campo.nombre);
-        }
-    });
-    
-    if (camposFaltantes.length > 0) {
-        alert('Por favor complete todos los campos requeridos:\n• ' + camposFaltantes.join('\n• '));
-        
-        // Enfocar el primer campo faltante
-        const primerCampoFaltante = camposRequeridos.find(campo => {
-            const elemento = document.getElementById(campo.id);
-            return !elemento || !elemento.value.trim();
-        });
-        
-        if (primerCampoFaltante) {
-            const elemento = document.getElementById(primerCampoFaltante.id);
-            if (elemento) {
-                elemento.focus();
-                elemento.classList.add('is-invalid');
-                setTimeout(() => elemento.classList.remove('is-invalid'), 3000);
-            }
-        }
-        return;
-    }
-    
-    // Obtener referencia al botón antes del try
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerHTML;
-    
-    try {
-        const formData = new FormData(this);
-        
-        // Mostrar indicador de carga
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
-        submitBtn.disabled = true;
-        
-        const response = await fetch('../php/conf/guardar_beneficiario.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        let result;
-        
-        try {
-            const text = await response.text();
-            try {
-                result = JSON.parse(text);
-            } catch (jsonError) {
-                console.error('Error al parsear JSON:', text);
-                throw new Error('Respuesta del servidor no es JSON válido. Revise los logs para más detalles.');
-            }
-        } catch (textError) {
-            console.error('Error al obtener texto de respuesta:', textError);
-            throw new Error('No se pudo leer la respuesta del servidor');
-        }
-        
-        if (result.status === 'success' || result.status === 'ok') {
-            alert('✅ Beneficiario agregado exitosamente:\n' + (result.beneficiario?.nombre_beneficiario || 'Beneficiario'));
-            
-            // Cerrar modal y recargar página
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
-            if (modal) {
-                modal.hide();
-            }
-            
-            // Limpiar formulario
-            this.reset();
-            
-            // Recargar página después de un breve delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-        } else {
-            throw new Error(result.message || 'Error desconocido al guardar');
-        }
-    } catch (error) {
-        console.error('Error completo:', error);
-        alert('❌ Error al guardar beneficiario:\n' + error.message);
-    } finally {
-        // Restaurar botón
-        submitBtn.innerHTML = originalBtnText;
-        submitBtn.disabled = false;
-    }
-});
+            formNuevoBeneficiario.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Validar campos requeridos con los IDs correctos del modal
+                const camposRequeridos = [
+                    { id: 'nombre_beneficiario', nombre: 'Nombre Completo' },
+                    { id: 'cedula', nombre: 'Cédula' },
+                    { id: 'telefono', nombre: 'Teléfono' },
+                    { id: 'codigo_obra', nombre: 'Código de Obra' },
+                    { id: 'comunidad', nombre: 'Comunidad' },
+                    { id: 'modalMunicipio', nombre: 'Municipio' },
+                    { id: 'modalParroquia', nombre: 'Parroquia' }
+                ];
+                
+                let camposFaltantes = [];
+                
+                camposRequeridos.forEach(campo => {
+                    const elemento = document.getElementById(campo.id);
+                    if (!elemento || !elemento.value.trim()) {
+                        camposFaltantes.push(campo.nombre);
+                    }
+                });
+                
+                if (camposFaltantes.length > 0) {
+                    showAlert('error', 'Por favor complete todos los campos requeridos: ' + camposFaltantes.join(', '));
+                    
+                    // Enfocar el primer campo faltante
+                    const primerCampoFaltante = camposRequeridos.find(campo => {
+                        const elemento = document.getElementById(campo.id);
+                        return !elemento || !elemento.value.trim();
+                    });
+                    
+                    if (primerCampoFaltante) {
+                        const elemento = document.getElementById(primerCampoFaltante.id);
+                        if (elemento) {
+                            elemento.focus();
+                            elemento.classList.add('is-invalid');
+                            setTimeout(() => elemento.classList.remove('is-invalid'), 3000);
+                        }
+                    }
+                    return;
+                }
+                
+                // Obtener referencia al botón antes del try
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                
+                try {
+                    const formData = new FormData(this);
+                    
+                    // Mostrar indicador de carga
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+                    submitBtn.disabled = true;
+                    
+                    const response = await fetch('../php/conf/guardar_beneficiario.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    
+                    const text = await response.text();
+                    console.log('Respuesta del servidor:', text); // Para debugging
+                    
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (jsonError) {
+                        console.error('Error al parsear JSON:', text);
+                        throw new Error('El servidor devolvió una respuesta inválida. Verifique los logs del servidor.');
+                    }
+                    
+                    if (result.status === 'success') {
+                        showAlert('success', 'Beneficiario agregado exitosamente');
+                        
+                        // Cerrar modal y recargar página
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // Limpiar formulario
+                        this.reset();
+                        
+                        // Recargar página después de un breve delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Error desconocido al guardar');
+                    }
+                } catch (error) {
+                    console.error('Error completo:', error);
+                    showAlert('error', 'Error al guardar beneficiario: ' + error.message);
+                } finally {
+                    // Restaurar botón
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            });
 
             // Funcionalidad de búsqueda
             const inputBuscar = document.getElementById('buscar');
@@ -700,7 +736,7 @@ formNuevoBeneficiario.addEventListener('submit', async function(e) {
                             fila.style.display = '';
                             resultadosEncontrados++;
                         } else {
-                            fila = 'none';
+                            fila.style.display = 'none';
                         }
                     }
                 });
