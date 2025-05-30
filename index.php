@@ -9,7 +9,7 @@ const ROLES_PERMITIDOS = ['admin', 'usuario']; // Ajustar según necesidades
 // 2. Configuración de la base de datos
 $db_config = [
     'host' => 'localhost',
-    'dbname' => 'nueva',
+    'dbname' => 'pasantias_v1',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8mb4',
