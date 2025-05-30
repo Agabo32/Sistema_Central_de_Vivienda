@@ -155,46 +155,6 @@ function formatProgressValue($value) {
     <link rel="stylesheet" href="..//css/expediente.css">
 </head>
 <body>
-    <!-- Barra de navegación (manteniendo la existente) -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="../php/menu_principal.php">
-                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 30px;" class="me-2">
-                <span class="fw-bold">SIGEVU</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../php/menu_principal.php">
-                            <i class="fas fa-home me-1"></i> Inicio
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="../php/beneficiarios.php">
-                            <i class="fas fa-users me-1"></i> Beneficiarios
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../php/reportes.php">
-                            <i class="fas fa-chart-bar me-1"></i> Reportes
-                        </a>
-                    </li>
-                </ul>
-                <div class="d-flex ms-3">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <a class="nav-link ms-2" href="../index.php">
-                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <div class="container" style="margin-top: 80px;">
         <!-- Encabezado institucional -->
         <div class="header-institution text-center">
