@@ -69,7 +69,7 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="../index.php" style="color : #f8f9fa">
+                    <a class="nav-link ms-2" href="../php/conf/logout.php" style="color : #f8f9fa">
                         <i class="fas fa-sign-out-alt me-1" style="color : #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>

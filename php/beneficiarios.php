@@ -32,9 +32,11 @@ LEFT JOIN estados e ON m.id_estado = e.id_estado
 LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
 WHERE e.id_estado = $id_lara ";
 
-// Solo administradores pueden ver inactivos si lo solicitan explícitamente
-if (!(isset($_SESSION['admin']) && $_SESSION['admin'] && isset($_GET['show_inactive']) && $_GET['show_inactive'])) {
+// Aplicar filtro de estado
+if (!isset($_GET['status']) || $_GET['status'] === 'activo' || $_GET['status'] === '') {
     $sql_base .= " AND b.status = 'activo'";
+} elseif ($_GET['status'] === 'inactivo') {
+    $sql_base .= " AND b.status = 'inactivo'";
 }
 
 // Aplicar filtros si existen
@@ -140,12 +142,24 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 }
 
 .nueva-comunidad-section {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
+    transition: all 0.3s ease-in-out;
     margin-top: 1rem;
-    display: none;
+    margin-bottom: 1rem;
+}
+
+.nueva-comunidad-section.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.nueva-comunidad-section.hide {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+}
+
+.btn-close:focus {
+    box-shadow: none;
 }
 </style>
 </head>
@@ -183,7 +197,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="../index.php" style="color : #f8f9fa">
+                    <a class="nav-link ms-2" href="../php/conf/logout.php" style="color : #f8f9fa">
                         <i class="fas fa-sign-out-alt me-1" style="color : #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -254,7 +268,15 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                     ?>
                                 </select>
                             </div>
-                            <div class="col-md-6 d-flex align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Estado del Beneficiario</label>
+                                <select name="status" class="form-select">
+                                    <option value="todos" <?= (!isset($_GET['status']) || $_GET['status'] === 'todos') ? 'selected' : '' ?>>Todos</option>
+                                    <option value="activo" <?= (isset($_GET['status']) && $_GET['status'] === 'activo') ? 'selected' : '' ?>>Activos</option>
+                                    <option value="inactivo" <?= (isset($_GET['status']) && $_GET['status'] === 'inactivo') ? 'selected' : '' ?>>Inactivos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-search me-1"></i> Filtrar
                                 </button>
@@ -503,14 +525,26 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
                         <div class="row">
                             <div class="col-md-8 mb-3">
-                                <label for="comunidad" class="form-label">Comunidad *</label>
+                                <label for="comunidad" class="form-label">Comunidad Existente</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="comunidad" name="comunidad" required placeholder="Escriba el nombre de la comunidad">
-                                    <button type="button" class="btn btn-outline-secondary" id="btnNuevaComunidad">
-                                        <i class="fas fa-plus"></i> Nueva
+                                    <select class="form-select" id="comunidad" name="comunidad">
+                                        <option value="">Seleccione una comunidad existente</option>
+                                        <?php
+                                        $comunidades = $conexion->query("SELECT c.ID_COMUNIDAD, c.COMUNIDAD, p.id_parroquia, p.parroquia 
+                                                                       FROM comunidades c 
+                                                                       JOIN parroquias p ON c.ID_PARROQUIA = p.id_parroquia 
+                                                                       ORDER BY c.COMUNIDAD ASC");
+                                        while ($com = $comunidades->fetch_assoc()) {
+                                            echo "<option value='{$com['ID_COMUNIDAD']}'>{$com['COMUNIDAD']} - {$com['parroquia']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="toggleNuevaComunidad">
+                                        <i class="fas fa-plus-circle me-1"></i> Crear Nueva Comunidad
                                     </button>
                                 </div>
-                                <div class="form-text">Si la comunidad no existe, puede crearla usando el botón "Nueva"</div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="direccion_exacta" class="form-label">Dirección Exacta</label>
@@ -518,28 +552,36 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                             </div>
                         </div>
 
-                        <!-- Sección para crear nueva comunidad -->
-                        <div class="nueva-comunidad-section" id="nuevaComunidadSection">
-                            <h6 class="text-primary"><i class="fas fa-map-marked-alt me-2"></i>Crear Nueva Comunidad</h6>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="nueva_comunidad_nombre" class="form-label">Nombre de la Nueva Comunidad</label>
-                                    <input type="text" class="form-control" id="nueva_comunidad_nombre" name="nueva_comunidad_nombre">
+                        <!-- Sección para crear nueva comunidad - Inicialmente oculta -->
+                        <div class="nueva-comunidad-section" id="nuevaComunidadSection" style="display: none;">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Registrar Nueva Comunidad</h6>
+                                    <button type="button" class="btn-close btn-close-white" id="cerrarNuevaComunidad"></button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="nueva_comunidad_parroquia" class="form-label">Parroquia para la Nueva Comunidad</label>
-                                    <select class="form-select" id="nueva_comunidad_parroquia" name="nueva_comunidad_parroquia">
-                                        <option value="">Seleccione una parroquia</option>
-                                    </select>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Complete los siguientes campos para registrar una nueva comunidad
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nueva_comunidad_nombre" class="form-label">Nombre de la Nueva Comunidad</label>
+                                            <input type="text" class="form-control" id="nueva_comunidad_nombre" name="nueva_comunidad_nombre">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nueva_comunidad_parroquia" class="form-label">Parroquia para la Nueva Comunidad</label>
+                                            <select class="form-select" id="nueva_comunidad_parroquia" name="nueva_comunidad_parroquia">
+                                                <option value="">Seleccione una parroquia</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-success" id="btnGuardarComunidad">
+                                            <i class="fas fa-save me-1"></i> Guardar Nueva Comunidad
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-success btn-sm" id="btnGuardarComunidad">
-                                    <i class="fas fa-save me-1"></i> Guardar Comunidad
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm" id="btnCancelarComunidad">
-                                    <i class="fas fa-times me-1"></i> Cancelar
-                                </button>
                             </div>
                         </div>
 
@@ -638,10 +680,11 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             const modalEstado = document.getElementById('modalEstado');
             const modalMunicipio = document.getElementById('modalMunicipio');
             const modalParroquia = document.getElementById('modalParroquia');
-            const btnNuevaComunidad = document.getElementById('btnNuevaComunidad');
+            const toggleNuevaComunidad = document.getElementById('toggleNuevaComunidad');
+            const cerrarNuevaComunidad = document.getElementById('cerrarNuevaComunidad');
             const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
-            const btnCancelarComunidad = document.getElementById('btnCancelarComunidad');
             const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
+            const comunidadSelect = document.getElementById('comunidad');
             
             modalEstado.disabled = true;
 
@@ -684,18 +727,60 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 }
             });
 
-            // Mostrar/ocultar sección de nueva comunidad
-            btnNuevaComunidad.addEventListener('click', function() {
-                nuevaComunidadSection.style.display = 'block';
+            // Modificar el evento de cambio de parroquia para actualizar las comunidades
+            modalParroquia.addEventListener('change', function() {
+                const parroquiaId = this.value;
+                const comunidadSelect = document.getElementById('comunidad');
+                
+                if (parroquiaId) {
+                    // Cargar comunidades de la parroquia seleccionada
+                    fetch(`../php/conf/get_comunidades.php?id_parroquia=${parroquiaId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            comunidadSelect.innerHTML = '<option value="">Seleccione una comunidad</option>';
+                            data.forEach(comunidad => {
+                                const option = document.createElement('option');
+                                option.value = comunidad.id_comunidad;
+                                option.textContent = comunidad.nombre;
+                                comunidadSelect.appendChild(option);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            comunidadSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
+                        });
+                } else {
+                    comunidadSelect.innerHTML = '<option value="">Seleccione una parroquia primero</option>';
+                }
             });
 
-            btnCancelarComunidad.addEventListener('click', function() {
-                nuevaComunidadSection.style.display = 'none';
+            // Funcionalidad para mostrar/ocultar nueva comunidad
+            function mostrarSeccionNuevaComunidad() {
+                nuevaComunidadSection.style.display = 'block';
+                setTimeout(() => {
+                    nuevaComunidadSection.classList.add('show');
+                    nuevaComunidadSection.classList.remove('hide');
+                }, 10);
+                toggleNuevaComunidad.style.display = 'none';
+            }
+
+            function ocultarSeccionNuevaComunidad() {
+                nuevaComunidadSection.classList.remove('show');
+                nuevaComunidadSection.classList.add('hide');
+                setTimeout(() => {
+                    nuevaComunidadSection.style.display = 'none';
+                }, 300);
+                toggleNuevaComunidad.style.display = 'inline-block';
+                
+                // Limpiar campos
                 document.getElementById('nueva_comunidad_nombre').value = '';
                 document.getElementById('nueva_comunidad_parroquia').value = '';
-            });
+            }
 
-            // Guardar nueva comunidad
+            toggleNuevaComunidad.addEventListener('click', mostrarSeccionNuevaComunidad);
+            cerrarNuevaComunidad.addEventListener('click', ocultarSeccionNuevaComunidad);
+
+            // Modificar el evento de guardar comunidad para ocultar la sección después de guardar
             btnGuardarComunidad.addEventListener('click', async function() {
                 const nombreComunidad = document.getElementById('nueva_comunidad_nombre').value.trim();
                 const parroquiaId = document.getElementById('nueva_comunidad_parroquia').value;
@@ -719,10 +804,18 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
                     if (result.status === 'success') {
                         showAlert('success', 'Comunidad creada exitosamente');
-                        document.getElementById('comunidad').value = nombreComunidad;
-                        nuevaComunidadSection.style.display = 'none';
-                        document.getElementById('nueva_comunidad_nombre').value = '';
-                        document.getElementById('nueva_comunidad_parroquia').value = '';
+                        
+                        // Crear y agregar la nueva opción al select
+                        const newOption = document.createElement('option');
+                        newOption.value = result.id_comunidad;
+                        newOption.textContent = result.nombre_comunidad;
+                        comunidadSelect.appendChild(newOption);
+                        
+                        // Seleccionar la nueva comunidad
+                        comunidadSelect.value = result.id_comunidad;
+                        
+                        // Ocultar la sección de nueva comunidad
+                        ocultarSeccionNuevaComunidad();
                     } else {
                         showAlert('error', result.message || 'Error al crear la comunidad');
                     }
@@ -742,12 +835,21 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     { id: 'cedula', nombre: 'Cédula' },
                     { id: 'telefono', nombre: 'Teléfono' },
                     { id: 'codigo_obra', nombre: 'Código de Obra' },
-                    { id: 'comunidad', nombre: 'Comunidad' },
                     { id: 'modalMunicipio', nombre: 'Municipio' },
                     { id: 'modalParroquia', nombre: 'Parroquia' }
                 ];
                 
                 let camposFaltantes = [];
+                
+                // Verificar si hay una comunidad seleccionada o si se está creando una nueva
+                const comunidadSeleccionada = document.getElementById('comunidad').value;
+                const nuevaComunidadNombre = document.getElementById('nueva_comunidad_nombre').value.trim();
+                const nuevaComunidadParroquia = document.getElementById('nueva_comunidad_parroquia').value;
+
+                if (!comunidadSeleccionada && (!nuevaComunidadNombre || !nuevaComunidadParroquia)) {
+                    showAlert('error', 'Debe seleccionar una comunidad existente o crear una nueva');
+                    return;
+                }
                 
                 camposRequeridos.forEach(campo => {
                     const elemento = document.getElementById(campo.id);

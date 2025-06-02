@@ -19,7 +19,6 @@ SELECT
     b.cedula, 
     b.nombre_beneficiario, 
     b.telefono, 
-    b.codigo_obra, 
     b.fecha_actualizacion,
     b.status,
     b.id_cod_obra,
@@ -74,8 +73,8 @@ SELECT
     dc.observaciones_fiscalizadores
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
+LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
 LEFT JOIN estados e ON m.id_estado = e.id_estado
 LEFT JOIN metodos_constructivos mc ON b.id_metodo_constructivo = mc.id_metodo
 LEFT JOIN modelos_constructivos mo ON b.id_modelo_constructivo = mo.id_modelo
@@ -161,6 +160,34 @@ function formatValue($value) {
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/datos_beneficiarios.css">
+    <style>
+        /* Estilos generales */
+        .modal-body label {
+            color: #000000 !important;
+            font-weight: 500;
+        }
+
+        .modal-body .form-label {
+            color: #000000 !important;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Asegurar que los textos en el modal sean negros */
+        .modal-content {
+            color: #000000;
+        }
+
+        .modal-title {
+            color: #ffffff; /* Mantener el título del modal en blanco */
+        }
+
+        /* Estilo para las secciones del modal */
+        .modal-body h6 {
+            color: #000000;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
     <!-- Barra de navegación -->
@@ -195,7 +222,7 @@ function formatValue($value) {
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="../index.php" style="color: #f8f9fa">
+                    <a class="nav-link ms-2" href="../php/conf/logout.php" style="color: #f8f9fa">
                         <i class="fas fa-sign-out-alt me-1" style="color: #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -344,7 +371,7 @@ function formatValue($value) {
                                             <div class="mb-3">
                                                 <label for="comunidad" class="form-label">Comunidad</label>
                                                 <input type="text" class="form-control" id="comunidad" name="comunidad" 
-                                                       value="<?php echo htmlspecialchars($data['comunidad']); ?>">
+                                                       value="<?php echo htmlspecialchars($data['nombre_comunidad']); ?>">
                                             </div>
                                             
                                             <div class="mb-3">

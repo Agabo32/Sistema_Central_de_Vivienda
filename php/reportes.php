@@ -29,6 +29,7 @@ $sql = "SELECT
     m.municipio,
     p.id_parroquia,
     p.parroquia,
+    u.comunidad,
     COUNT(DISTINCT b.id_beneficiario) AS total_viviendas,
     ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) AS avance_promedio,
     SUM(CASE WHEN COALESCE(dc.$tipo_avance, 0) >= 100 THEN 1 ELSE 0 END) AS completadas,
@@ -72,9 +73,9 @@ if ($comunidad) {
     $params[] = '%' . $comunidad . '%';
 }
 
-$sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia
+$sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia, u.comunidad
           HAVING total_viviendas > 0
-          ORDER BY m.municipio, p.parroquia";
+          ORDER BY m.municipio, p.parroquia, u.comunidad";
 
 // Preparar la consulta
 $stmt = $conexion->prepare($sql);
@@ -120,6 +121,43 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/reportes.css">
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        .table th {
+            white-space: nowrap;
+            background-color: #f8f9fa;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        .progress-container {
+            min-width: 100px;
+        }
+        
+        .badge {
+            min-width: 40px;
+        }
+        
+        .table td .badge.bg-info {
+            background-color: rgba(13, 202, 240, 0.1) !important;
+            color: #0dcaf0 !important;
+            padding: 8px 12px;
+            font-weight: 500;
+        }
+        
+        @media print {
+            .table th {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Barra de navegación -->
@@ -154,7 +192,7 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="../index.php" style="color: #f8f9fa">
+                    <a class="nav-link ms-2" href="../php/conf/logout.php" style="color: #f8f9fa">
                         <i class="fas fa-sign-out-alt me-1" style="color: #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -322,14 +360,15 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Estado</th>
-                                    <th>Municipio</th>
-                                    <th>Parroquia</th>
-                                    <th>Total Viviendas</th>
-                                    <th>Avance Promedio</th>
-                                    <th>Completadas</th>
-                                    <th>En Progreso</th>
-                                    <th>No Iniciadas</th>
+                                    <th style="color: #000000;">Estado</th>
+                                    <th style="color: #000000;">Municipio</th>
+                                    <th style="color: #000000;">Parroquia</th>
+                                    <th style="color: #000000;">Comunidad</th>
+                                    <th style="color: #000000;">Total Viviendas</th>
+                                    <th style="color: #000000;">Avance Promedio</th>
+                                    <th style="color: #000000;">Completadas</th>
+                                    <th style="color: #000000;">En Progreso</th>
+                                    <th style="color: #000000;">No Iniciadas</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -338,6 +377,11 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                                     <td><?= htmlspecialchars($reporte['nombre_estado']) ?></td>
                                     <td><?= htmlspecialchars($reporte['municipio'] ?? 'N/A') ?></td>
                                     <td><?= htmlspecialchars($reporte['parroquia'] ?? 'N/A') ?></td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info">
+                                            <?= htmlspecialchars($reporte['comunidad'] ?? 'No especificada') ?>
+                                        </span>
+                                    </td>
                                     <td><strong><?= $reporte['total_viviendas'] ?? 0 ?></strong></td>
                                     <td>
                                         <div class="progress-container">
