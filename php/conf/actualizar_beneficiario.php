@@ -37,7 +37,9 @@ try {
         nombre_beneficiario = ?,
         cedula = ?,
         telefono = ?,
-        codigo_obra = ?,
+        id_cod_obra = ?,
+        id_metodo_constructivo = ?,
+        id_modelo_constructivo = ?,
         status = ?,
         fecha_actualizacion = NOW()
         WHERE id_beneficiario = ?";
@@ -50,10 +52,58 @@ try {
     $nombre = trim($_POST['nombre_beneficiario'] ?? '');
     $cedula = trim($_POST['cedula'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
-    $codigo_obra = trim($_POST['codigo_obra'] ?? '');
+    $id_cod_obra = !empty($_POST['codigo_obra']) ? intval($_POST['codigo_obra']) : null;
+    $id_metodo_constructivo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : null;
+    $id_modelo_constructivo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : null;
     $status = trim($_POST['status'] ?? 'activo');
-    
-    $stmt->bind_param("sssssi", $nombre, $cedula, $telefono, $codigo_obra, $status, $id_beneficiario);
+
+    // Verificar si hay valores nulos para los IDs y ajustar la consulta
+    if ($id_cod_obra === null || $id_metodo_constructivo === null || $id_modelo_constructivo === null) {
+        // Consulta alternativa para manejar valores nulos
+        $query_beneficiario = "UPDATE beneficiarios SET 
+            nombre_beneficiario = ?,
+            cedula = ?,
+            telefono = ?,
+            id_cod_obra = " . ($id_cod_obra === null ? "NULL" : "?") . ",
+            id_metodo_constructivo = " . ($id_metodo_constructivo === null ? "NULL" : "?") . ",
+            id_modelo_constructivo = " . ($id_modelo_constructivo === null ? "NULL" : "?") . ",
+            status = ?,
+            fecha_actualizacion = NOW()
+            WHERE id_beneficiario = ?";
+        
+        $stmt = $conexion->prepare($query_beneficiario);
+        if (!$stmt) {
+            throw new Exception("Error al preparar consulta de beneficiario: " . $conexion->error);
+        }
+        
+        // Construir dinámicamente los parámetros y tipos
+        $params = [$nombre, $cedula, $telefono];
+        $types = "sss";
+        
+        if ($id_cod_obra !== null) {
+            $params[] = $id_cod_obra;
+            $types .= "i";
+        }
+        
+        if ($id_metodo_constructivo !== null) {
+            $params[] = $id_metodo_constructivo;
+            $types .= "i";
+        }
+        
+        if ($id_modelo_constructivo !== null) {
+            $params[] = $id_modelo_constructivo;
+            $types .= "i";
+        }
+        
+        $params[] = $status;
+        $params[] = $id_beneficiario;
+        $types .= "si";
+        
+        $stmt->bind_param($types, ...$params);
+    } else {
+        // Todos los valores están presentes, usar la consulta original
+        $stmt->bind_param("sssiiisi", $nombre, $cedula, $telefono, $id_cod_obra, $id_metodo_constructivo, $id_modelo_constructivo, $status, $id_beneficiario);
+    }
     
     if (!$stmt->execute()) {
         throw new Exception("Error al actualizar beneficiario: " . $stmt->error);

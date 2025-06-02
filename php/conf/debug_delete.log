@@ -1,0 +1,28 @@
+Incoming data: Array
+(
+    [id] => 1
+)
+Exception: Cannot delete or update a parent row: a foreign key constraint fails (`nueva`.`beneficiarios`, CONSTRAINT `beneficiarios_ibfk_1` FOREIGN KEY (`id_ubicacion`) REFERENCES `ubicaciones` (`id_ubicacion`))
+Incoming data: Array
+(
+    [id] => 1
+)
+Exception: Cannot delete or update a parent row: a foreign key constraint fails (`nueva`.`beneficiarios`, CONSTRAINT `beneficiarios_ibfk_1` FOREIGN KEY (`id_ubicacion`) REFERENCES `ubicaciones` (`id_ubicacion`))
+Incoming data: Array
+(
+    [id] => 1
+)
+Incoming data: Array
+(
+    [id] => 1
+)
+Incoming data: Array
+(
+    [id_beneficiario] => 1
+)
+Error: Invalid or missing ID
+Incoming data: Array
+(
+    [id_beneficiario] => 1
+)
+Error: Invalid or missing ID
