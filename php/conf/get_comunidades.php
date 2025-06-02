@@ -1,41 +1,34 @@
 <?php
+session_start();
 require_once 'conexion.php';
 
 header('Content-Type: application/json');
 
-if (!isset($_GET['parroquia_id']) || !is_numeric($_GET['parroquia_id'])) {
-    echo json_encode([]);
+if (!isset($_GET['id_parroquia'])) {
+    echo json_encode(['error' => 'ID de parroquia no proporcionado']);
     exit;
 }
 
-$parroquia_id = intval($_GET['parroquia_id']);
+$id_parroquia = intval($_GET['id_parroquia']);
 
 try {
-    $query = "SELECT ID_COMUNIDAD, COMUNIDAD FROM comunidades WHERE ID_PARROQUIA = ? ORDER BY COMUNIDAD ASC";
-    $stmt = $conexion->prepare($query);
-    
-    if (!$stmt) {
-        throw new Exception("Error preparando consulta: " . $conexion->error);
-    }
-    
-    $stmt->bind_param("i", $parroquia_id);
+    $stmt = $conexion->prepare("SELECT ID_COMUNIDAD as id_comunidad, COMUNIDAD as nombre 
+                               FROM comunidades 
+                               WHERE ID_PARROQUIA = ? 
+                               ORDER BY COMUNIDAD ASC");
+    $stmt->bind_param("i", $id_parroquia);
     $stmt->execute();
     $result = $stmt->get_result();
     
     $comunidades = [];
     while ($row = $result->fetch_assoc()) {
-        $comunidades[] = [
-            'id_comunidad' => $row['ID_COMUNIDAD'],
-            'comunidad' => $row['COMUNIDAD']
-        ];
+        $comunidades[] = $row;
     }
     
     echo json_encode($comunidades);
-    
 } catch (Exception $e) {
-    error_log("Error obteniendo comunidades: " . $e->getMessage());
-    echo json_encode([]);
+    echo json_encode(['error' => 'Error al obtener las comunidades: ' . $e->getMessage()]);
 }
 
-mysqli_close($conexion);
+$conexion->close();
 ?>
