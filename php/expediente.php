@@ -5,9 +5,6 @@ require_once '../php/conf/conexion.php';
 // Verificación robusta de sesión y rol
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
 
-$query = "SELECT * FROM beneficiarios";
-$resultado = mysqli_query($conexion, $query);
-
 if (!isset($_GET['id'])) {
     echo "ID de beneficiario no especificado.";
     exit;
@@ -15,15 +12,16 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']); // Asegurarse de que el ID es un número entero
 
+// Consulta SQL corregida con nombres de tablas y campos actualizados
 $sql = "
 SELECT
     b.id_beneficiario, 
     b.cedula, 
     b.nombre_beneficiario, 
     b.telefono, 
-    b.codigo_obra, 
     b.fecha_actualizacion,
     b.status,
+    co.cod_obra AS codigo_obra,
     u.comunidad, 
     u.direccion_exacta, 
     u.utm_norte, 
@@ -31,10 +29,10 @@ SELECT
     m.id_municipio,
     m.municipio AS municipio,  
     p.id_parroquia,
-    p.parroquia AS parroquia,  
-    o.metodo_constructivo, 
-    o.modelo_constructivo, 
-    f.nombre_fiscalizador,
+    p.parroquia AS parroquia,
+    e.estado AS estado,
+    mc.nomb_metodo AS metodo_constructivo, 
+    mo.nomb_modelo AS modelo_constructivo,
     dc.acondicionamiento, 
     dc.limpieza, 
     dc.replanteo, 
@@ -70,13 +68,15 @@ SELECT
     dc.acta_entregada, 
     dc.observaciones_responsables_control, 
     dc.observaciones_fiscalizadores
-FROM Beneficiarios b
-LEFT JOIN Ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+FROM beneficiarios b
+LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN Obras o ON b.codigo_obra = b.codigo_obra
-LEFT JOIN Fiscalizadores f ON b.id_fiscalizador = f.id_fiscalizador
-LEFT JOIN Datos_de_Construccion dc ON b.id_beneficiario = dc.id_beneficiario
+LEFT JOIN estados e ON m.id_estado = e.id_estado
+LEFT JOIN metodos_constructivos mc ON b.id_metodo_constructivo = mc.id_metodo
+LEFT JOIN modelos_constructivos mo ON b.id_modelo_constructivo = mo.id_modelo
+LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
+LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE b.id_beneficiario = ?
 ";
 
@@ -117,19 +117,19 @@ function getProgressClass($value) {
     if (is_numeric($value)) {
         $percentage = floatval($value);
         if ($percentage == 100) return 'complete';
-        if ($percentage >= 75) return 'medium';
+        if ($percentage >= 75) return 'high';
         if ($percentage >= 50) return 'medium';
         if ($percentage > 0) return 'low';
-        return 'low';
+        return 'none';
     }
     
     switch(strtolower($value)) {
         case 'completo': return 'complete';
-        case 'avanzado': return 'medium';
+        case 'avanzado': return 'high';
         case 'en progreso': return 'medium';
         case 'pendiente': return 'low';
-        case 'no iniciado': return 'low';
-        default: return 'low';
+        case 'no iniciado': return 'none';
+        default: return 'none';
     }
 }
 
@@ -152,424 +152,906 @@ function formatProgressValue($value) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="..//css/expediente.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-red: #e30016;
+            --primary-dark: #1b1918;
+            --light-gray: #f8f9fa;
+            --medium-gray: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--primary-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .expediente-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Header Institucional */
+        .header-institution {
+            background: linear-gradient(135deg, var(--primary-red) 0%, #c8001a 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px 20px 0 0;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-institution::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+        }
+
+        .header-institution .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-institution .logo-container img {
+            height: 60px;
+            margin-right: 1rem;
+            filter: brightness(0) invert(1);
+        }
+
+        .header-institution h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-institution h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin: 0.5rem 0 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Contenedor Principal */
+        .main-content {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* Header del Expediente */
+        .expediente-header {
+            background: var(--primary-dark);
+            color: white;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .expediente-header h3 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .expediente-header h4 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin: 0.5rem 0 0;
+            opacity: 0.8;
+        }
+
+        .btn-print {
+            background: var(--primary-red);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-print:hover {
+            background: #c8001a;
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(227, 0, 22, 0.3);
+            color: white;
+        }
+
+        /* Cards de Información */
+        .info-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .section-title {
+            color: var(--primary-red);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary-red);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            font-size: 1.2rem;
+        }
+
+        /* Información Básica */
+        .basic-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-item {
+            background: var(--light-gray);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-red);
+            transition: all 0.3s ease;
+        }
+
+        .info-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--medium-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--primary-dark);
+            word-break: break-word;
+        }
+
+        /* Tabla de Detalles */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .details-table th {
+            background: var(--primary-dark);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .details-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .details-table tr:hover td {
+            background: var(--light-gray);
+        }
+
+        .details-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Barras de Progreso */
+        .progress-container {
+            background: #e9ecef;
+            border-radius: 50px;
+            height: 25px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .progress-bar.complete {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .progress-bar.high {
+            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+        }
+
+        .progress-bar.medium {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+
+        .progress-bar.low {
+            background: linear-gradient(135deg, #dc3545, var(--primary-red));
+        }
+
+        .progress-bar.none {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        /* Badges */
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-active {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .badge-inactive {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .ref-badge {
+            background: linear-gradient(135deg, var(--primary-red), #c8001a);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Observaciones */
+        .observations-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 1rem;
+            border-left: 5px solid var(--primary-red);
+        }
+
+        /* Footer */
+        .footer-institution {
+            background: var(--primary-dark);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .footer-institution h5 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Estilos de Impresión */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+
+            body {
+                background: white !important;
+                font-size: 11px !important;
+                line-height: 1.4 !important;
+                color: #333 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .expediente-container {
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Ocultar elementos no necesarios para impresión */
+            .no-print,
+            .btn-print,
+            .navbar,
+            .fixed-top {
+                display: none !important;
+            }
+
+            /* Header institucional */
+            .header-institution {
+                background: linear-gradient(135deg, var(--primary-red) 0%, #c8001a 100%) !important;
+                color: white !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid !important;
+                margin-bottom: 0 !important;
+                padding: 15mm !important;
+            }
+
+            .header-institution::before {
+                display: none !important;
+            }
+
+            .header-institution .logo-container img {
+                height: 40px !important;
+                filter: brightness(0) invert(1) !important;
+            }
+
+            .header-institution h1 {
+                font-size: 24px !important;
+                margin: 5px 0 !important;
+            }
+
+            .header-institution h2 {
+                font-size: 14px !important;
+                margin: 0 !important;
+            }
+
+            /* Contenido principal */
+            .main-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+
+            .expediente-header {
+                background: var(--primary-dark) !important;
+                color: white !important;
+                page-break-inside: avoid !important;
+                padding: 15px !important;
+                margin-bottom: 0 !important;
+            }
+
+            .expediente-header h3 {
+                font-size: 20px !important;
+                margin: 0 !important;
+            }
+
+            .expediente-header h4 {
+                font-size: 14px !important;
+                margin: 5px 0 0 !important;
+            }
+
+            /* Cards de información */
+            .info-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                page-break-inside: avoid !important;
+                margin-bottom: 15px !important;
+                padding: 15px !important;
+                background: white !important;
+            }
+
+            .section-title {
+                color: var(--primary-red) !important;
+                page-break-after: avoid !important;
+                font-size: 16px !important;
+                margin-bottom: 10px !important;
+                border-bottom: 2px solid var(--primary-red) !important;
+                padding-bottom: 5px !important;
+            }
+
+            .section-title i {
+                color: var(--primary-red) !important;
+            }
+
+            /* Grid de información básica */
+            .basic-info {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .info-item {
+                background: #f8f9fa !important;
+                border: 1px solid #dee2e6 !important;
+                border-left: 3px solid var(--primary-red) !important;
+                padding: 10px !important;
+                border-radius: 5px !important;
+                page-break-inside: avoid !important;
+            }
+
+            .info-item:hover {
+                transform: none !important;
+            }
+
+            .info-label {
+                font-size: 9px !important;
+                font-weight: 600 !important;
+                color: #666 !important;
+                text-transform: uppercase !important;
+                margin-bottom: 3px !important;
+            }
+
+            .info-value {
+                font-size: 11px !important;
+                font-weight: 500 !important;
+                color: #333 !important;
+            }
+
+            /* Tabla de detalles */
+            .details-table {
+                box-shadow: none !important;
+                page-break-inside: avoid !important;
+                border: 1px solid #ddd !important;
+                margin-top: 10px !important;
+            }
+
+            .details-table th {
+                background: var(--primary-dark) !important;
+                color: white !important;
+                padding: 8px !important;
+                font-size: 10px !important;
+                border: 1px solid #ddd !important;
+            }
+
+            .details-table td {
+                padding: 8px !important;
+                border: 1px solid #ddd !important;
+                font-size: 10px !important;
+                background: white !important;
+            }
+
+            .details-table tr:hover td {
+                background: white !important;
+            }
+
+            /* Barras de progreso */
+            .progress-container {
+                background: #e9ecef !important;
+                border: 1px solid #ddd !important;
+                height: 20px !important;
+                border-radius: 10px !important;
+            }
+
+            .progress-bar {
+                color: white !important;
+                font-weight: 600 !important;
+                font-size: 10px !important;
+                line-height: 20px !important;
+            }
+
+            .progress-bar::before {
+                display: none !important;
+            }
+
+            .progress-bar.complete {
+                background: #28a745 !important;
+            }
+
+            .progress-bar.high {
+                background: #17a2b8 !important;
+            }
+
+            .progress-bar.medium {
+                background: #ffc107 !important;
+                color: #333 !important;
+            }
+
+            .progress-bar.low {
+                background: #dc3545 !important;
+            }
+
+            .progress-bar.none {
+                background: #6c757d !important;
+            }
+
+            /* Badges */
+            .status-badge {
+                padding: 3px 8px !important;
+                border-radius: 12px !important;
+                font-size: 9px !important;
+                font-weight: 600 !important;
+            }
+
+            .badge-active {
+                background: #28a745 !important;
+                color: white !important;
+            }
+
+            .badge-inactive {
+                background: #6c757d !important;
+                color: white !important;
+            }
+
+            .ref-badge {
+                background: var(--primary-red) !important;
+                color: white !important;
+                padding: 2px 6px !important;
+                border-radius: 8px !important;
+                font-size: 8px !important;
+                font-weight: 600 !important;
+            }
+
+            /* Observaciones */
+            .observations-card {
+                background: #f8f9fa !important;
+                border: 1px solid #dee2e6 !important;
+                border-left: 4px solid var(--primary-red) !important;
+                padding: 12px !important;
+                border-radius: 5px !important;
+                page-break-inside: avoid !important;
+            }
+
+            /* Footer */
+            .footer-institution {
+                background: var(--primary-dark) !important;
+                color: white !important;
+                page-break-inside: avoid !important;
+                margin-top: 20px !important;
+                padding: 15px !important;
+                border-radius: 8px !important;
+            }
+
+            .footer-institution h5 {
+                font-size: 14px !important;
+                margin: 0 !important;
+            }
+
+            /* Ajustes específicos para impresión */
+            .printing .expediente-container {
+                transform: scale(0.95);
+                transform-origin: top left;
+            }
+
+            /* Evitar saltos de página en elementos importantes */
+            .info-card,
+            .basic-info,
+            .details-table,
+            .observations-card {
+                page-break-inside: avoid !important;
+            }
+
+            /* Asegurar que los colores se impriman */
+            .header-institution,
+            .expediente-header,
+            .section-title,
+            .progress-bar,
+            .status-badge,
+            .ref-badge,
+            .footer-institution {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        /* Estilos adicionales para mejorar la impresión */
+        @media print and (max-width: 210mm) {
+            .basic-info {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .info-item {
+                margin-bottom: 8px !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container" style="margin-top: 80px;">
-        <!-- Encabezado institucional -->
-        <div class="header-institution text-center">
-            <h4>22 CORPOLARA - Corporación de Desarrollo Jacinto Lara</h4>
-            <h5>AÑO: 2013</h5>
+    <div class="expediente-container">
+        <!-- Header Institucional -->
+        <div class="header-institution">
+            <div class="logo-container">
+                <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU Logo">
+                <div>
+                    <h1>CORPOLARA</h1>
+                    <h2>Corporación de Desarrollo Jacinto Lara</h2>
+                </div>
+            </div>
         </div>
 
-        <!-- Contenedor principal del expediente -->
-        <div class="expediente-container">
-            <!-- Encabezado del expediente -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Contenido Principal -->
+        <div class="main-content">
+            <!-- Header del Expediente -->
+            <div class="expediente-header">
                 <div>
-                    <h2 class="mb-1">Expediente del Beneficiario</h2>
-                    <h3 class="mb-0 text-primary"><?php echo htmlspecialchars($data['nombre_beneficiario']); ?></h3>
+                    <h3>Expediente del Beneficiario</h3>
+                    <h4><?php echo htmlspecialchars($data['nombre_beneficiario']); ?></h4>
                 </div>
                 <div>
-                <?php if ($esAdmin): ?>
-    <button class="btn btn-primary btn-action no-print" onclick="imprimirExpediente()">
-        <i class="fas fa-print me-1"></i> Imprimir
-    </button>
-<?php endif; ?>
-                    
+                    <?php if ($esAdmin): ?>
+                        <button class="btn btn-print no-print" onclick="imprimirExpediente()">
+                            <i class="fas fa-print me-2"></i>Imprimir Expediente
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Datos básicos -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
+            <!-- Información Básica -->
+            <div class="info-card">
+                <h4 class="section-title">
+                    <i class="fas fa-id-card"></i>
+                    Información Básica
+                </h4>
+                <div class="basic-info">
+                    <div class="info-item">
                         <div class="info-label">N° Expediente</div>
                         <div class="info-value"><?php echo !empty($data['id_beneficiario']) ? htmlspecialchars($data['id_beneficiario']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <div class="info-label">Código de obra</div>
+                    <div class="info-item">
+                        <div class="info-label">Código de Obra</div>
                         <div class="info-value"><?php echo !empty($data['codigo_obra']) ? htmlspecialchars($data['codigo_obra']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Información del beneficiario -->
-            <h4 class="section-title">Información del Beneficiario</h4>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <div class="info-label">Nombre</div>
+                    <div class="info-item">
+                        <div class="info-label">Nombre Completo</div>
                         <div class="info-value"><?php echo !empty($data['nombre_beneficiario']) ? htmlspecialchars($data['nombre_beneficiario']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
+                    <div class="info-item">
                         <div class="info-label">Cédula</div>
                         <div class="info-value"><?php echo !empty($data['cedula']) ? htmlspecialchars($data['cedula']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
+                    <div class="info-item">
                         <div class="info-label">Teléfono</div>
                         <div class="info-value"><?php echo !empty($data['telefono']) ? htmlspecialchars($data['telefono']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Estado</div>
+                        <div class="info-value">
+                            <?php if($data['status'] == 'activo'): ?>
+                                <span class="status-badge badge-active">Activo</span>
+                            <?php else: ?>
+                                <span class="status-badge badge-inactive">Inactivo</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Ubicación -->
-            <h4 class="section-title">Ubicación</h4>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <div class="info-label">Comunidad</div>
-                        <div class="info-value"><?php echo !empty($data['comunidad']) ? htmlspecialchars($data['comunidad']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
+            <div class="info-card">
+                <h4 class="section-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Ubicación
+                </h4>
+                <div class="basic-info">
+                    <div class="info-item">
+                        <div class="info-label">Estado</div>
+                        <div class="info-value"><?php echo !empty($data['estado']) ? htmlspecialchars($data['estado']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <div class="info-label">Parroquia</div>
-                        <div class="info-value"><?php echo !empty($data['parroquia']) ? htmlspecialchars($data['parroquia']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
+                    <div class="info-item">
                         <div class="info-label">Municipio</div>
                         <div class="info-value"><?php echo !empty($data['municipio']) ? htmlspecialchars($data['municipio']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="mb-3">
-                        <div class="info-label">Dirección Exacta</div>
-                        <div class="info-value"><?php echo !empty($data['direccion_exacta']) ? htmlspecialchars($data['direccion_exacta']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
+                    <div class="info-item">
+                        <div class="info-label">Parroquia</div>
+                        <div class="info-value"><?php echo !empty($data['parroquia']) ? htmlspecialchars($data['parroquia']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
+                    <div class="info-item">
+                        <div class="info-label">Comunidad</div>
+                        <div class="info-value"><?php echo !empty($data['comunidad']) ? htmlspecialchars($data['comunidad']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
+                    </div>
+                    <div class="info-item">
                         <div class="info-label">UTM Norte</div>
                         <div class="info-value"><?php echo !empty($data['utm_norte']) ? htmlspecialchars($data['utm_norte']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="mb-3">
+                    <div class="info-item">
                         <div class="info-label">UTM Este</div>
                         <div class="info-value"><?php echo !empty($data['utm_este']) ? htmlspecialchars($data['utm_este']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
                     </div>
                 </div>
+                <div style="margin-top: 1.5rem;">
+                    <div class="info-item">
+                        <div class="info-label">Dirección Exacta</div>
+                        <div class="info-value"><?php echo !empty($data['direccion_exacta']) ? htmlspecialchars($data['direccion_exacta']) : '<span class="ref-badge">¡REF!</span>'; ?></div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Datos de construcción -->
-            <h4 class="section-title">Datos de Construcción</h4>
-            <table class="table-details">
-                <tr>
-                    <td width="30%"><div class="info-label">Método Constructivo</div></td>
-                    <td width="70%"><?php echo !empty($data['metodo_constructivo']) ? htmlspecialchars($data['metodo_constructivo']) : '<span class="ref-badge">¡REF!</span>'; ?></td>
-                </tr>
-                <tr>
-                    <td><div class="info-label">Modelo Constructivo</div></td>
-                    <td><?php echo !empty($data['modelo_constructivo']) ? htmlspecialchars($data['modelo_constructivo']) : '<span class="ref-badge">¡REF!</span>'; ?></td>
-                </tr>
-                <tr>
-                    <td><div class="info-label">Proyecto</div></td>
-                    <td>IMVI´S</td>
-                </tr>
-                <tr>
-                    <td><div class="info-label">Avance Físico</div></td>
-                    <td>
-                        <div class="progress-container">
-                            <div class="progress-bar <?php echo getProgressClass($data['avance_fisico']); ?>" style="width: <?php echo getProgressWidth($data['avance_fisico']); ?>%">
-                                <?php echo getProgressWidth($data['avance_fisico']); ?>%
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><div class="info-label">Estado</div></td>
-                    <td>
-                        <?php if($data['status'] == 'activo'): ?>
-                            <span class="badge bg-success">Activo</span>
-                        <?php else: ?>
-                            <span class="badge bg-secondary">Inactivo</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <tr>
-                    <td><div class="info-label">Culminado</div></td>
-                    <td><?php echo !empty($data['fecha_culminacion']) ? 'Sí (' . htmlspecialchars($data['fecha_culminacion']) . ')' : 'No'; ?></td>
-                </tr>
-            </table>
+            <!-- Datos de Construcción -->
+            <div class="info-card">
+                <h4 class="section-title">
+                    <i class="fas fa-hammer"></i>
+                    Datos de Construcción
+                </h4>
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Concepto</th>
+                            <th style="width: 70%;">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Método Constructivo</strong></td>
+                            <td><?php echo !empty($data['metodo_constructivo']) ? htmlspecialchars($data['metodo_constructivo']) : '<span class="ref-badge">¡REF!</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Modelo Constructivo</strong></td>
+                            <td><?php echo !empty($data['modelo_constructivo']) ? htmlspecialchars($data['modelo_constructivo']) : '<span class="ref-badge">¡REF!</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Proyecto</strong></td>
+                            <td>IMVI´S</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Avance Físico</strong></td>
+                            <td>
+                                <div class="progress-container">
+                                    <div class="progress-bar <?php echo getProgressClass($data['avance_fisico']); ?>" style="width: <?php echo getProgressWidth($data['avance_fisico']); ?>%">
+                                        <?php echo getProgressWidth($data['avance_fisico']); ?>%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fecha de Culminación</strong></td>
+                            <td><?php echo !empty($data['fecha_culminacion']) ? 'Sí (' . htmlspecialchars($data['fecha_culminacion']) . ')' : 'No culminado'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Acta Entregada</strong></td>
+                            <td>
+                                <?php if($data['acta_entregada'] == 1): ?>
+                                    <span class="status-badge badge-active">Sí</span>
+                                <?php else: ?>
+                                    <span class="status-badge badge-inactive">No</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Observaciones -->
-            <h4 class="section-title">Observaciones</h4>
-            <div class="alert alert-light border">
-                <?php echo !empty($data['observaciones_responsables_control']) ? nl2br(htmlspecialchars($data['observaciones_responsables_control'])) : 'No hay observaciones registradas'; ?>
+            <div class="info-card">
+                <h4 class="section-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Observaciones
+                </h4>
+                <div class="observations-card">
+                    <?php echo !empty($data['observaciones_responsables_control']) ? nl2br(htmlspecialchars($data['observaciones_responsables_control'])) : 'No hay observaciones registradas para este beneficiario.'; ?>
+                </div>
+                
+                <?php if (!empty($data['observaciones_fiscalizadores'])): ?>
+                <div style="margin-top: 1rem;">
+                    <h5 style="color: var(--primary-red); margin-bottom: 1rem;">
+                        <i class="fas fa-eye me-2"></i>Observaciones de Fiscalizadores
+                    </h5>
+                    <div class="observations-card">
+                        <?php echo nl2br(htmlspecialchars($data['observaciones_fiscalizadores'])); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
+        </div>
 
-            <!-- Pie de página institucional -->
-            <div class="text-center mt-4 pt-3 border-top">
-                <h5 class="text-primary">¡Impulsando el Desarrollo!</h5>
-            </div>
+        <!-- Footer Institucional -->
+        <div class="footer-institution">
+            <h5><i class="fas fa-rocket me-2"></i>¡Impulsando el Desarrollo!</h5>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Función para manejar la impresión
-        function prepareForPrint() {
-            // Aquí puedes agregar lógica adicional para preparar la página antes de imprimir
-            console.log("Preparando para imprimir...");
+        function imprimirExpediente() {
+            // Ocultar elementos que no deben imprimirse
+            const elementsToHide = document.querySelectorAll('.no-print, .btn-print');
+            elementsToHide.forEach(element => {
+                element.style.display = 'none';
+            });
+            
+            // Agregar clase para impresión al body
+            document.body.classList.add('printing');
+            
+            // Configurar el título de la página para la impresión
+            const originalTitle = document.title;
+            document.title = `Expediente - ${document.querySelector('.expediente-header h4').textContent}`;
+            
+            // Imprimir
+            window.print();
+            
+            // Restaurar elementos después de la impresión
+            setTimeout(() => {
+                elementsToHide.forEach(element => {
+                    element.style.display = '';
+                });
+                document.body.classList.remove('printing');
+                document.title = originalTitle;
+            }, 100);
         }
 
-        // Asignar el evento de antes de imprimir
-        window.addEventListener('beforeprint', prepareForPrint);
-
-        
-        function imprimirExpediente() {
-    // Función auxiliar para obtener contenido seguro
-    function getSafeContent(selector, defaultValue = 'N/A') {
-        const element = document.querySelector(selector);
-        return element ? element.innerHTML : defaultValue;
-    }
-
-    // Función auxiliar para obtener progreso seguro
-    function getSafeProgress(selector, defaultValue = '0%') {
-        const container = document.querySelector(selector);
-        if (!container) return `<div class="progress-container"><div class="progress-bar low" style="width: ${defaultValue}">${defaultValue}</div></div>`;
-        return container.outerHTML;
-    }
-
-    // Datos para la impresión
-    const expedienteData = {
-    titulo: "<?php echo htmlspecialchars($data['nombre_beneficiario']); ?>",
-    nExpediente: "<?php echo !empty($data['id_beneficiario']) ? htmlspecialchars($data['id_beneficiario']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    codigoObra: "<?php echo !empty($data['codigo_obra']) ? htmlspecialchars($data['codigo_obra']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    nombre: "<?php echo !empty($data['nombre_beneficiario']) ? htmlspecialchars($data['nombre_beneficiario']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    cedula: "<?php echo !empty($data['cedula']) ? htmlspecialchars($data['cedula']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    telefono: "<?php echo !empty($data['telefono']) ? htmlspecialchars($data['telefono']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    estado: "<?php echo ($data['status'] == 'activo') ? '<span class=\"badge bg-success\">Activo</span>' : '<span class=\"badge bg-secondary\">Inactivo</span>'; ?>",
-    comunidad: "<?php echo !empty($data['comunidad']) ? htmlspecialchars($data['comunidad']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    parroquia: "<?php echo !empty($data['parroquia']) ? htmlspecialchars($data['parroquia']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    municipio: "<?php echo !empty($data['municipio']) ? htmlspecialchars($data['municipio']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    direccion: "<?php echo !empty($data['direccion_exacta']) ? htmlspecialchars($data['direccion_exacta']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    utmNorte: "<?php echo !empty($data['utm_norte']) ? htmlspecialchars($data['utm_norte']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    utmEste: "<?php echo !empty($data['utm_este']) ? htmlspecialchars($data['utm_este']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    metodoConstructivo: "<?php echo !empty($data['metodo_constructivo']) ? htmlspecialchars($data['metodo_constructivo']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    modeloConstructivo: "<?php echo !empty($data['modelo_constructivo']) ? htmlspecialchars($data['modelo_constructivo']) : '<span class=\"ref-badge\">¡REF!</span>'; ?>",
-    fiscalizador: "<?php echo !empty($data['nombre_fiscalizador']) ? htmlspecialchars($data['nombre_fiscalizador']) : 'No asignado'; ?>",
-    avanceFisico: "<?php echo getProgressWidth($data['avance_fisico']); ?>%",
-    avanceFisicoClass: "<?php echo getProgressClass($data['avance_fisico']); ?>",
-    culminado: "<?php echo !empty($data['fecha_culminacion']) ? 'Sí (' . htmlspecialchars($data['fecha_culminacion']) . ')' : 'No'; ?>",
-    observaciones: "<?php echo !empty($data['observaciones_responsables_control']) ? addslashes(nl2br(htmlspecialchars($data['observaciones_responsables_control']))) : 'No hay observaciones registradas'; ?>"
-};
-
-
-    // Crear ventana de impresión
-    const ventanaImpresion = window.open('', '_blank');
-    ventanaImpresion.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Expediente del Beneficiario - SIGEVU</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @page {
-                    size: A4 portrait;
-                    margin: 5mm;
-                }
-                body { 
-                    font-family: Arial, sans-serif; 
-                    font-size: 10px;
-                    line-height: 1.2;
-                    padding: 5mm;
-                    margin: 0;
-                    background-color: white;
-                }
-                .print-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 5px;
-                }
-                .print-table th {
-                    background-color: #f8f9fa;
-                    text-align: left;
-                    padding: 3px 5px;
-                    border: 1px solid #ddd;
-                    font-weight: bold;
-                }
-                .print-table td {
-                    padding: 3px 5px;
-                    border: 1px solid #ddd;
-                    vertical-align: top;
-                }
-                .print-header {
-                    text-align: center;
-                    margin-bottom: 10px;
-                }
-                .print-title {
-                    font-size: 14px;
-                    font-weight: bold;
-                    margin: 5px 0;
-                }
-                .print-subtitle {
-                    font-size: 12px;
-                    margin: 3px 0 8px;
-                }
-                .progress-container {
-                    width: 100%;
-                    height: 12px;
-                    background-color: #e9ecef;
-                    border-radius: 2px;
-                    margin-top: 2px;
-                }
-                .progress-bar {
-                    height: 100%;
-                    font-size: 8px;
-                    line-height: 12px;
-                    text-align: center;
-                    color: white;
-                }
-                .complete {
-                    background-color: #4CAF50;
-                }
-                .medium {
-                    background-color: #FFC107;
-                }
-                .low {
-                    background-color: #E53935;
-                }
-                .section-title {
-                    background-color: #f0f0f0;
-                    font-weight: bold;
-                    padding: 3px 5px;
-                    margin: 8px 0 5px;
-                    font-size: 11px;
-                }
-                .badge {
-                    font-size: 10px;
-                    padding: 2px 5px;
-                }
-                .ref-badge {
-                    background-color: #f8d7da;
-                    color: #721c24;
-                    padding: 2px 5px;
-                    border-radius: 3px;
-                    font-size: 9px;
-                }
-                @media print {
-                    body {
-                        zoom: 85%;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="print-header">
-                <div class="print-title">22 CORPOLARA - Corporación de Desarrollo Jacinto Lara</div>
-                <div class="print-subtitle">AÑO: 2013 | Expediente del Beneficiario: ${expedienteData.titulo}</div>
-            </div>
-
-            <table class="print-table">
-                <tr>
-                    <th colspan="4" class="section-title">INFORMACIÓN BÁSICA</th>
-                </tr>
-                <tr>
-                    <td width="15%"><strong>N° Expediente</strong></td>
-                    <td width="35%">${expedienteData.nExpediente}</td>
-                    <td width="15%"><strong>Código Obra</strong></td>
-                    <td width="35%">${expedienteData.codigoObra}</td>
-                </tr>
-                <tr>
-                    <td><strong>Nombre</strong></td>
-                    <td>${expedienteData.nombre}</td>
-                    <td><strong>Cédula</strong></td>
-                    <td>${expedienteData.cedula}</td>
-                </tr>
-                <tr>
-                    <td><strong>Teléfono</strong></td>
-                    <td>${expedienteData.telefono}</td>
-                    <td><strong>Estado</strong></td>
-                    <td>${expedienteData.estado}</td>
-                </tr>
-            </table>
-
-            <table class="print-table">
-                <tr>
-                    <th colspan="4" class="section-title">UBICACIÓN</th>
-                </tr>
-                <tr>
-                    <td width="15%"><strong>Comunidad</strong></td>
-                    <td width="35%">${expedienteData.comunidad}</td>
-                    <td width="15%"><strong>Parroquia</strong></td>
-                    <td width="35%">${expedienteData.parroquia}</td>
-                </tr>
-                <tr>
-                    <td><strong>Municipio</strong></td>
-                    <td>${expedienteData.municipio}</td>
-                    <td><strong>Dirección</strong></td>
-                    <td>${expedienteData.direccion}</td>
-                </tr>
-                <tr>
-                    <td><strong>UTM Norte</strong></td>
-                    <td>${expedienteData.utmNorte}</td>
-                    <td><strong>UTM Este</strong></td>
-                    <td>${expedienteData.utmEste}</td>
-                </tr>
-            </table>
-
-            <table class="print-table">
-                <tr>
-                    <th colspan="4" class="section-title">DATOS DE CONSTRUCCIÓN</th>
-                </tr>
-                <tr>
-                    <td width="15%"><strong>Método Constructivo</strong></td>
-                    <td width="35%">${expedienteData.metodoConstructivo}</td>
-                    <td width="15%"><strong>Modelo Constructivo</strong></td>
-                    <td width="35%">${expedienteData.modeloConstructivo}</td>
-                </tr>
-                <tr>
-                    <td><strong>Proyecto</strong></td>
-                    <td>IMVI´S</td>
-                    <td><strong>Fiscalizador</strong></td>
-                    <td>${expedienteData.fiscalizador}</td>
-                </tr>
-                <tr>
-                    <td><strong>Avance Físico</strong></td>
-                    <td colspan="3">${expedienteData.avanceFisico}</td>
-                </tr>
-                <tr>
-                    <td><strong>Culminado</strong></td>
-                    <td colspan="3">${expedienteData.culminado}</td>
-                </tr>
-            </table>
-            <table class="print-table">
-                <tr>
-                    <th class="section-title">OBSERVACIONES</th>
-                </tr>
-                <tr>
-                    <td>${expedienteData.observaciones}</td>
-                </tr>
-            </table>
-
-            <div style="text-align: center; margin-top: 10px; font-size: 9px;">
-                Documento generado el ${new Date().toLocaleDateString()} - ¡Impulsando el Desarrollo!
-            </div>
-        </body>
-        </html>
-    `);
-    
-    ventanaImpresion.document.close();
-    
-    // Esperar a que los estilos se carguen antes de imprimir
-    setTimeout(() => {
-        ventanaImpresion.print();
-        ventanaImpresion.close();
-    }, 500);
-}
-
+        // Detectar cuando se cancela la impresión
+        window.addEventListener('afterprint', function() {
+            const elementsToShow = document.querySelectorAll('.no-print, .btn-print');
+            elementsToShow.forEach(element => {
+                element.style.display = '';
+            });
+            document.body.classList.remove('printing');
+        });
     </script>
 </body>
 </html>

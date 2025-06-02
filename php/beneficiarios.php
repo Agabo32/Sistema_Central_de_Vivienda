@@ -13,7 +13,7 @@ $id_lara = $lara['id_estado'];
 // Default to show only active
 $show_inactive = $_GET['show_inactive'] ?? false;
 
-$registros_por_pagina = 10; // Número de registros por página
+$registros_por_pagina = 10;
 $pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
@@ -21,13 +21,16 @@ $offset = ($pagina_actual - 1) * $registros_por_pagina;
 $sql_base = "SELECT b.*, 
     p.parroquia, 
     m.municipio, 
-    e.estado 
+    e.estado,
+    u.comunidad,
+    co.cod_obra as codigo_obra_nombre
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
 LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
 LEFT JOIN estados e ON m.id_estado = e.id_estado
-WHERE e.id_estado = $id_lara "; // Forzar filtro por Lara
+LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
+WHERE e.id_estado = $id_lara ";
 
 // Solo administradores pueden ver inactivos si lo solicitan explícitamente
 if (!(isset($_SESSION['admin']) && $_SESSION['admin'] && isset($_GET['show_inactive']) && $_GET['show_inactive'])) {
@@ -45,16 +48,18 @@ if (!empty($_GET['municipio'])) {
     $params[] = $_GET['municipio'];
     $types .= 'i';
 }
-
 if (!empty($_GET['parroquia'])) {
     $sql_base .= " AND p.id_parroquia = ?";
     $params[] = $_GET['parroquia'];
     $types .= 'i';
 }
-
-// Después de los otros filtros, añade:
+if (!empty($_GET['comunidad'])) {
+    $sql_base .= " AND u.comunidad LIKE ?";
+    $params[] = '%'.$_GET['comunidad'].'%';
+    $types .= 's';
+}
 if (!empty($_GET['codigo_obra'])) {
-    $sql_base .= " AND b.codigo_obra LIKE ?";
+    $sql_base .= " AND co.cod_obra LIKE ?";
     $params[] = '%'.$_GET['codigo_obra'].'%';
     $types .= 's';
 }
@@ -133,6 +138,15 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     border-color: #f5c6cb;
     color: #721c24;
 }
+
+.nueva-comunidad-section {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    display: none;
+}
 </style>
 </head>
 
@@ -187,22 +201,20 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                     <div class="card-body">
                         <form method="GET" class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Estado</label>
                                 <select name="estado" id="estadoSelect" class="form-select" disabled>
                                     <?php
-                                    // Forzar solo el estado Lara
                                     $lara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
                                     echo "<option value='{$lara['id_estado']}' selected>{$lara['estado']}</option>";
                                     ?>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Municipio</label>
                                 <select name="municipio" id="municipioSelect" class="form-select">
                                     <option value="">Todos</option>
                                     <?php
-                                    // Cargar solo municipios de Lara
                                     $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']}");
                                     while ($row = $municipios->fetch_assoc()) {
                                         $selected = (isset($_GET['municipio']) && $_GET['municipio'] == $row['id_municipio']) ? 'selected' : '';
@@ -211,7 +223,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                     ?>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Parroquia</label>
                                 <select name="parroquia" id="parroquiaSelect" class="form-select" <?= !isset($_GET['municipio']) ? 'disabled' : '' ?>>
                                     <option value="">Todas</option>
@@ -225,7 +237,24 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                     ?>
                                 </select>
                             </div>
-                            <div class="col-12 text-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Comunidad</label>
+                                <input type="text" name="comunidad" class="form-control" placeholder="Buscar comunidad..." value="<?= htmlspecialchars($_GET['comunidad'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Código de Obra</label>
+                                <select name="codigo_obra" class="form-select">
+                                    <option value="">Todos los códigos</option>
+                                    <?php
+                                    $codigos_obra = $conexion->query("SELECT id_cod_obra, cod_obra FROM cod_obra ORDER BY cod_obra ASC");
+                                    while ($row = $codigos_obra->fetch_assoc()) {
+                                        $selected = (isset($_GET['codigo_obra']) && $_GET['codigo_obra'] == $row['cod_obra']) ? 'selected' : '';
+                                        echo "<option value='{$row['cod_obra']}' $selected>{$row['cod_obra']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-search me-1"></i> Filtrar
                                 </button>
@@ -279,6 +308,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                 <th style="color: #000000;">Cédula</th>
                                                 <th style="color: #000000;">Nombre Completo</th>
                                                 <th style="color: #000000;">Teléfono</th>
+                                                <th style="color: #000000;">Comunidad</th>
                                                 <th style="color: #000000;">Código Obra</th>
                                                 <th class="text-center" style="color: #000000;">Acciones</th>
                                             </tr>
@@ -290,9 +320,9 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                         <td class="text-center fw-bold"><?= htmlspecialchars($beneficiario['id_beneficiario']) ?></td>
                                                         <td><?= htmlspecialchars($beneficiario['cedula']) ?></td>
                                                         <td>
-                                                            <div class="d-flex align-items-center" >
+                                                            <div class="d-flex align-items-center">
                                                                 <div class="me-3">
-                                                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #000000; color: #ffffff;" >
+                                                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background-color: #000000; color: #ffffff;">
                                                                         <i class="fas fa-user"></i>
                                                                     </div>
                                                                 </div>
@@ -304,8 +334,13 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                         </td>
                                                         <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
                                                         <td>
-                                                            <span class="badge bg-primary bg-opacity-10 text-primary " style="color: #e30016;">
-                                                                <?= htmlspecialchars($beneficiario['codigo_obra']) ?>
+                                                            <span class="badge bg-info bg-opacity-10 text-info">
+                                                                <?= htmlspecialchars($beneficiario['comunidad'] ?? 'No especificada') ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                                <?= htmlspecialchars($beneficiario['codigo_obra_nombre'] ?? $beneficiario['codigo_obra'] ?? 'No asignado') ?>
                                                             </span>
                                                         </td>
                                                         <td class="text-center">
@@ -317,7 +352,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                 <?php endforeach; ?>
                                             <?php else: ?>
                                                 <tr>
-                                                    <td colspan="6" class="text-center py-4">
+                                                    <td colspan="7" class="text-center py-4">
                                                         <div class="d-flex flex-column align-items-center">
                                                             <i class="fas fa-users-slash text-muted mb-2" style="font-size: 2rem;"></i>
                                                             <h5 class="text-muted">No hay beneficiarios registrados</h5>
@@ -343,12 +378,10 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                             <?php endif; ?>
 
                                             <?php 
-                                            // Mostrar páginas cercanas
-                                            $rango = 2; // Número de páginas a mostrar antes y después de la página actual
+                                            $rango = 2;
                                             $inicio = max(1, $pagina_actual - $rango);
                                             $fin = min($total_paginas, $pagina_actual + $rango);
 
-                                            // Mostrar primera página si no está en el rango inicial
                                             if ($inicio > 1) {
                                                 echo '<li class="page-item"><a class="page-link" href="?pagina=1">1</a></li>';
                                                 if ($inicio > 2) {
@@ -356,7 +389,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                 }
                                             }
 
-                                            // Mostrar páginas en el rango
                                             for ($i = $inicio; $i <= $fin; $i++): 
                                                 $active = $i == $pagina_actual ? 'active' : '';
                                             ?>
@@ -392,7 +424,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
     <!-- Modal Nuevo Beneficiario -->
     <div class="modal fade" id="modalNuevoBeneficiario" tabindex="-1" aria-labelledby="modalNuevoBeneficiarioLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="modalNuevoBeneficiarioLabel">
@@ -421,7 +453,15 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="codigo_obra" class="form-label">Código de Obra *</label>
-                                <input type="text" class="form-control" id="codigo_obra" name="codigo_obra" required>
+                                <select class="form-select" id="codigo_obra" name="codigo_obra" required>
+                                    <option value="">Seleccione un código de obra</option>
+                                    <?php
+                                    $codigos_obra = $conexion->query("SELECT id_cod_obra, cod_obra FROM cod_obra ORDER BY cod_obra ASC");
+                                    while ($row = $codigos_obra->fetch_assoc()) {
+                                        echo "<option value='{$row['id_cod_obra']}'>{$row['cod_obra']}</option>";
+                                    }
+                                    ?>
+                                </select>
                             </div>
                         </div>
 
@@ -430,22 +470,10 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Información de Ubicación</h6>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="comunidad" class="form-label">Comunidad *</label>
-                                <input type="text" class="form-control" id="comunidad" name="comunidad" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="direccion_exacta" class="form-label">Dirección Exacta</label>
-                                <input type="text" class="form-control" id="direccion_exacta" name="direccion_exacta">
-                            </div>
-                        </div>
-
-                        <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="modalEstado" class="form-label">Estado *</label>
                                 <select name="estado" id="modalEstado" class="form-select" required>
                                     <?php
-                                    // Forzar solo el estado Lara
                                     $estado = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'");
                                     if ($row = $estado->fetch_assoc()) {
                                         echo "<option value='{$row['id_estado']}' selected>{$row['estado']}</option>";
@@ -458,7 +486,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                 <select name="municipio" id="modalMunicipio" class="form-select" required>
                                     <option value="">Seleccione un municipio</option>
                                     <?php
-                                    // Cargar municipios de Lara
                                     $municipios = $conexion->query("SELECT id_municipio, municipio FROM municipios WHERE id_estado = {$lara['id_estado']} ORDER BY municipio ASC");
                                     while ($mun = $municipios->fetch_assoc()) {
                                         echo "<option value='{$mun['id_municipio']}'>{$mun['municipio']}</option>";
@@ -471,6 +498,48 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                 <select name="parroquia" id="modalParroquia" class="form-select" required disabled>
                                     <option value="">Primero seleccione un municipio</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="comunidad" class="form-label">Comunidad *</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="comunidad" name="comunidad" required placeholder="Escriba el nombre de la comunidad">
+                                    <button type="button" class="btn btn-outline-secondary" id="btnNuevaComunidad">
+                                        <i class="fas fa-plus"></i> Nueva
+                                    </button>
+                                </div>
+                                <div class="form-text">Si la comunidad no existe, puede crearla usando el botón "Nueva"</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="direccion_exacta" class="form-label">Dirección Exacta</label>
+                                <input type="text" class="form-control" id="direccion_exacta" name="direccion_exacta">
+                            </div>
+                        </div>
+
+                        <!-- Sección para crear nueva comunidad -->
+                        <div class="nueva-comunidad-section" id="nuevaComunidadSection">
+                            <h6 class="text-primary"><i class="fas fa-map-marked-alt me-2"></i>Crear Nueva Comunidad</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="nueva_comunidad_nombre" class="form-label">Nombre de la Nueva Comunidad</label>
+                                    <input type="text" class="form-control" id="nueva_comunidad_nombre" name="nueva_comunidad_nombre">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="nueva_comunidad_parroquia" class="form-label">Parroquia para la Nueva Comunidad</label>
+                                    <select class="form-select" id="nueva_comunidad_parroquia" name="nueva_comunidad_parroquia">
+                                        <option value="">Seleccione una parroquia</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success btn-sm" id="btnGuardarComunidad">
+                                    <i class="fas fa-save me-1"></i> Guardar Comunidad
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="btnCancelarComunidad">
+                                    <i class="fas fa-times me-1"></i> Cancelar
+                                </button>
                             </div>
                         </div>
 
@@ -525,7 +594,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             
             alertContainer.innerHTML = alertHtml;
             
-            // Auto-remover después de 5 segundos
             setTimeout(() => {
                 const alert = alertContainer.querySelector('.alert');
                 if (alert) {
@@ -562,7 +630,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 }
             });
             
-            // Cargar parroquias si ya hay un municipio seleccionado
             if (municipioSelect.value) {
                 municipioSelect.dispatchEvent(new Event('change'));
             }
@@ -571,8 +638,11 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             const modalEstado = document.getElementById('modalEstado');
             const modalMunicipio = document.getElementById('modalMunicipio');
             const modalParroquia = document.getElementById('modalParroquia');
+            const btnNuevaComunidad = document.getElementById('btnNuevaComunidad');
+            const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
+            const btnCancelarComunidad = document.getElementById('btnCancelarComunidad');
+            const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
             
-            // Deshabilitar cambios en el estado (siempre será Lara)
             modalEstado.disabled = true;
 
             // Cargar parroquias al seleccionar municipio en el modal
@@ -581,16 +651,26 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 modalParroquia.innerHTML = '<option value="">Cargando...</option>';
                 modalParroquia.disabled = true;
                 
+                // También actualizar el select de nueva comunidad
+                const nuevaComunidadParroquia = document.getElementById('nueva_comunidad_parroquia');
+                
                 if (municipioId) {
                     fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
                         .then(response => response.json())
                         .then(data => {
                             modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
+                            nuevaComunidadParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
+                            
                             data.forEach(parroquia => {
-                                const option = document.createElement('option');
-                                option.value = parroquia.id_parroquia;
-                                option.textContent = parroquia.parroquia;
-                                modalParroquia.appendChild(option);
+                                const option1 = document.createElement('option');
+                                option1.value = parroquia.id_parroquia;
+                                option1.textContent = parroquia.parroquia;
+                                modalParroquia.appendChild(option1);
+                                
+                                const option2 = document.createElement('option');
+                                option2.value = parroquia.id_parroquia;
+                                option2.textContent = parroquia.parroquia;
+                                nuevaComunidadParroquia.appendChild(option2);
                             });
                             modalParroquia.disabled = false;
                         })
@@ -600,6 +680,55 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         });
                 } else {
                     modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
+                    nuevaComunidadParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
+                }
+            });
+
+            // Mostrar/ocultar sección de nueva comunidad
+            btnNuevaComunidad.addEventListener('click', function() {
+                nuevaComunidadSection.style.display = 'block';
+            });
+
+            btnCancelarComunidad.addEventListener('click', function() {
+                nuevaComunidadSection.style.display = 'none';
+                document.getElementById('nueva_comunidad_nombre').value = '';
+                document.getElementById('nueva_comunidad_parroquia').value = '';
+            });
+
+            // Guardar nueva comunidad
+            btnGuardarComunidad.addEventListener('click', async function() {
+                const nombreComunidad = document.getElementById('nueva_comunidad_nombre').value.trim();
+                const parroquiaId = document.getElementById('nueva_comunidad_parroquia').value;
+
+                if (!nombreComunidad || !parroquiaId) {
+                    showAlert('error', 'Por favor complete el nombre de la comunidad y seleccione una parroquia');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('nombre_comunidad', nombreComunidad);
+                    formData.append('id_parroquia', parroquiaId);
+
+                    const response = await fetch('../php/conf/guardar_comunidad.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showAlert('success', 'Comunidad creada exitosamente');
+                        document.getElementById('comunidad').value = nombreComunidad;
+                        nuevaComunidadSection.style.display = 'none';
+                        document.getElementById('nueva_comunidad_nombre').value = '';
+                        document.getElementById('nueva_comunidad_parroquia').value = '';
+                    } else {
+                        showAlert('error', result.message || 'Error al crear la comunidad');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al crear la comunidad');
                 }
             });
 
@@ -608,7 +737,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             formNuevoBeneficiario.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                // Validar campos requeridos con los IDs correctos del modal
                 const camposRequeridos = [
                     { id: 'nombre_beneficiario', nombre: 'Nombre Completo' },
                     { id: 'cedula', nombre: 'Cédula' },
@@ -631,7 +759,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 if (camposFaltantes.length > 0) {
                     showAlert('error', 'Por favor complete todos los campos requeridos: ' + camposFaltantes.join(', '));
                     
-                    // Enfocar el primer campo faltante
                     const primerCampoFaltante = camposRequeridos.find(campo => {
                         const elemento = document.getElementById(campo.id);
                         return !elemento || !elemento.value.trim();
@@ -648,14 +775,12 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     return;
                 }
                 
-                // Obtener referencia al botón antes del try
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalBtnText = submitBtn.innerHTML;
                 
                 try {
                     const formData = new FormData(this);
                     
-                    // Mostrar indicador de carga
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
                     submitBtn.disabled = true;
                     
@@ -669,7 +794,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     }
                     
                     const text = await response.text();
-                    console.log('Respuesta del servidor:', text); // Para debugging
+                    console.log('Respuesta del servidor:', text);
                     
                     let result;
                     try {
@@ -682,16 +807,13 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     if (result.status === 'success') {
                         showAlert('success', 'Beneficiario agregado exitosamente');
                         
-                        // Cerrar modal y recargar página
                         const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
                         if (modal) {
                             modal.hide();
                         }
                         
-                        // Limpiar formulario
                         this.reset();
                         
-                        // Recargar página después de un breve delay
                         setTimeout(() => {
                             window.location.reload();
                         }, 1500);
@@ -702,7 +824,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     console.error('Error completo:', error);
                     showAlert('error', 'Error al guardar beneficiario: ' + error.message);
                 } finally {
-                    // Restaurar botón
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
                 }
@@ -723,13 +844,15 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     if (celdas.length > 0) {
                         const cedula = celdas[1].textContent.toLowerCase().replace(/\D/g, '');
                         const nombre = celdas[2].textContent.toLowerCase();
-                        const codigoObra = celdas[4].textContent.toLowerCase();
+                        const comunidad = celdas[4].textContent.toLowerCase();
+                        const codigoObra = celdas[5].textContent.toLowerCase();
                         
                         const terminoLimpio = termino.replace(/\D/g, '');
                         
                         const coincide = 
                             cedula.includes(terminoLimpio) || 
                             nombre.includes(termino) || 
+                            comunidad.includes(termino) ||
                             codigoObra.includes(termino);
                         
                         if (coincide) {
@@ -759,7 +882,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 busquedaOptimizada(this.value);
             });
 
-            // Manejar el scroll del navbar
             window.addEventListener('scroll', function() {
                 const navbar = document.querySelector('.navbar');
                 if (window.scrollY > 10) {
@@ -774,7 +896,6 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 </html>
 
 <?php
-// Cerrar conexión al final del documento
 if (isset($conexion)) {
     $conexion->close();
 }

@@ -12,6 +12,7 @@ $id_municipio = $_GET['municipios'] ?? null;
 $id_parroquia = $_GET['parroquias'] ?? null;
 $estado_beneficiario = $_GET['estado'] ?? null;
 $tipo_avance = $_GET['tipo_avance'] ?? 'avance_fisico';
+$comunidad = $_GET['comunidad'] ?? null;
 
 function getProgressClass($valor) {
     $valor = floatval($valor ?? 0);
@@ -20,7 +21,7 @@ function getProgressClass($valor) {
     return 'not-started';
 }
 
-// Consulta SQL corregida con nombres de tabla en minúsculas y mejor manejo de NULL
+// Consulta SQL corregida para usar id_cod_obra en lugar de codigo_obra
 $sql = "SELECT 
     e.id_estado,
     e.estado AS nombre_estado,
@@ -62,6 +63,13 @@ if ($estado_beneficiario) {
     $sql .= " AND b.status = ?";
     $types .= "s";
     $params[] = $estado_beneficiario;
+}
+
+// Filtro por comunidad
+if ($comunidad) {
+    $sql .= " AND u.comunidad LIKE ?";
+    $types .= "s";
+    $params[] = '%' . $comunidad . '%';
 }
 
 $sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia
@@ -194,7 +202,7 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                 <form id="filterForm" method="GET" class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Estado</label>
-                        <select name="estados" id="estadoSelect" class="form-select">
+                        <select name="estados" id="estadoSelect" class="form-select" disabled>
                             <?php
                             $estadoLara = $conexion->query("SELECT id_estado, estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
                             echo "<option value='{$estadoLara['id_estado']}' selected>{$estadoLara['estado']}</option>";
@@ -240,6 +248,11 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                             <option value="inactivo" <?= $estado_beneficiario == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
                         </select>
                     </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Comunidad</label>
+                        <input type="text" name="comunidad" class="form-control" placeholder="Buscar comunidad..." value="<?= htmlspecialchars($_GET['comunidad'] ?? '') ?>">
+                    </div>
                     
                     <div class="col-md-6">
                         <label class="form-label">Tipo de Avance</label>
@@ -278,11 +291,14 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                         </select>
                     </div>
                     
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="form-label">&nbsp;</label>
                         <div>
                             <button type="submit" class="btn btn-primary btn-action">
                                 <i class="fas fa-search me-1"></i> Generar Reporte
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='reportes.php'">
+                                <i class="fas fa-times me-1"></i> Limpiar Filtros
                             </button>
                         </div>
                     </div>
@@ -422,7 +438,10 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     <h1>Reporte de Avance Constructivo</h1>
                     <div class="summary">
                         <strong>Resumen General:</strong><br>
-                        Total de Viviendas: <?= $total_viviendas_general ?> | 
+                        <?php if (!empty($_GET['comunidad'])): ?>
+Comunidad: <?= htmlspecialchars($_GET['comunidad']) ?> | 
+<?php endif; ?>
+Total de Viviendas: <?= $total_viviendas_general ?> | 
                         Avance Promedio: <?= $avance_promedio_general ?>% | 
                         Completadas: <?= $total_completadas_general ?> | 
                         En Progreso: <?= $total_en_progreso_general ?> | 
