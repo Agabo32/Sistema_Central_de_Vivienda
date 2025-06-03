@@ -1,75 +1,52 @@
 <?php
 // registro_usuario.php: Procesa el registro de usuario de forma segura
+session_start();
+require_once 'conexion.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once 'conexion.php';
-    
-    // Sanitizar y validar datos recibidos
-    $nombres    = trim(mysqli_real_escape_string($conexion, $_POST['nombre'] ?? ''));
-    $apellidos  = trim(mysqli_real_escape_string($conexion, $_POST['apellido'] ?? ''));
-    $usuario    = trim(mysqli_real_escape_string($conexion, $_POST['nombre_usuario'] ?? ''));
-    $cedula     = trim(mysqli_real_escape_string($conexion, $_POST['cedula'] ?? ''));
-    $correo     = trim(mysqli_real_escape_string($conexion, $_POST['correo'] ?? ''));
-    $telefono   = trim(mysqli_real_escape_string($conexion, $_POST['telefono'] ?? ''));
-    $password   = $_POST['password'] ?? '';
-    $rol        = 'usuario'; // Rol por defecto
+    $nombre = $_POST['nombre'] ?? '';
+    $apellido = $_POST['apellido'] ?? '';
+    $cedula = $_POST['cedula'] ?? '';
+    $usuario = $_POST['usuario'] ?? '';
+    $contrasena = $_POST['contrasena'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $telefono = $_POST['telefono'] ?? '';
 
-    // Validación de campos obligatorios
-    if (empty($nombres) || empty($apellidos) || empty($usuario) || 
-        empty($cedula) || empty($correo) || empty($telefono) || empty($password)) {
-        die('Todos los campos son obligatorios.');
+    // Validar que todos los campos estén llenos
+    if (empty($nombre) || empty($apellido) || empty($cedula) || empty($usuario) || empty($contrasena) || empty($email)) {
+        echo json_encode(['status' => 'error', 'message' => 'Todos los campos son obligatorios']);
+        exit;
     }
 
-    // Validar formato de email
-    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-        die('El formato del correo electrónico no es válido.');
+    // Verificar si el usuario ya existe
+    $stmt = $conexion->prepare("SELECT id FROM usuarios WHERE usuario = ? OR cedula = ? OR email = ?");
+    $stmt->bind_param("sss", $usuario, $cedula, $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'El usuario, cédula o email ya está registrado']);
+        exit;
     }
 
-    // Validar fortaleza de contraseña
-    if (strlen($password) < 8) {
-        die('La contraseña debe tener al menos 8 caracteres.');
-    }
+    // Hash de la contraseña
+    $contrasena_hash = password_hash($contrasena, PASSWORD_DEFAULT);
 
-    // Hash seguro de la contraseña (compatible con password_verify)
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    
-    if ($password_hash === false) {
-        die('Error al generar el hash de la contraseña');
-    }
+    // Insertar nuevo usuario con acceso total
+    $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, apellido, cedula, usuario, contrasena, email, telefono, rol, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 'activo')");
+    $stmt->bind_param("sssssss", $nombre, $apellido, $cedula, $usuario, $contrasena_hash, $email, $telefono);
 
-    // Verificar si el usuario o correo ya existen
-    $stmt_check = $conexion->prepare("SELECT id_usuario FROM usuario WHERE nombre_usuario = ? OR correo = ?");
-    $stmt_check->bind_param("ss", $usuario, $correo);
-    $stmt_check->execute();
-    $stmt_check->store_result();
-    
-    if ($stmt_check->num_rows > 0) {
-        die('El nombre de usuario o correo electrónico ya está registrado.');
-    }
-    $stmt_check->close();
-
-    // Insertar usuario de forma segura con rol
-    $stmt = $conexion->prepare("INSERT INTO usuario 
-        (nombre, apellido, nombre_usuario, cedula, correo, telefono, password, rol) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssss", $nombres, $apellidos, $usuario, $cedula, $correo, $telefono, $password_hash, $rol);
-    
     if ($stmt->execute()) {
-        // Registro exitoso
-        $stmt->close();
-        $conexion->close();
-        header("Location: /Sistema_Central_de_Vivienda-main/index.php?registro=exitoso");
-        exit();
+        echo json_encode(['status' => 'success', 'message' => 'Usuario registrado exitosamente']);
     } else {
-        // Manejo de errores de SQL
-        if (strpos($stmt->error, 'Duplicate entry') !== false) {
-            die('El nombre de usuario o correo electrónico ya está registrado.');
-        } else {
-            die('Error al registrar: ' . $stmt->error);
-        }
+        echo json_encode(['status' => 'error', 'message' => 'Error al registrar el usuario: ' . $conexion->error]);
     }
+
+    $stmt->close();
+    $conexion->close();
 } else {
     // Método no permitido
     http_response_code(405);
-    die('Método no permitido');
+    echo json_encode(['status' => 'error', 'message' => 'Método no permitido']);
 }
 ?>

@@ -1,16 +1,9 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_helper.php';
 require_once __DIR__ . '/conexion.php';
 
 // Verificar permisos de administrador
-if (!isset($_SESSION['user']['rol']) || $_SESSION['user']['rol'] !== 'admin') {
-    header('Content-Type: application/json');
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Acceso no autorizado'
-    ]);
-    exit;
-}
+verificar_admin();
 
 // Verificar método de solicitud
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
