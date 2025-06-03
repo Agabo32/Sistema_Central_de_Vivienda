@@ -2,17 +2,17 @@
 session_start();
 require_once '../php/conf/conexion.php';
 
-// Verificación robusta de sesión y rol
-$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
+// Todos los usuarios tienen acceso total
+$esAdmin = true;
 
 // Retrieve filter parameters
 $estadoLara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
 $id_lara = $estadoLara['id_estado'];
 $id_municipio = $_GET['municipios'] ?? null;
 $id_parroquia = $_GET['parroquias'] ?? null;
+$id_comunidad = $_GET['comunidad'] ?? null;
 $estado_beneficiario = $_GET['estado'] ?? null;
 $tipo_avance = $_GET['tipo_avance'] ?? 'avance_fisico';
-$comunidad = $_GET['comunidad'] ?? null;
 
 function getProgressClass($valor) {
     $valor = floatval($valor ?? 0);
@@ -21,32 +21,34 @@ function getProgressClass($valor) {
     return 'not-started';
 }
 
-// Consulta SQL corregida para usar id_cod_obra en lugar de codigo_obra
+// Consulta SQL base
 $sql = "SELECT 
     e.id_estado,
-    e.estado AS nombre_estado,
+    e.estado,
     m.id_municipio,
     m.municipio,
     p.id_parroquia,
     p.parroquia,
-    u.comunidad,
-    COUNT(DISTINCT b.id_beneficiario) AS total_viviendas,
-    ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) AS avance_promedio,
-    SUM(CASE WHEN COALESCE(dc.$tipo_avance, 0) >= 100 THEN 1 ELSE 0 END) AS completadas,
-    SUM(CASE WHEN COALESCE(dc.$tipo_avance, 0) > 0 AND COALESCE(dc.$tipo_avance, 0) < 100 THEN 1 ELSE 0 END) AS en_progreso,
-    SUM(CASE WHEN COALESCE(dc.$tipo_avance, 0) = 0 THEN 1 ELSE 0 END) AS no_iniciadas
+    c.id_comunidad,
+    c.comunidad,
+    COUNT(DISTINCT b.id_beneficiario) as total_viviendas,
+    COUNT(DISTINCT CASE WHEN dc.$tipo_avance = 100 THEN b.id_beneficiario END) as completadas,
+    COUNT(DISTINCT CASE WHEN dc.$tipo_avance > 0 AND dc.$tipo_avance < 100 THEN b.id_beneficiario END) as en_progreso,
+    COUNT(DISTINCT CASE WHEN dc.$tipo_avance = 0 OR dc.$tipo_avance IS NULL THEN b.id_beneficiario END) as no_iniciadas,
+    ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) as avance_promedio
 FROM estados e
-LEFT JOIN municipios m ON e.id_estado = m.id_estado
-LEFT JOIN parroquias p ON m.id_municipio = p.id_municipio
-LEFT JOIN ubicaciones u ON p.id_parroquia = u.id_parroquia
+JOIN municipios m ON e.id_estado = m.id_estado
+JOIN parroquias p ON m.id_municipio = p.id_municipio
+JOIN ubicaciones u ON p.id_parroquia = u.id_parroquia
+JOIN comunidades c ON u.id_comunidad = c.id_comunidad
 LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
-WHERE e.id_estado = ? AND b.id_beneficiario IS NOT NULL";
+WHERE e.id_estado = ?";
 
 $types = "i";
 $params = [$id_lara];
 
-// Aplicar filtros jerárquicos
+// Aplicar filtros
 if ($id_municipio) {
     $sql .= " AND m.id_municipio = ?";
     $types .= "i";
@@ -59,35 +61,40 @@ if ($id_parroquia) {
     $params[] = $id_parroquia;
 }
 
+if ($id_comunidad) {
+    $sql .= " AND c.id_comunidad = ?";
+    $types .= "i";
+    $params[] = $id_comunidad;
+}
+
 // Filtro por estado del beneficiario
-if ($estado_beneficiario) {
+if ($estado_beneficiario && $estado_beneficiario !== 'todos') {
     $sql .= " AND b.status = ?";
     $types .= "s";
     $params[] = $estado_beneficiario;
 }
 
-// Filtro por comunidad
-if ($comunidad) {
-    $sql .= " AND u.comunidad LIKE ?";
-    $types .= "s";
-    $params[] = '%' . $comunidad . '%';
-}
-
-$sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia, u.comunidad
+// Agrupar y ordenar
+$sql .= " GROUP BY e.id_estado, m.id_municipio, p.id_parroquia, c.id_comunidad
           HAVING total_viviendas > 0
-          ORDER BY m.municipio, p.parroquia, u.comunidad";
+          ORDER BY m.municipio, p.parroquia, c.comunidad";
 
-// Preparar la consulta
+// Preparar y ejecutar la consulta
 $stmt = $conexion->prepare($sql);
 if ($stmt === false) {
-    die("Error en la consulta: " . $conexion->error);
+    die("Error en la preparación de la consulta: " . $conexion->error);
 }
 
 // Vincular parámetros
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 
 // Ejecutar consulta
-$stmt->execute();
+if (!$stmt->execute()) {
+    die("Error al ejecutar la consulta: " . $stmt->error);
+}
+
 $result = $stmt->get_result();
 $reportes = $result->fetch_all(MYSQLI_ASSOC);
 
@@ -233,8 +240,8 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
         
         <!-- Filtros -->
         <div class="card">
-            <div class="card-header">
-                <h3 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de Búsqueda</h3>
+            <div class="card-header bg-primary text-white text-center">
+                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
             </div>
             <div class="card-body">
                 <form id="filterForm" method="GET" class="row g-3">
@@ -265,13 +272,13 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     
                     <div class="col-md-3">
                         <label class="form-label">Parroquia</label>
-                        <select name="parroquias" id="parroquiaSelect" class="form-select" <?= !$id_municipio ? 'disabled' : '' ?>>
+                        <select name="parroquias" id="parroquiaSelect" class="form-select" <?= !isset($_GET['municipios']) ? 'disabled' : '' ?>>
                             <option value="">Todas</option>
                             <?php
-                            if ($id_municipio) {
-                                $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = $id_municipio ORDER BY parroquia");
+                            if (isset($_GET['municipios'])) {
+                                $parroquias = $conexion->query("SELECT id_parroquia, parroquia FROM parroquias WHERE id_municipio = " . intval($_GET['municipios']) . " ORDER BY parroquia");
                                 while ($row = $parroquias->fetch_assoc()) {
-                                    echo "<option value='{$row['id_parroquia']}' " . ($row['id_parroquia'] == $id_parroquia ? 'selected' : '') . ">{$row['parroquia']}</option>";
+                                    echo "<option value='{$row['id_parroquia']}' " . ($row['id_parroquia'] == ($_GET['parroquias'] ?? '') ? 'selected' : '') . ">{$row['parroquia']}</option>";
                                 }
                             }
                             ?>
@@ -281,15 +288,25 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     <div class="col-md-3">
                         <label class="form-label">Estado Beneficiario</label>
                         <select name="estado" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="activo" <?= $estado_beneficiario == 'activo' ? 'selected' : '' ?>>Activo</option>
-                            <option value="inactivo" <?= $estado_beneficiario == 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                            <option value="todos" <?= (!isset($_GET['estado']) || $_GET['estado'] === 'todos') ? 'selected' : '' ?>>Todos</option>
+                            <option value="activo" <?= (isset($_GET['estado']) && $_GET['estado'] === 'activo') ? 'selected' : '' ?>>Activos</option>
+                            <option value="inactivo" <?= (isset($_GET['estado']) && $_GET['estado'] === 'inactivo') ? 'selected' : '' ?>>Inactivos</option>
                         </select>
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Comunidad</label>
-                        <input type="text" name="comunidad" class="form-control" placeholder="Buscar comunidad..." value="<?= htmlspecialchars($_GET['comunidad'] ?? '') ?>">
+                        <select name="comunidad" id="comunidadSelect" class="form-select" <?= !isset($_GET['parroquias']) ? 'disabled' : '' ?>>
+                            <option value="">Todas</option>
+                            <?php
+                            if (isset($_GET['parroquias'])) {
+                                $comunidades = $conexion->query("SELECT id_comunidad, comunidad FROM comunidades WHERE id_parroquia = " . intval($_GET['parroquias']) . " ORDER BY comunidad");
+                                while ($row = $comunidades->fetch_assoc()) {
+                                    echo "<option value='{$row['id_comunidad']}' " . ($row['id_comunidad'] == ($_GET['comunidad'] ?? '') ? 'selected' : '') . ">{$row['comunidad']}</option>";
+                                }
+                            }
+                            ?>
+                        </select>
                     </div>
                     
                     <div class="col-md-6">
@@ -332,7 +349,7 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     <div class="col-md-3">
                         <label class="form-label">&nbsp;</label>
                         <div>
-                            <button type="submit" class="btn btn-primary btn-action">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search me-1"></i> Generar Reporte
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="window.location.href='reportes.php'">
@@ -348,11 +365,9 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resultados Detallados</h3>
-                <?php if ($esAdmin && !empty($reportes)): ?>
-                    <button class="btn btn-light btn-action" onclick="imprimirReporte()">
-                        <i class="fas fa-print me-1"></i> Imprimir
-                    </button>
-                <?php endif; ?>
+                <button class="btn btn-light btn-action" onclick="imprimirReporte()">
+                    <i class="fas fa-print me-1"></i> Imprimir
+                </button>
             </div>
             <div class="card-body">
                 <?php if (!empty($reportes)): ?>
@@ -374,7 +389,7 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                             <tbody>
                                 <?php foreach ($reportes as $reporte): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($reporte['nombre_estado']) ?></td>
+                                    <td><?= htmlspecialchars($reporte['estado']) ?></td>
                                     <td><?= htmlspecialchars($reporte['municipio'] ?? 'N/A') ?></td>
                                     <td><?= htmlspecialchars($reporte['parroquia'] ?? 'N/A') ?></td>
                                     <td>
@@ -415,39 +430,81 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
         document.addEventListener('DOMContentLoaded', function() {
             const municipioSelect = document.getElementById('municipioSelect');
             const parroquiaSelect = document.getElementById('parroquiaSelect');
+            const comunidadSelect = document.getElementById('comunidadSelect');
 
-            // Cargar parroquias al seleccionar municipio
-            municipioSelect.addEventListener('change', function() {
-                const idMunicipio = this.value;
-                if (!idMunicipio) {
+            // Función para cargar parroquias
+            async function cargarParroquias(municipioId) {
+                if (!municipioId) {
                     parroquiaSelect.innerHTML = '<option value="">Todas</option>';
                     parroquiaSelect.disabled = true;
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    comunidadSelect.disabled = true;
                     return;
                 }
 
-                parroquiaSelect.disabled = false;
-                fetch(`../php/conf/get_parroquias.php?municipio_id=${idMunicipio}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        let parroquiasHTML = '<option value="">Todas</option>';
-                        data.forEach(parroquia => {
-                            parroquiasHTML += `<option value="${parroquia.id_parroquia}">${parroquia.parroquia}</option>`;
-                        });
-                        parroquiaSelect.innerHTML = parroquiasHTML;
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        parroquiaSelect.innerHTML = '<option value="">Error al cargar</option>';
+                try {
+                    const response = await fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`);
+                    const data = await response.json();
+                    
+                    parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                    data.forEach(parroquia => {
+                        const option = document.createElement('option');
+                        option.value = parroquia.id_parroquia;
+                        option.textContent = parroquia.parroquia;
+                        parroquiaSelect.appendChild(option);
                     });
+                    parroquiaSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando parroquias:', error);
+                    parroquiaSelect.innerHTML = '<option value="">Error al cargar parroquias</option>';
+                }
+            }
+
+            // Función para cargar comunidades
+            async function cargarComunidades(parroquiaId) {
+                if (!parroquiaId) {
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    comunidadSelect.disabled = true;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`../php/conf/obtener_comunidades.php?id_parroquia=${parroquiaId}`);
+                    const data = await response.json();
+                    
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    data.forEach(comunidad => {
+                        const option = document.createElement('option');
+                        option.value = comunidad.id_comunidad;
+                        option.textContent = comunidad.nombre;
+                        comunidadSelect.appendChild(option);
+                    });
+                    comunidadSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando comunidades:', error);
+                    comunidadSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
+                }
+            }
+
+            // Eventos para los selects
+            municipioSelect.addEventListener('change', function() {
+                cargarParroquias(this.value);
             });
+
+            parroquiaSelect.addEventListener('change', function() {
+                cargarComunidades(this.value);
+            });
+
+            // Cargar datos iniciales si hay valores seleccionados
+            if (municipioSelect.value) {
+                cargarParroquias(municipioSelect.value);
+            }
+            if (parroquiaSelect.value) {
+                cargarComunidades(parroquiaSelect.value);
+            }
         });
 
         function imprimirReporte() {
-            <?php if (!$esAdmin): ?>
-                alert('No tienes permisos para realizar esta acción');
-                return false;
-            <?php endif; ?>
-
             const contenido = document.querySelector('.card:last-child').cloneNode(true);
             const botones = contenido.querySelectorAll('.btn-action');
             botones.forEach(boton => boton.style.display = 'none');

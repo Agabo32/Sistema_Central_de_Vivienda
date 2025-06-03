@@ -39,9 +39,8 @@
 
                 <div class="mb-3">
                     <label class="form-label">Nombre de usuario</label>
-                    <input type="text" name="nombre_usuario" class="form-control modern-input" placeholder="Nombre de Usuario" required>
+                    <input type="text" name="usuario" class="form-control modern-input" placeholder="Nombre de Usuario" required>
                 </div>
-
 
                 <div class="mb-3">
                     <label class="form-label">Cédula</label>
@@ -50,7 +49,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Correo electrónico</label>
-                    <input type="email" name="correo" class="form-control modern-input" placeholder="Email" required>
+                    <input type="email" name="email" class="form-control modern-input" placeholder="Email" required>
                 </div>
 
                 <div class="mb-3">
@@ -60,7 +59,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Contraseña</label>
-                    <input type="password" name="password" class="form-control modern-input" placeholder="••••••••" required>
+                    <input type="password" name="contrasena" class="form-control modern-input" placeholder="••••••••" required>
                 </div>
 
                 <button type="submit" class="btn btn-animado">Registrarse</button>

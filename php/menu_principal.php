@@ -1,6 +1,9 @@
 <?php
-session_start();
+require_once '../php/conf/session_helper.php';
 require_once '../php/conf/conexion.php';
+
+// Verificación de autenticación
+verificar_autenticacion();
 
 // Consulta para contar el total de beneficiarios
 $sql_total = "SELECT COUNT(*) as total FROM beneficiarios";

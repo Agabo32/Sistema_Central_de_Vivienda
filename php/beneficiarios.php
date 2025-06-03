@@ -2,7 +2,7 @@
 session_start();
 require_once '../php/conf/conexion.php';
 
-// Verificación robusta de sesión y rol
+// Dar acceso a todos los usuarios
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
 $params = [];
 $types = '';
@@ -17,18 +17,108 @@ $registros_por_pagina = 10;
 $pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-// Preparar consulta con posibles filtros
+
+// Procesar formulario de nuevo beneficiario ANTES de cualquier salida HTML
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuevo_beneficiario') {
+    // Limpiar cualquier salida previa
+    ob_clean();
+    header('Content-Type: application/json');
+    
+    try {
+        $conexion->begin_transaction();
+        
+        // Validar campos requeridos
+        $required_fields = ['nombre_beneficiario', 'cedula', 'telefono', 'codigo_obra', 'municipio', 'parroquia'];
+        foreach ($required_fields as $field) {
+            if (empty($_POST[$field])) {
+                throw new Exception("El campo $field es requerido");
+            }
+        }
+        
+        // Verificar si la cédula ya existe
+        $check_cedula = $conexion->prepare("SELECT id_beneficiario FROM beneficiarios WHERE cedula = ?");
+        $check_cedula->bind_param("s", $_POST['cedula']);
+        $check_cedula->execute();
+        if ($check_cedula->get_result()->num_rows > 0) {
+            throw new Exception("Ya existe un beneficiario con esta cédula");
+        }
+        
+        // Crear ubicación primero
+        $stmt_ubicacion = $conexion->prepare("
+            INSERT INTO ubicaciones (id_estado, id_municipio, id_parroquia, id_comunidad, utm_este, utm_norte, direccion_exacta) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        $id_estado = 12; // Lara
+        $id_municipio = intval($_POST['municipio']);
+        $id_parroquia = intval($_POST['parroquia']);
+        $id_comunidad = !empty($_POST['comunidad']) ? intval($_POST['comunidad']) : null;
+        $utm_este = !empty($_POST['utm_este']) ? $_POST['utm_este'] : null;
+        $utm_norte = !empty($_POST['utm_norte']) ? $_POST['utm_norte'] : null;
+        $direccion_exacta = !empty($_POST['direccion_exacta']) ? $_POST['direccion_exacta'] : null;
+        
+        $stmt_ubicacion->bind_param("iiissss", $id_estado, $id_municipio, $id_parroquia, $id_comunidad, $utm_este, $utm_norte, $direccion_exacta);
+        
+        if (!$stmt_ubicacion->execute()) {
+            throw new Exception("Error al crear la ubicación: " . $stmt_ubicacion->error);
+        }
+        
+        $id_ubicacion = $conexion->insert_id;
+        
+        // Crear beneficiario
+        $stmt_beneficiario = $conexion->prepare("
+            INSERT INTO beneficiarios (tipo_de_documento, cedula, nombre_beneficiario, telefono, fecha_actualizacion, id_ubicacion, status, id_metodo_constructivo, id_modelo_constructivo, id_cod_obra) 
+            VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?)
+        ");
+        
+        $tipo_documento = 'V'; // Por defecto venezolano
+        $nombre = $_POST['nombre_beneficiario'];
+        $cedula = $_POST['cedula'];
+        $telefono = $_POST['telefono'];
+        $status = $_POST['status'] ?? 'activo';
+        $id_metodo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : null;
+        $id_modelo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : null;
+        $id_cod_obra = intval($_POST['codigo_obra']);
+        
+        $stmt_beneficiario->bind_param("ssssissii", $tipo_documento, $cedula, $nombre, $telefono, $id_ubicacion, $status, $id_metodo, $id_modelo, $id_cod_obra);
+        
+        if (!$stmt_beneficiario->execute()) {
+            throw new Exception("Error al crear el beneficiario: " . $stmt_beneficiario->error);
+        }
+        
+        $conexion->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Beneficiario creado exitosamente']);
+        exit;
+        
+    } catch (Exception $e) {
+        $conexion->rollback();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
+$params = [];
+$types = '';
+$lara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
+$id_lara = $lara['id_estado'];
+
+$registros_por_pagina = 10;
+$pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
+$offset = ($pagina_actual - 1) * $registros_por_pagina;
+
+// Preparar consulta con posibles filtros - CORREGIDA
 $sql_base = "SELECT b.*, 
     p.parroquia, 
     m.municipio, 
     e.estado,
-    u.comunidad,
+    c.comunidad,
     co.cod_obra as codigo_obra_nombre
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+LEFT JOIN comunidades c ON u.id_comunidad = c.id_comunidad
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
-LEFT JOIN estados e ON m.id_estado = e.id_estado
+LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
+LEFT JOIN estados e ON u.id_estado = e.id_estado
 LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
 WHERE e.id_estado = $id_lara ";
 
@@ -37,6 +127,8 @@ if (!isset($_GET['status']) || $_GET['status'] === 'activo' || $_GET['status'] =
     $sql_base .= " AND b.status = 'activo'";
 } elseif ($_GET['status'] === 'inactivo') {
     $sql_base .= " AND b.status = 'inactivo'";
+} elseif ($_GET['status'] === 'todos') {
+    // No agregar filtro de status
 }
 
 // Aplicar filtros si existen
@@ -56,9 +148,9 @@ if (!empty($_GET['parroquia'])) {
     $types .= 'i';
 }
 if (!empty($_GET['comunidad'])) {
-    $sql_base .= " AND u.comunidad LIKE ?";
-    $params[] = '%'.$_GET['comunidad'].'%';
-    $types .= 's';
+    $sql_base .= " AND c.id_comunidad = ?";
+    $params[] = $_GET['comunidad'];
+    $types .= 'i';
 }
 if (!empty($_GET['codigo_obra'])) {
     $sql_base .= " AND co.cod_obra LIKE ?";
@@ -87,7 +179,9 @@ $params[] = $offset;
 
 // Ejecutar consulta con paginación
 $stmt = $conexion->prepare($sql_base);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
@@ -99,7 +193,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beneficiarios - SIGEVU</title>
-    <link rel="icon" type="image/x-icon" href="/imagenes/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="../imagenes/favicon.ico">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -125,7 +219,10 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
 .modal-body .form-label[for="direccion_exacta"]:after,
 .modal-body .form-label[for="utm_norte"]:after,
-.modal-body .form-label[for="utm_este"]:after {
+.modal-body .form-label[for="utm_este"]:after,
+.modal-body .form-label[for="comunidad"]:after,
+.modal-body .form-label[for="metodo_constructivo"]:after,
+.modal-body .form-label[for="modelo_constructivo"]:after {
     content: "";
 }
 
@@ -253,7 +350,18 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Comunidad</label>
-                                <input type="text" name="comunidad" class="form-control" placeholder="Buscar comunidad..." value="<?= htmlspecialchars($_GET['comunidad'] ?? '') ?>">
+                                <select name="comunidad" id="comunidadSelect" class="form-select" <?= !isset($_GET['parroquia']) ? 'disabled' : '' ?>>
+                                    <option value="">Todas</option>
+                                    <?php
+                                    if (isset($_GET['parroquia'])) {
+                                        $comunidades = $conexion->query("SELECT id_comunidad, comunidad FROM comunidades WHERE id_parroquia = " . intval($_GET['parroquia']) . " ORDER BY comunidad");
+                                        while ($row = $comunidades->fetch_assoc()) {
+                                            $selected = (isset($_GET['comunidad']) && $_GET['comunidad'] == $row['id_comunidad']) ? 'selected' : '';
+                                            echo "<option value='{$row['id_comunidad']}' $selected>{$row['comunidad']}</option>";
+                                        }
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Código de Obra</label>
@@ -618,7 +726,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     </div>
 
     <!-- Bootstrap JS Bundle con Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Función para mostrar alertas
         function showAlert(type, message) {
@@ -645,116 +753,91 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Funcionalidad de filtros en la página principal
-            const estadoSelect = document.getElementById('estadoSelect');
             const municipioSelect = document.getElementById('municipioSelect');
             const parroquiaSelect = document.getElementById('parroquiaSelect');
-            
-            municipioSelect.addEventListener('change', function() {
-                const municipioId = this.value;
-                
-                if (municipioId) {
-                    parroquiaSelect.disabled = false;
-                    fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                            data.forEach(parroquia => {
-                                const option = document.createElement('option');
-                                option.value = parroquia.id_parroquia;
-                                option.textContent = parroquia.parroquia;
-                                parroquiaSelect.appendChild(option);
-                            });
-                        });
-                } else {
+            const comunidadSelect = document.getElementById('comunidadSelect');
+
+            // Función para cargar parroquias
+            async function cargarParroquias(municipioId) {
+                if (!municipioId) {
                     parroquiaSelect.innerHTML = '<option value="">Todas</option>';
                     parroquiaSelect.disabled = true;
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    comunidadSelect.disabled = true;
+                    return;
                 }
-            });
-            
-            if (municipioSelect.value) {
-                municipioSelect.dispatchEvent(new Event('change'));
+
+                try {
+                    const response = await fetch(`conf/get_parroquias.php?municipio_id=${municipioId}`);
+                    const data = await response.json();
+                    
+                    parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                    data.forEach(parroquia => {
+                        const option = document.createElement('option');
+                        option.value = parroquia.id_parroquia;
+                        option.textContent = parroquia.parroquia;
+                        parroquiaSelect.appendChild(option);
+                    });
+                    parroquiaSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando parroquias:', error);
+                    parroquiaSelect.innerHTML = '<option value="">Error al cargar parroquias</option>';
+                }
             }
 
-            // Funcionalidad del modal
-            const modalEstado = document.getElementById('modalEstado');
+            // Función para cargar comunidades
+            async function cargarComunidades(parroquiaId) {
+                if (!parroquiaId) {
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    comunidadSelect.disabled = true;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`conf/obtener_comunidades.php?id_parroquia=${parroquiaId}`);
+                    const data = await response.json();
+                    
+                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    data.forEach(comunidad => {
+                        const option = document.createElement('option');
+                        option.value = comunidad.id_comunidad;
+                        option.textContent = comunidad.nombre;
+                        comunidadSelect.appendChild(option);
+                    });
+                    comunidadSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando comunidades:', error);
+                    comunidadSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
+                }
+            }
+
+            // Eventos para los selects
+            municipioSelect.addEventListener('change', function() {
+                cargarParroquias(this.value);
+            });
+
+            parroquiaSelect.addEventListener('change', function() {
+                cargarComunidades(this.value);
+            });
+
+            // Cargar datos iniciales si hay valores seleccionados
+            if (municipioSelect.value) {
+                cargarParroquias(municipioSelect.value);
+            }
+            if (parroquiaSelect.value) {
+                cargarComunidades(parroquiaSelect.value);
+            }
+
+            // Elementos del formulario principal de filtros
             const modalMunicipio = document.getElementById('modalMunicipio');
             const modalParroquia = document.getElementById('modalParroquia');
+            const modalComunidad = document.getElementById('comunidad');
             const toggleNuevaComunidad = document.getElementById('toggleNuevaComunidad');
             const cerrarNuevaComunidad = document.getElementById('cerrarNuevaComunidad');
             const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
             const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
-            const comunidadSelect = document.getElementById('comunidad');
-            
-            modalEstado.disabled = true;
 
-            // Cargar parroquias al seleccionar municipio en el modal
-            modalMunicipio.addEventListener('change', function() {
-                const municipioId = this.value;
-                modalParroquia.innerHTML = '<option value="">Cargando...</option>';
-                modalParroquia.disabled = true;
-                
-                // También actualizar el select de nueva comunidad
-                const nuevaComunidadParroquia = document.getElementById('nueva_comunidad_parroquia');
-                
-                if (municipioId) {
-                    fetch(`../php/conf/get_parroquias.php?municipio_id=${municipioId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            modalParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
-                            nuevaComunidadParroquia.innerHTML = '<option value="">Seleccione una parroquia</option>';
-                            
-                            data.forEach(parroquia => {
-                                const option1 = document.createElement('option');
-                                option1.value = parroquia.id_parroquia;
-                                option1.textContent = parroquia.parroquia;
-                                modalParroquia.appendChild(option1);
-                                
-                                const option2 = document.createElement('option');
-                                option2.value = parroquia.id_parroquia;
-                                option2.textContent = parroquia.parroquia;
-                                nuevaComunidadParroquia.appendChild(option2);
-                            });
-                            modalParroquia.disabled = false;
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            modalParroquia.innerHTML = '<option value="">Error al cargar parroquias</option>';
-                        });
-                } else {
-                    modalParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
-                    nuevaComunidadParroquia.innerHTML = '<option value="">Seleccione un municipio primero</option>';
-                }
-            });
-
-            // Modificar el evento de cambio de parroquia para actualizar las comunidades
-            modalParroquia.addEventListener('change', function() {
-                const parroquiaId = this.value;
-                const comunidadSelect = document.getElementById('comunidad');
-                
-                if (parroquiaId) {
-                    // Cargar comunidades de la parroquia seleccionada
-                    fetch(`../php/conf/get_comunidades.php?id_parroquia=${parroquiaId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            comunidadSelect.innerHTML = '<option value="">Seleccione una comunidad</option>';
-                            data.forEach(comunidad => {
-                                const option = document.createElement('option');
-                                option.value = comunidad.id_comunidad;
-                                option.textContent = comunidad.nombre;
-                                comunidadSelect.appendChild(option);
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            comunidadSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
-                        });
-                } else {
-                    comunidadSelect.innerHTML = '<option value="">Seleccione una parroquia primero</option>';
-                }
-            });
-
-            // Funcionalidad para mostrar/ocultar nueva comunidad
+            // Funciones para mostrar/ocultar nueva comunidad
             function mostrarSeccionNuevaComunidad() {
                 nuevaComunidadSection.style.display = 'block';
                 setTimeout(() => {
@@ -780,7 +863,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             toggleNuevaComunidad.addEventListener('click', mostrarSeccionNuevaComunidad);
             cerrarNuevaComunidad.addEventListener('click', ocultarSeccionNuevaComunidad);
 
-            // Modificar el evento de guardar comunidad para ocultar la sección después de guardar
+            // Evento para guardar nueva comunidad
             btnGuardarComunidad.addEventListener('click', async function() {
                 const nombreComunidad = document.getElementById('nueva_comunidad_nombre').value.trim();
                 const parroquiaId = document.getElementById('nueva_comunidad_parroquia').value;
@@ -805,14 +888,12 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     if (result.status === 'success') {
                         showAlert('success', 'Comunidad creada exitosamente');
                         
-                        // Crear y agregar la nueva opción al select
-                        const newOption = document.createElement('option');
-                        newOption.value = result.id_comunidad;
-                        newOption.textContent = result.nombre_comunidad;
-                        comunidadSelect.appendChild(newOption);
-                        
-                        // Seleccionar la nueva comunidad
-                        comunidadSelect.value = result.id_comunidad;
+                        // Actualizar el select de comunidades
+                        const option = document.createElement('option');
+                        option.value = result.id_comunidad;
+                        option.textContent = result.nombre_comunidad;
+                        modalComunidad.appendChild(option);
+                        modalComunidad.value = result.id_comunidad;
                         
                         // Ocultar la sección de nueva comunidad
                         ocultarSeccionNuevaComunidad();
@@ -821,177 +902,114 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    showAlert('error', 'Error al crear la comunidad');
+                    showAlert('error', 'Error al procesar la solicitud');
                 }
             });
 
-            // Manejar envío del formulario
-            const formNuevoBeneficiario = document.getElementById('formNuevoBeneficiario');
-            formNuevoBeneficiario.addEventListener('submit', async function(e) {
+            // Manejar el envío del formulario de nuevo beneficiario
+            document.getElementById('formNuevoBeneficiario').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                const camposRequeridos = [
-                    { id: 'nombre_beneficiario', nombre: 'Nombre Completo' },
-                    { id: 'cedula', nombre: 'Cédula' },
-                    { id: 'telefono', nombre: 'Teléfono' },
-                    { id: 'codigo_obra', nombre: 'Código de Obra' },
-                    { id: 'modalMunicipio', nombre: 'Municipio' },
-                    { id: 'modalParroquia', nombre: 'Parroquia' }
-                ];
-                
-                let camposFaltantes = [];
-                
-                // Verificar si hay una comunidad seleccionada o si se está creando una nueva
-                const comunidadSeleccionada = document.getElementById('comunidad').value;
-                const nuevaComunidadNombre = document.getElementById('nueva_comunidad_nombre').value.trim();
-                const nuevaComunidadParroquia = document.getElementById('nueva_comunidad_parroquia').value;
-
-                if (!comunidadSeleccionada && (!nuevaComunidadNombre || !nuevaComunidadParroquia)) {
-                    showAlert('error', 'Debe seleccionar una comunidad existente o crear una nueva');
-                    return;
-                }
-                
-                camposRequeridos.forEach(campo => {
-                    const elemento = document.getElementById(campo.id);
-                    if (!elemento || !elemento.value.trim()) {
-                        camposFaltantes.push(campo.nombre);
-                    }
-                });
-                
-                if (camposFaltantes.length > 0) {
-                    showAlert('error', 'Por favor complete todos los campos requeridos: ' + camposFaltantes.join(', '));
-                    
-                    const primerCampoFaltante = camposRequeridos.find(campo => {
-                        const elemento = document.getElementById(campo.id);
-                        return !elemento || !elemento.value.trim();
-                    });
-                    
-                    if (primerCampoFaltante) {
-                        const elemento = document.getElementById(primerCampoFaltante.id);
-                        if (elemento) {
-                            elemento.focus();
-                            elemento.classList.add('is-invalid');
-                            setTimeout(() => elemento.classList.remove('is-invalid'), 3000);
-                        }
-                    }
-                    return;
-                }
-                
                 const submitBtn = this.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
+                const originalBtnContent = submitBtn.innerHTML;
                 
                 try {
-                    const formData = new FormData(this);
+                    // Validar campos requeridos
+                    const requiredFields = {
+                        'nombre_beneficiario': 'Nombre del beneficiario',
+                        'cedula': 'Cédula',
+                        'telefono': 'Teléfono',
+                        'codigo_obra': 'Código de obra',
+                        'modalMunicipio': 'Municipio',
+                        'modalParroquia': 'Parroquia'
+                    };
                     
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+                    let isValid = true;
+                    let missingFields = [];
+                    
+                    Object.entries(requiredFields).forEach(([fieldId, fieldName]) => {
+                        const element = document.getElementById(fieldId);
+                        
+                        if (!element || !element.value.trim()) {
+                            if (element) {
+                                element.classList.add('is-invalid');
+                            }
+                            isValid = false;
+                            missingFields.push(fieldName);
+                        } else {
+                            if (element) {
+                                element.classList.remove('is-invalid');
+                            }
+                        }
+                    });
+                    
+                    if (!isValid) {
+                        showAlert('error', `Por favor complete los siguientes campos requeridos: ${missingFields.join(', ')}`);
+                        return;
+                    }
+                    
+                    // Mostrar indicador de carga
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
                     submitBtn.disabled = true;
                     
-                    const response = await fetch('../php/conf/guardar_beneficiario.php', {
+                    const formData = new FormData(this);
+                    
+                    const response = await fetch(window.location.href, {
                         method: 'POST',
                         body: formData
                     });
                     
-                    if (!response.ok) {
-                        throw new Error(`Error HTTP: ${response.status}`);
+                    // Verificar si la respuesta es JSON válida
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Respuesta no es JSON:', text);
+                        throw new Error('El servidor no devolvió una respuesta JSON válida');
                     }
                     
-                    const text = await response.text();
-                    console.log('Respuesta del servidor:', text);
-                    
-                    let result;
-                    try {
-                        result = JSON.parse(text);
-                    } catch (jsonError) {
-                        console.error('Error al parsear JSON:', text);
-                        throw new Error('El servidor devolvió una respuesta inválida. Verifique los logs del servidor.');
-                    }
+                    const result = await response.json();
                     
                     if (result.status === 'success') {
-                        showAlert('success', 'Beneficiario agregado exitosamente');
-                        
+                        showAlert('success', result.message);
+                        // Cerrar el modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
-                        if (modal) {
-                            modal.hide();
-                        }
-                        
-                        this.reset();
-                        
+                        modal.hide();
+                        // Recargar la página después de un breve retraso
                         setTimeout(() => {
-                            window.location.reload();
+                            location.reload();
                         }, 1500);
                     } else {
-                        throw new Error(result.message || 'Error desconocido al guardar');
+                        showAlert('error', result.message || 'Error al guardar el beneficiario');
+                        submitBtn.innerHTML = originalBtnContent;
+                        submitBtn.disabled = false;
                     }
                 } catch (error) {
-                    console.error('Error completo:', error);
-                    showAlert('error', 'Error al guardar beneficiario: ' + error.message);
-                } finally {
-                    submitBtn.innerHTML = originalBtnText;
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al procesar la solicitud: ' + error.message);
+                    submitBtn.innerHTML = originalBtnContent;
                     submitBtn.disabled = false;
                 }
             });
 
-            // Funcionalidad de búsqueda
-            const inputBuscar = document.getElementById('buscar');
+            // Funcionalidad de búsqueda en tiempo real
+            const buscarInput = document.getElementById('buscar');
             const tablaBeneficiarios = document.getElementById('tablaBeneficiarios');
-            const filas = tablaBeneficiarios.querySelectorAll('tr');
-            const paginationContainer = document.querySelector('.pagination');
-
-            function busquedaAvanzada(termino) {
-                termino = termino.trim().toLowerCase();
-                let resultadosEncontrados = 0;
-                
-                filas.forEach(fila => {
-                    const celdas = fila.getElementsByTagName('td');
-                    if (celdas.length > 0) {
-                        const cedula = celdas[1].textContent.toLowerCase().replace(/\D/g, '');
-                        const nombre = celdas[2].textContent.toLowerCase();
-                        const comunidad = celdas[4].textContent.toLowerCase();
-                        const codigoObra = celdas[5].textContent.toLowerCase();
-                        
-                        const terminoLimpio = termino.replace(/\D/g, '');
-                        
-                        const coincide = 
-                            cedula.includes(terminoLimpio) || 
-                            nombre.includes(termino) || 
-                            comunidad.includes(termino) ||
-                            codigoObra.includes(termino);
-                        
-                        if (coincide) {
-                            fila.style.display = '';
-                            resultadosEncontrados++;
+            
+            if (buscarInput && tablaBeneficiarios) {
+                buscarInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const rows = tablaBeneficiarios.querySelectorAll('tr');
+                    
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            row.style.display = '';
                         } else {
-                            fila.style.display = 'none';
+                            row.style.display = 'none';
                         }
-                    }
+                    });
                 });
-
-                if (paginationContainer) {
-                    paginationContainer.style.display = resultadosEncontrados === 0 ? 'none' : 'flex';
-                }
             }
-
-            function debounce(func, timeout = 300) {
-                let timer;
-                return (...args) => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-                };
-            }
-
-            const busquedaOptimizada = debounce(busquedaAvanzada);
-            inputBuscar.addEventListener('input', function() {
-                busquedaOptimizada(this.value);
-            });
-
-            window.addEventListener('scroll', function() {
-                const navbar = document.querySelector('.navbar');
-                if (window.scrollY > 10) {
-                    navbar.classList.add('shadow-sm');
-                } else {
-                    navbar.classList.remove('shadow-sm');
-                }
-            });
         });
     </script>
 </body>

@@ -15,40 +15,65 @@ $id = intval($_GET['id']); // Asegurarse de que el ID es un número entero
 // Consulta SQL corregida con nombres de tablas y campos actualizados
 $sql = "
 SELECT
-    b.id_beneficiario, 
-    b.cedula, 
-    b.nombre_beneficiario, 
-    b.telefono, 
+    b.id_beneficiario,
+    b.tipo_de_documento,
+    b.cedula,
+    b.nombre_beneficiario,
+    b.telefono,
     b.fecha_actualizacion,
     b.status,
-    co.cod_obra AS codigo_obra,
-    u.comunidad, 
-    u.direccion_exacta, 
-    u.utm_norte, 
+    e.estado,
+    m.municipio,
+    p.parroquia,
+    c.comunidad,
+    u.direccion_exacta,
     u.utm_este,
-    m.id_municipio,
-    m.municipio AS municipio,  
-    p.id_parroquia,
-    p.parroquia AS parroquia,
-    e.estado AS estado,
-    mc.nomb_metodo AS metodo_constructivo, 
-    mo.nomb_modelo AS modelo_constructivo,
-    dc.avance_fisico, 
-    dc.fecha_culminacion, 
-    dc.acta_entregada, 
-    dc.observaciones_responsables_control, 
-    dc.observaciones_fiscalizadores
+    u.utm_norte,
+    mc.metodo as metodo_constructivo,
+    moc.modelo as modelo_constructivo,
+    co.cod_obra as codigo_obra,
+    dc.acondicionamiento,
+    dc.limpieza,
+    dc.replanteo,
+    dc.excavacion,
+    dc.fundacion,
+    dc.acero_vigas_riostra,
+    dc.encofrado_malla,
+    dc.instalaciones_electricas_sanitarias,
+    dc.vaciado_losa_anclajes,
+    dc.estructura,
+    dc.armado_columnas,
+    dc.vaciado_columnas,
+    dc.armado_vigas,
+    dc.vaciado_vigas,
+    dc.cerramiento,
+    dc.bloqueado,
+    dc.colocacion_correas,
+    dc.colocacion_techo,
+    dc.acabado,
+    dc.colocacion_ventanas,
+    dc.colocacion_puertas_principales,
+    dc.instalaciones_electricas_sanitarias_paredes,
+    dc.frisos,
+    dc.sobrepiso,
+    dc.ceramica_bano,
+    dc.colocacion_puertas_internas,
+    dc.equipos_accesorios_electricos,
+    dc.equipos_accesorios_sanitarios,
+    dc.colocacion_lavaplatos,
+    dc.pintura,
+    dc.avance_fisico
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
+LEFT JOIN comunidades c ON u.id_comunidad = c.id_comunidad
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN estados e ON m.id_estado = e.id_estado
+LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
+LEFT JOIN estados e ON u.id_estado = e.id_estado
 LEFT JOIN metodos_constructivos mc ON b.id_metodo_constructivo = mc.id_metodo
-LEFT JOIN modelos_constructivos mo ON b.id_modelo_constructivo = mo.id_modelo
+LEFT JOIN modelos_constructivos moc ON b.id_modelo_constructivo = moc.id_modelo
 LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
-WHERE b.id_beneficiario = ?
-";
+WHERE b.id_beneficiario = ?";
 
 $stmt = $conexion->prepare($sql);
 if ($stmt === false) {

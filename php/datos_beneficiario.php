@@ -1,10 +1,7 @@
 <?php
 session_start();
 require_once '../php/conf/conexion.php';
-
-// Verificación robusta de sesión y rol
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
-
 if (!isset($_GET['id'])) {
     echo "ID de beneficiario no especificado.";
     exit;
@@ -24,7 +21,7 @@ SELECT
     b.id_cod_obra,
     b.id_metodo_constructivo,
     b.id_modelo_constructivo,
-    u.comunidad, 
+    c.comunidad, 
     u.direccion_exacta, 
     u.utm_norte, 
     u.utm_este,
@@ -33,8 +30,8 @@ SELECT
     p.id_parroquia,
     p.parroquia AS parroquia,
     e.estado AS estado,
-    mc.nomb_metodo AS metodo_constructivo, 
-    mo.nomb_modelo AS modelo_constructivo,
+    mc.metodo AS metodo_constructivo, 
+    mo.modelo AS modelo_constructivo,
     co.cod_obra AS codigo_obra_nombre,
     dc.acondicionamiento, 
     dc.limpieza, 
@@ -73,6 +70,7 @@ SELECT
     dc.observaciones_fiscalizadores
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+LEFT JOIN comunidades c ON u.id_comunidad = c.id_comunidad
 LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
 LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
 LEFT JOIN estados e ON m.id_estado = e.id_estado
