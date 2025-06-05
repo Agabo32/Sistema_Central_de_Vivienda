@@ -3,7 +3,7 @@ session_start();
 require_once '../php/conf/conexion.php';
 
 // Dar acceso a todos los usuarios
-$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
+$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'root';
 $params = [];
 $types = '';
 $filtro_condiciones = '';

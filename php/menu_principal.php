@@ -81,44 +81,50 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
     </nav>
     <!-- Carrusel de imágenes -->
     <div class="main-content">
-        <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+        <div id="carouselExample" class="carousel slide carousel-fade" data-bs-ride="carousel">
+            <!-- Indicadores -->
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExample" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#carouselExample" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#carouselExample" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                <button type="button" data-bs-target="#carouselExample" data-bs-slide-to="3" aria-label="Slide 4"></button>
+                <button type="button" data-bs-target="#carouselExample" data-bs-slide-to="4" aria-label="Slide 5"></button>
+            </div>
+
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <img src="../imagenes/C0XUWCQWgAAnTeb.jpg" class="d-block w-100" alt="Construcción 1" style="height: 600px; object-fit: cover;">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5 class="text-white">Proyecto Vivienda Digna</h5>
-                        <p class="text-white">Avance de construcción: 75%</p>
+                    <div class="carousel-overlay"></div>
+                    <img src="../imagenes/C0XUWCQWgAAnTeb.jpg" class="d-block w-100" alt="Construcción 1">
+                    <div class="carousel-caption">
                     </div>
                 </div>
                 <div class="carousel-item">
-                    <img src="../imagenes/construccion2.jpg" class="d-block w-100" alt="Construcción 2" style="height: 600px; object-fit: cover;">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5 class="text-white">Barrio Nuevo Hogar</h5>
-                        <p class="text-white">Etapa de finalización</p>
+                    <div class="carousel-overlay"></div>
+                    <img src="../imagenes/construccion2.jpg" class="d-block w-100" alt="Construcción 2">
+                    <div class="carousel-caption">
                     </div>
                 </div>
                 <div class="carousel-item">
-                    <img src="../imagenes/construccion3.jpg" class="d-block w-100" alt="Construcción 3" style="height: 600px; object-fit: cover;">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5 class="text-white">Comunidad Unida</h5>
-                        <p class="text-white">Inicio de obras</p>
+                    <div class="carousel-overlay"></div>
+                    <img src="../imagenes/construccion3.jpg" class="d-block w-100" alt="Construcción 3">
+                    <div class="carousel-caption">
                     </div>
                 </div>
                 <div class="carousel-item">
-                    <img src="../imagenes/construccion4.jpg" class="d-block w-100" alt="Construcción 4" style="height: 600px; object-fit: cover;">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5 class="text-white">Progreso Habitacional</h5>
-                        <p class="text-white">En desarrollo</p>
+                    <div class="carousel-overlay"></div>
+                    <img src="../imagenes/construccion4.jpg" class="d-block w-100" alt="Construcción 4">
+                    <div class="carousel-caption">
                     </div>
                 </div>
                 <div class="carousel-item">
-                    <img src="../imagenes/construccion5.jpg" class="d-block w-100" alt="Construcción 5" style="height: 600px; object-fit: cover;">
-                    <div class="carousel-caption d-none d-md-block">
-                        <h5 class="text-white">Urbanización Moderna</h5>
-                        <p class="text-white">Planificación inicial</p>
+                    <div class="carousel-overlay"></div>
+                    <img src="../imagenes/construccion5.jpg" class="d-block w-100" alt="Construcción 5">
+                    <div class="carousel-caption">
                     </div>
                 </div>
             </div>
+
+            <!-- Controles modernos -->
             <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Anterior</span>
@@ -130,66 +136,79 @@ $otros_datos = $result_otros->fetch_assoc()['otros'];
         </div>
     </div>
 
-    <!-- Tarjetas de estadísticas -->
-   
-<div class="row mb-4">
-    <!-- Tarjeta 1: Total Beneficiarios -->
-    <div class="col-md-4 mb-3">
-        <div class="card border-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center" href=../php/beneficiarios.php">
-                    <div>
-                        <h6 class="card-title text-muted mb-2" >Total Beneficiarios</h6>
-                        <h3 class="mb-0 text-primary"><?php echo $total_beneficiarios; ?></h3>
+    <!-- Sección de Módulos -->
+    <div class="container modules-section">
+        <h2 class="text-center mb-5">Módulos del Sistema</h2>
+        <div class="row g-4">
+            <!-- Módulo de Beneficiarios -->
+            <div class="col-md-4">
+                <div class="module-card">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
                     </div>
-                    <div class="bg-primary bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-users fa-2x text-primary"></i>
+                    <h3>Beneficiarios</h3>
+                    <p>Gestión completa de beneficiarios, actualización de datos y seguimiento de casos.</p>
+                    <a href="../php/beneficiarios.php" class="module-btn">
+                        Acceder <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Módulo de Reportes -->
+            <div class="col-md-4">
+                <div class="module-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-bar"></i>
                     </div>
+                    <h3>Reportes</h3>
+                    <p>Generación de informes, estadísticas y análisis de datos del programa.</p>
+                    <a href="../php/reportes.php" class="module-btn">
+                        Acceder <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Módulo de Configuración -->
+            <div class="col-md-4">
+                <div class="module-card">
+                    <div class="card-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h3>Configuración</h3>
+                    <p>Gestión de usuarios, roles y permisos. Configuración de parámetros del sistema, respaldo de datos y personalización de la interfaz.</p>
+                    <a href="../php/configuracion.php" class="module-btn">
+                        Acceder <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tarjeta 2: Avance -->
-    <div class="col-md-4 mb-3">
-        <div class="card border-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title text-muted mb-2">Avance Total</h6>
-                        <h3 class="mb-0 text-success"><?php echo $porcentaje_avance; ?>%</h3>
-                        <small class="text-muted"><?php echo $avance; ?> de <?php echo $total_beneficiarios; ?></small>
-                    </div>
-                    <div class="bg-success bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-chart-line fa-2x text-success"></i>
-                    </div>
-                </div>
-                <div class="progress mt-3" style="height: 8px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: <?php echo $porcentaje_avance; ?>%" 
-                         aria-valuenow="<?php echo $porcentaje_avance; ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <style>
+    .config-features {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
 
-    <!-- Tarjeta 3: Otros datos (ajusta según necesites) -->
-    <div class="col-md-4 mb-3">
-        <div class="card border-info">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title text-muted mb-2">Otros Datos</h6>
-                        <h3 class="mb-0 text-info"><?php echo $otros_datos; ?></h3>
-                        <small class="text-muted">Descripción breve</small>
-                    </div>
-                    <div class="bg-info bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-info-circle fa-2x text-info"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    .feature-tag {
+        background: rgba(238, 66, 66, 0.2);
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(238, 66, 66, 0.3);
+    }
+
+    .feature-tag i {
+        font-size: 0.8rem;
+    }
+    </style>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
