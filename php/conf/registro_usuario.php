@@ -4,37 +4,40 @@ session_start();
 require_once 'conexion.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre = $_POST['nombre'] ?? '';
-    $apellido = $_POST['apellido'] ?? '';
-    $cedula = $_POST['cedula'] ?? '';
-    $usuario = $_POST['usuario'] ?? '';
-    $contrasena = $_POST['contrasena'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $telefono = $_POST['telefono'] ?? '';
+    // Obtener y sanitizar los datos del formulario
+    $nombre = trim($_POST['nombre'] ?? '');
+    $apellido = trim($_POST['apellido'] ?? '');
+    $nombre_usuario = trim($_POST['nombre_usuario'] ?? '');
+    $cedula = trim($_POST['cedula'] ?? '');
+    $correo = trim($_POST['correo'] ?? '');
+    $telefono = trim($_POST['telefono'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $rol = $_POST['rol'] ?? 'usuario';
 
-    // Validar que todos los campos estén llenos
-    if (empty($nombre) || empty($apellido) || empty($cedula) || empty($usuario) || empty($contrasena) || empty($email)) {
+    // Validar que todos los campos requeridos estén llenos
+    if (empty($nombre) || empty($apellido) || empty($nombre_usuario) || 
+        empty($cedula) || empty($correo) || empty($telefono) || empty($password)) {
         echo json_encode(['status' => 'error', 'message' => 'Todos los campos son obligatorios']);
         exit;
     }
 
     // Verificar si el usuario ya existe
-    $stmt = $conexion->prepare("SELECT id FROM usuarios WHERE usuario = ? OR cedula = ? OR email = ?");
-    $stmt->bind_param("sss", $usuario, $cedula, $email);
+    $stmt = $conexion->prepare("SELECT id_usuario FROM usuario WHERE nombre_usuario = ? OR cedula = ? OR correo = ?");
+    $stmt->bind_param("sss", $nombre_usuario, $cedula, $correo);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        echo json_encode(['status' => 'error', 'message' => 'El usuario, cédula o email ya está registrado']);
+        echo json_encode(['status' => 'error', 'message' => 'El nombre de usuario, cédula o correo ya está registrado']);
         exit;
     }
 
     // Hash de la contraseña
-    $contrasena_hash = password_hash($contrasena, PASSWORD_DEFAULT);
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-    // Insertar nuevo usuario con acceso total
-    $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, apellido, cedula, usuario, contrasena, email, telefono, rol, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', 'activo')");
-    $stmt->bind_param("sssssss", $nombre, $apellido, $cedula, $usuario, $contrasena_hash, $email, $telefono);
+    // Insertar nuevo usuario
+    $stmt = $conexion->prepare("INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssss", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol);
 
     if ($stmt->execute()) {
         echo json_encode(['status' => 'success', 'message' => 'Usuario registrado exitosamente']);
