@@ -4,12 +4,12 @@ session_start();
 // 1. Configuración de la aplicación
 const APP_NAME = 'SIGEVU';
 const DEFAULT_ROLE = 'usuario';
-const ROLES_PERMITIDOS = ['admin', 'usuario']; // Ajustar según necesidades
+const ROLES_PERMITIDOS = ['admin', 'root']; // Ajustar según necesidades
 
 // 2. Configuración de la base de datos
 $db_config = [
     'host' => 'localhost',
-    'dbname' => 'pasantias_v1',
+    'dbname' => 'sistema_central',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8mb4',
@@ -45,7 +45,7 @@ function login_exitoso(array $user): void {
     ];
     
     // Redirección según rol
-    $redirect = ($rol === 'admin') 
+    $redirect = ($rol === 'root') 
         ? './php/beneficiarios.php' 
         : './php/menu_principal.php';
     
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Migración de contraseñas en texto plano (solo para desarrollo)
         elseif ($input_password === $user['password']) {
             $nuevoHash = password_hash($input_password, PASSWORD_DEFAULT);
-            $pdo->prepare("UPDATE usuario SET password = ? WHERE id_usuario = ?")
+            $pdo->prepare("UPDATE usuarios SET password = ? WHERE id_usuario = ?")
                ->execute([$nuevoHash, $user['id_usuario']]);
             login_exitoso($user);
         } else {
@@ -130,7 +130,7 @@ $input_usuario = $_POST['nombre_usuario'] ?? '';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="..//Sistema_Central_de_Vivienda-main/css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 
 <body>
