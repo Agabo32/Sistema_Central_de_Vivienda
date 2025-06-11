@@ -45,19 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         // Crear ubicación primero
         $stmt_ubicacion = $conexion->prepare("
-            INSERT INTO ubicaciones (id_estado, id_municipio, id_parroquia, id_comunidad, utm_este, utm_norte, direccion_exacta) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO ubicaciones (municipio, parroquia, comunidad, direccion_exacta, utm_norte, utm_este) 
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
         
-        $id_estado = 12; // Lara
         $id_municipio = intval($_POST['municipio']);
         $id_parroquia = intval($_POST['parroquia']);
-        $id_comunidad = !empty($_POST['comunidad']) ? intval($_POST['comunidad']) : null;
-        $utm_este = !empty($_POST['utm_este']) ? $_POST['utm_este'] : null;
-        $utm_norte = !empty($_POST['utm_norte']) ? $_POST['utm_norte'] : null;
-        $direccion_exacta = !empty($_POST['direccion_exacta']) ? $_POST['direccion_exacta'] : null;
+        $id_comunidad = !empty($_POST['comunidad']) ? intval($_POST['comunidad']) : 0;
+        $direccion_exacta = !empty($_POST['direccion_exacta']) ? $_POST['direccion_exacta'] : '';
+        $utm_norte = !empty($_POST['utm_norte']) ? $_POST['utm_norte'] : '';
+        $utm_este = !empty($_POST['utm_este']) ? $_POST['utm_este'] : '';
         
-        $stmt_ubicacion->bind_param("iiissss", $id_estado, $id_municipio, $id_parroquia, $id_comunidad, $utm_este, $utm_norte, $direccion_exacta);
+        $stmt_ubicacion->bind_param("iiisss", $id_municipio, $id_parroquia, $id_comunidad, $direccion_exacta, $utm_norte, $utm_este);
         
         if (!$stmt_ubicacion->execute()) {
             throw new Exception("Error al crear la ubicación: " . $stmt_ubicacion->error);
@@ -67,20 +66,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         // Crear beneficiario
         $stmt_beneficiario = $conexion->prepare("
-            INSERT INTO beneficiarios (tipo_de_documento, cedula, nombre_beneficiario, telefono, fecha_actualizacion, id_ubicacion, status, id_metodo_constructivo, id_modelo_constructivo, id_cod_obra) 
-            VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?)
+            INSERT INTO beneficiarios (
+                id_ubicacion,
+                cedula,
+                nombre_beneficiario,
+                telefono,
+                cod_obra,
+                metodo_constructivo,
+                modelo_constructivo,
+                fiscalizador,
+                status
+            ) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        $tipo_documento = 'V'; // Por defecto venezolano
         $nombre = $_POST['nombre_beneficiario'];
         $cedula = $_POST['cedula'];
-        $telefono = $_POST['telefono'];
+        $telefono = !empty($_POST['telefono']) ? $_POST['telefono'] : null;
+        $cod_obra = intval($_POST['codigo_obra']);
+        $metodo_constructivo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : 0;
+        $modelo_constructivo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : 0;
+        $fiscalizador = !empty($_POST['fiscalizador']) ? intval($_POST['fiscalizador']) : 0;
         $status = $_POST['status'] ?? 'activo';
-        $id_metodo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : null;
-        $id_modelo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : null;
-        $id_cod_obra = intval($_POST['codigo_obra']);
         
-        $stmt_beneficiario->bind_param("ssssissii", $tipo_documento, $cedula, $nombre, $telefono, $id_ubicacion, $status, $id_metodo, $id_modelo, $id_cod_obra);
+        $stmt_beneficiario->bind_param("isssiiiii", 
+            $id_ubicacion, 
+            $cedula, 
+            $nombre, 
+            $telefono, 
+            $cod_obra,
+            $metodo_constructivo,
+            $modelo_constructivo,
+            $fiscalizador,
+            $status
+        );
         
         if (!$stmt_beneficiario->execute()) {
             throw new Exception("Error al crear el beneficiario: " . $stmt_beneficiario->error);
@@ -107,20 +126,28 @@ $pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
 // Preparar consulta con posibles filtros - CORREGIDA
-$sql_base = "SELECT b.*, 
-    p.parroquia, 
-    m.municipio, 
-    e.estado,
-    c.comunidad,
-    co.cod_obra as codigo_obra_nombre
+$sql_base = "SELECT 
+    b.*,
+    p.parroquia as nombre_parroquia, 
+    m.municipio as nombre_municipio,
+    c.comunidad as nombre_comunidad,
+    mc.metodo as nombre_metodo,
+    moc.modelo as nombre_modelo,
+    f.fiscalizador as nombre_fiscalizador,
+    co.cod_obra as codigo_obra_nombre,
+    u.direccion_exacta,
+    u.utm_norte,
+    u.utm_este
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-LEFT JOIN comunidades c ON u.id_comunidad = c.id_comunidad
-LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
-LEFT JOIN estados e ON u.id_estado = e.id_estado
-LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
-WHERE e.id_estado = $id_lara ";
+LEFT JOIN comunidades c ON u.comunidad = c.id_comunidad
+LEFT JOIN parroquias p ON u.parroquia = p.id_parroquia
+LEFT JOIN municipios m ON u.municipio = m.id_municipio
+LEFT JOIN cod_obra co ON b.cod_obra = co.id_cod_obra
+LEFT JOIN metodos_constructivos mc ON b.metodo_constructivo = mc.id_metodo
+LEFT JOIN modelos_constructivos moc ON b.modelo_constructivo = moc.id_modelo
+LEFT JOIN fiscalizadores f ON b.fiscalizador = f.id_fiscalizador
+WHERE 1=1 ";
 
 // Aplicar filtro de estado
 if (!isset($_GET['status']) || $_GET['status'] === 'activo' || $_GET['status'] === '') {
@@ -465,7 +492,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                                         <td><?= htmlspecialchars($beneficiario['telefono']) ?></td>
                                                         <td>
                                                             <span class="badge bg-info bg-opacity-10 text-info">
-                                                                <?= htmlspecialchars($beneficiario['comunidad'] ?? 'No especificada') ?>
+                                                                <?= htmlspecialchars($beneficiario['nombre_comunidad'] ?? 'No especificada') ?>
                                                             </span>
                                                         </td>
                                                         <td>
@@ -708,6 +735,27 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                 <select class="form-select" id="status" name="status" required>
                                     <option value="activo" selected>Activo</option>
                                     <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="metodo_constructivo" class="form-label">Método Constructivo *</label>
+                                <select class="form-select" id="metodo_constructivo" name="metodo_constructivo" required>
+                                    <option value="0">Seleccione un método</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="modelo_constructivo" class="form-label">Modelo Constructivo *</label>
+                                <select class="form-select" id="modelo_constructivo" name="modelo_constructivo" required>
+                                    <option value="0">Seleccione un modelo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="fiscalizador" class="form-label">Fiscalizador *</label>
+                                <select class="form-select" id="fiscalizador" name="fiscalizador" required>
+                                    <option value="0">Seleccione un fiscalizador</option>
                                 </select>
                             </div>
                         </div>

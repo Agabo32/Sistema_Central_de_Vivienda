@@ -5,24 +5,26 @@ require_once '../php/conf/conexion.php';
 // Verificación de autenticación
 verificar_autenticacion();
 
-// Consulta para contar el total de beneficiarios
+// Total de beneficiarios
 $sql_total = "SELECT COUNT(*) as total FROM beneficiarios";
 $result_total = $conexion->query($sql_total);
-$total_beneficiarios = $result_total->fetch_assoc()['total'];
+$row_total = $result_total->fetch_assoc();
+$total = $row_total['total'];
 
-// Consulta alternativa para "avance" - usando una columna que sí existe
-// Por ejemplo, podemos contar beneficiarios con teléfono registrado
+// Beneficiarios con teléfono
 $sql_avance = "SELECT COUNT(*) as avance FROM beneficiarios WHERE telefono IS NOT NULL AND telefono != ''";
 $result_avance = $conexion->query($sql_avance);
-$avance = $result_avance->fetch_assoc()['avance'];
+$row_avance = $result_avance->fetch_assoc();
+$avance = $row_avance['avance'];
 
-// Calculamos el porcentaje de avance
-$porcentaje_avance = ($total_beneficiarios > 0) ? round(($avance / $total_beneficiarios) * 100) : 0;
-
-// Consulta para otro dato estadístico - por ejemplo, beneficiarios con cédula
+// Beneficiarios con cédula
 $sql_otros = "SELECT COUNT(*) as otros FROM beneficiarios WHERE cedula IS NOT NULL AND cedula != ''";
 $result_otros = $conexion->query($sql_otros);
-$otros_datos = $result_otros->fetch_assoc()['otros'];
+$row_otros = $result_otros->fetch_assoc();
+$otros = $row_otros['otros'];
+
+// Calculamos el porcentaje de avance
+$porcentaje_avance = ($total > 0) ? round(($avance / $total) * 100) : 0;
 ?>
 
 <!DOCTYPE html>

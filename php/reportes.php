@@ -39,8 +39,8 @@ $sql = "SELECT
 FROM estados e
 JOIN municipios m ON e.id_estado = m.id_estado
 JOIN parroquias p ON m.id_municipio = p.id_municipio
-JOIN ubicaciones u ON p.id_parroquia = u.id_parroquia
-JOIN comunidades c ON u.id_comunidad = c.id_comunidad
+JOIN ubicaciones u ON p.id_parroquia = u.parroquia
+JOIN comunidades c ON u.comunidad = c.id_comunidad
 LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE e.id_estado = ?";

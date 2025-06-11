@@ -25,12 +25,11 @@ SELECT
     b.cedula, 
     b.nombre_beneficiario, 
     b.telefono, 
-    b.fecha_actualizacion,
     b.status,
-    b.id_cod_obra,
-    b.id_metodo_constructivo,
-    b.id_modelo_constructivo,
-    b.id_fiscalizador,
+    b.cod_obra,
+    b.metodo_constructivo,
+    b.modelo_constructivo,
+    b.fiscalizador,
     c.comunidad, 
     u.direccion_exacta, 
     u.utm_norte, 
@@ -39,10 +38,9 @@ SELECT
     m.municipio AS municipio,  
     p.id_parroquia,
     p.parroquia AS parroquia,
-    e.estado AS estado,
-    mc.metodo AS metodo_constructivo, 
-    mo.modelo AS modelo_constructivo,
-    co.cod_obra,
+    mc.metodo AS metodo_constructivo_nombre, 
+    mo.modelo AS modelo_constructivo_nombre,
+    co.cod_obra as codigo_obra_nombre,
     f.Fiscalizador AS nombre_fiscalizador,
     dc.acondicionamiento, 
     dc.limpieza, 
@@ -82,14 +80,13 @@ SELECT
     dc.observaciones_fiscalizadores
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-LEFT JOIN comunidades c ON u.id_comunidad = c.id_comunidad
-LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
+LEFT JOIN comunidades c ON u.comunidad = c.id_comunidad
+LEFT JOIN parroquias p ON u.parroquia = p.id_parroquia
 LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
-LEFT JOIN estados e ON m.id_estado = e.id_estado
-LEFT JOIN metodos_constructivos mc ON b.id_metodo_constructivo = mc.id_metodo
-LEFT JOIN modelos_constructivos mo ON b.id_modelo_constructivo = mo.id_modelo
-LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
-LEFT JOIN fiscalizadores f ON b.id_fiscalizador = f.id_fiscalizador
+LEFT JOIN metodos_constructivos mc ON b.metodo_constructivo = mc.id_metodo
+LEFT JOIN modelos_constructivos mo ON b.modelo_constructivo = mo.id_modelo
+LEFT JOIN cod_obra co ON b.cod_obra = co.id_cod_obra
+LEFT JOIN fiscalizadores f ON b.fiscalizador = f.id_fiscalizador
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE b.id_beneficiario = ?
 ";
@@ -295,7 +292,7 @@ function formatProgressValue($value) {
                                                 <?php
                                                 if ($resultado_fiscalizadores) {
                                                     while ($row = mysqli_fetch_assoc($resultado_fiscalizadores)) {
-                                                        $selected = ($row['id_fiscalizador'] == $data['id_fiscalizador']) ? 'selected' : '';
+                                                        $selected = ($row['id_fiscalizador'] == $data['fiscalizador']) ? 'selected' : '';
                                                         echo "<option value='{$row['id_fiscalizador']}' $selected>{$row['Fiscalizador']}</option>";
                                                     }
                                                 }
@@ -318,7 +315,7 @@ function formatProgressValue($value) {
                                                 <?php
                                                 $codigos_obra = $conexion->query("SELECT id_cod_obra, cod_obra FROM cod_obra ORDER BY cod_obra ASC");
                                                 while ($row = $codigos_obra->fetch_assoc()) {
-                                                    $selected = ($row['id_cod_obra'] == $data['id_cod_obra']) ? 'selected' : '';
+                                                    $selected = ($row['id_cod_obra'] == $data['cod_obra']) ? 'selected' : '';
                                                     echo "<option value='{$row['id_cod_obra']}' $selected>{$row['cod_obra']}</option>";
                                                 }
                                                 ?>
@@ -332,7 +329,7 @@ function formatProgressValue($value) {
                                                 <?php
                                                 $metodos = $conexion->query("SELECT id_metodo, metodo FROM metodos_constructivos ORDER BY metodo ASC");
                                                 while ($row = $metodos->fetch_assoc()) {
-                                                    $selected = ($row['id_metodo'] == $data['id_metodo_constructivo']) ? 'selected' : '';
+                                                    $selected = ($row['id_metodo'] == $data['metodo_constructivo']) ? 'selected' : '';
                                                     echo "<option value='{$row['id_metodo']}' $selected>{$row['metodo']}</option>";
                                                 }
                                                 ?>
@@ -346,7 +343,7 @@ function formatProgressValue($value) {
                                                 <?php
                                                 $modelos = $conexion->query("SELECT id_modelo, modelo FROM modelos_constructivos ORDER BY modelo ASC");
                                                 while ($row = $modelos->fetch_assoc()) {
-                                                    $selected = ($row['id_modelo'] == $data['id_modelo_constructivo']) ? 'selected' : '';
+                                                    $selected = ($row['id_modelo'] == $data['modelo_constructivo']) ? 'selected' : '';
                                                     echo "<option value='{$row['id_modelo']}' $selected>{$row['modelo']}</option>";
                                                 }
                                                 ?>
@@ -764,15 +761,15 @@ function formatProgressValue($value) {
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label"style="color: #000000">Código de Obra</div>
-                        <div class="info-value"><?php echo htmlspecialchars($data['cod_obra'] ?? 'No asignado'); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($data['codigo_obra_nombre'] ?? 'No asignado'); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"style="color: #000000">Modelo Constructivo</div>
-                        <div class="info-value"><?php echo htmlspecialchars($data['modelo_constructivo']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($data['modelo_constructivo_nombre']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"style="color: #000000">Método Constructivo</div>
-                        <div class="info-value"><?php echo htmlspecialchars($data['metodo_constructivo']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($data['metodo_constructivo_nombre']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"style="color: #000000">Fiscalizador</div>

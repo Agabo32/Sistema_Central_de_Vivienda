@@ -13,42 +13,38 @@ if (!isset($_GET['id'])) {
 $id = intval($_GET['id']); // Asegurarse de que el ID es un número entero
 
 // Consulta SQL corregida con nombres de tablas y campos actualizados
-$sql = "
-SELECT
-    b.id_beneficiario, 
-    b.cedula, 
-    b.nombre_beneficiario, 
-    b.telefono, 
-    b.fecha_actualizacion,
+$sql = "SELECT 
+    b.id_beneficiario,
+    b.cedula,
+    b.nombre_beneficiario,
+    b.telefono,
     b.status,
-    co.cod_obra AS codigo_obra,
-    u.comunidad, 
-    u.direccion_exacta, 
-    u.utm_norte, 
+    b.cod_obra,
+    b.metodo_constructivo,
+    b.modelo_constructivo,
+    b.fiscalizador,
+    u.direccion_exacta,
+    u.utm_norte,
     u.utm_este,
-    m.id_municipio,
-    m.municipio AS municipio,  
-    p.id_parroquia,
-    p.parroquia AS parroquia,
-    e.estado AS estado,
-    mc.nomb_metodo AS metodo_constructivo, 
-    mo.nomb_modelo AS modelo_constructivo,
-    dc.avance_fisico, 
-    dc.fecha_culminacion, 
-    dc.acta_entregada, 
-    dc.observaciones_responsables_control, 
-    dc.observaciones_fiscalizadores
+    p.parroquia as nombre_parroquia,
+    m.municipio as nombre_municipio,
+    c.comunidad as nombre_comunidad,
+    mc.metodo as nombre_metodo,
+    mo.modelo as nombre_modelo,
+    co.cod_obra as codigo_obra_nombre,
+    f.Fiscalizador as nombre_fiscalizador,
+    dc.*
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
-LEFT JOIN municipios m ON u.id_municipio = m.id_municipio
-LEFT JOIN parroquias p ON u.id_parroquia = p.id_parroquia
-LEFT JOIN estados e ON m.id_estado = e.id_estado
-LEFT JOIN metodos_constructivos mc ON b.id_metodo_constructivo = mc.id_metodo
-LEFT JOIN modelos_constructivos mo ON b.id_modelo_constructivo = mo.id_modelo
-LEFT JOIN cod_obra co ON b.id_cod_obra = co.id_cod_obra
+LEFT JOIN comunidades c ON u.comunidad = c.id_comunidad
+LEFT JOIN parroquias p ON u.parroquia = p.id_parroquia
+LEFT JOIN municipios m ON u.municipio = m.id_municipio
+LEFT JOIN cod_obra co ON b.cod_obra = co.id_cod_obra
+LEFT JOIN metodos_constructivos mc ON b.metodo_constructivo = mc.id_metodo
+LEFT JOIN modelos_constructivos mo ON b.modelo_constructivo = mo.id_modelo
+LEFT JOIN fiscalizadores f ON b.fiscalizador = f.id_fiscalizador
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
-WHERE b.id_beneficiario = ?
-";
+WHERE b.id_beneficiario = ?";
 
 $stmt = $conexion->prepare($sql);
 if ($stmt === false) {
@@ -296,14 +292,14 @@ if (!$data) {
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">COMUNIDAD</label>
                                     <input type="text" class="form-control form-input" id="comunidad" 
-                                           value="<?php echo !empty($data['comunidad']) ? htmlspecialchars($data['comunidad']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['comunidad']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['nombre_comunidad']) ? htmlspecialchars($data['nombre_comunidad']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_comunidad']) ? '#REF!' : ''; ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">Parroquia</label>
                                     <input type="text" class="form-control form-input" id="parroquia" 
-                                           value="<?php echo !empty($data['parroquia']) ? htmlspecialchars($data['parroquia']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['parroquia']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['nombre_parroquia']) ? htmlspecialchars($data['nombre_parroquia']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_parroquia']) ? '#REF!' : ''; ?>">
                                 </div>
                             </div>
                             
@@ -312,8 +308,8 @@ if (!$data) {
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">Municipio</label>
                                     <input type="text" class="form-control form-input" id="municipio" 
-                                           value="<?php echo !empty($data['municipio']) ? htmlspecialchars($data['municipio']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['municipio']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['nombre_municipio']) ? htmlspecialchars($data['nombre_municipio']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_municipio']) ? '#REF!' : ''; ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">Estado</label>
@@ -352,14 +348,14 @@ if (!$data) {
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">Método Constructivo</label>
                                     <input type="text" class="form-control form-input" id="metodoConstructivo" 
-                                           value="<?php echo !empty($data['metodo_constructivo']) ? htmlspecialchars($data['metodo_constructivo']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['metodo_constructivo']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['nombre_metodo']) ? htmlspecialchars($data['nombre_metodo']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_metodo']) ? '#REF!' : ''; ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="field-label">Modelo Constructivo</label>
                                     <input type="text" class="form-control form-input" id="modeloConstructivo" 
-                                           value="<?php echo !empty($data['modelo_constructivo']) ? htmlspecialchars($data['modelo_constructivo']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['modelo_constructivo']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['nombre_modelo']) ? htmlspecialchars($data['nombre_modelo']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_modelo']) ? '#REF!' : ''; ?>">
                                 </div>
                             </div>
                             
