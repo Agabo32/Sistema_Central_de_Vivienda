@@ -63,7 +63,7 @@ try {
     $stmt_check->close();
     
     // Actualizar el proyecto
-    $query_update = "UPDATE beneficiarios SET proyecto = ?, fecha_actualizacion = NOW() WHERE id_beneficiario = ?";
+    $query_update = "UPDATE beneficiarios SET proyecto = ? WHERE id_beneficiario = ?";
     $stmt_update = $conexion->prepare($query_update);
     
     if (!$stmt_update) {
