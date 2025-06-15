@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once '../php/conf/conexion.php';
+require_once '../php/conf/session_helper.php';
+
+// Verificación de autenticación
+verificar_autenticacion();
 
 // Dar acceso a todos los usuarios
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'root';
@@ -17,12 +21,18 @@ $registros_por_pagina = 10;
 $pagina_actual = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-
-// Procesar formulario de nuevo beneficiario ANTES de cualquier salida HTML
+// Manejar solicitudes AJAX para crear beneficiario
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuevo_beneficiario') {
     // Limpiar cualquier salida previa
-    ob_clean();
-    header('Content-Type: application/json');
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Establecer headers JSON
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
     
     try {
         $conexion->begin_transaction();
@@ -33,6 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (empty($_POST[$field])) {
                 throw new Exception("El campo $field es requerido");
             }
+        }
+        
+        // Validar formato de cédula
+        if (!preg_match('/^\d{7,8}$/', $_POST['cedula'])) {
+            throw new Exception("La cédula debe tener entre 7 y 8 dígitos");
         }
         
         // Verificar si la cédula ya existe
@@ -51,12 +66,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         $id_municipio = intval($_POST['municipio']);
         $id_parroquia = intval($_POST['parroquia']);
-        $id_comunidad = !empty($_POST['comunidad']) ? intval($_POST['comunidad']) : 0;
+        $id_comunidad = !empty($_POST['comunidad']) ? intval($_POST['comunidad']) : null;
         $direccion_exacta = !empty($_POST['direccion_exacta']) ? $_POST['direccion_exacta'] : '';
         $utm_norte = !empty($_POST['utm_norte']) ? $_POST['utm_norte'] : '';
         $utm_este = !empty($_POST['utm_este']) ? $_POST['utm_este'] : '';
         
-        $stmt_ubicacion->bind_param("iiisss", $id_municipio, $id_parroquia, $id_comunidad, $direccion_exacta, $utm_norte, $utm_este);
+        $stmt_ubicacion->bind_param("iiisss", 
+            $id_municipio, 
+            $id_parroquia, 
+            $id_comunidad, 
+            $direccion_exacta, 
+            $utm_norte, 
+            $utm_este
+        );
         
         if (!$stmt_ubicacion->execute()) {
             throw new Exception("Error al crear la ubicación: " . $stmt_ubicacion->error);
@@ -80,20 +102,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        $nombre = $_POST['nombre_beneficiario'];
         $cedula = $_POST['cedula'];
-        $telefono = !empty($_POST['telefono']) ? $_POST['telefono'] : null;
+        $nombre = $_POST['nombre_beneficiario'];
+        $telefono = $_POST['telefono'];
         $cod_obra = intval($_POST['codigo_obra']);
-        $metodo_constructivo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : 0;
-        $modelo_constructivo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : 0;
-        $fiscalizador = !empty($_POST['fiscalizador']) ? intval($_POST['fiscalizador']) : 0;
+        $metodo_constructivo = !empty($_POST['metodo_constructivo']) ? intval($_POST['metodo_constructivo']) : null;
+        $modelo_constructivo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : null;
+        $fiscalizador = !empty($_POST['fiscalizador']) ? intval($_POST['fiscalizador']) : null;
         $status = $_POST['status'] ?? 'activo';
         
-        $stmt_beneficiario->bind_param("isssiiiii", 
-            $id_ubicacion, 
-            $cedula, 
-            $nombre, 
-            $telefono, 
+        $stmt_beneficiario->bind_param("isssiiiss", 
+            $id_ubicacion,
+            $cedula,
+            $nombre,
+            $telefono,
             $cod_obra,
             $metodo_constructivo,
             $modelo_constructivo,
@@ -105,13 +127,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             throw new Exception("Error al crear el beneficiario: " . $stmt_beneficiario->error);
         }
         
+        $id_beneficiario = $conexion->insert_id;
+        
+        // Crear registro en datos_de_construccion
+        $stmt_construccion = $conexion->prepare("
+            INSERT INTO datos_de_construccion (
+                id_beneficiario,
+                acondicionamiento,
+                limpieza,
+                replanteo,
+                fundacion,
+                excavacion,
+                acero_vigas_riostra,
+                encofrado_malla,
+                instalaciones_electricas_sanitarias,
+                vaciado_losa_anclajes,
+                estructura,
+                armado_columnas,
+                vaciado_columnas,
+                armado_vigas,
+                vaciado_vigas,
+                cerramiento,
+                bloqueado,
+                colocacion_correas,
+                colocacion_techo,
+                acabado,
+                colocacion_ventanas,
+                colocacion_puertas_principales,
+                instalaciones_electricas_sanitarias_paredes,
+                frisos,
+                sobrepiso,
+                ceramica_bano,
+                colocacion_puertas_internas,
+                equipos_accesorios_electricos,
+                equipos_accesorios_sanitarios,
+                colocacion_lavaplatos,
+                pintura,
+                avance_fisico
+            ) VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        ");
+        
+        $stmt_construccion->bind_param("i", $id_beneficiario);
+        
+        if (!$stmt_construccion->execute()) {
+            throw new Exception("Error al crear los datos de construcción: " . $stmt_construccion->error);
+        }
+        
         $conexion->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Beneficiario creado exitosamente']);
+        
+        // Respuesta exitosa
+        echo json_encode([
+            'status' => 'success', 
+            'message' => 'Beneficiario creado exitosamente',
+            'id_beneficiario' => $id_beneficiario
+        ], JSON_UNESCAPED_UNICODE);
+        
         exit;
         
     } catch (Exception $e) {
         $conexion->rollback();
-        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        
+        // Respuesta de error
+        echo json_encode([
+            'status' => 'error', 
+            'message' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+        
         exit;
     }
 }
@@ -185,6 +266,15 @@ if (!empty($_GET['codigo_obra'])) {
     $types .= 's';
 }
 
+// Filtro de búsqueda por cédula o nombre
+if (!empty($_GET['buscar_termino'])) {
+    $sql_base .= " AND (b.cedula LIKE ? OR b.nombre_beneficiario LIKE ?)";
+    $termino_busqueda = '%'.$_GET['buscar_termino'].'%';
+    $params[] = $termino_busqueda;
+    $params[] = $termino_busqueda;
+    $types .= 'ss';
+}
+
 // Consulta para contar total de registros
 $total_registros_query = $sql_base;
 $total_stmt = $conexion->prepare($total_registros_query);
@@ -199,7 +289,7 @@ $total_registros = $total_result->num_rows;
 $total_paginas = ceil($total_registros / $registros_por_pagina);
 
 // Añadir límite y offset a la consulta principal
-$sql_base .= " ORDER BY b.id_beneficiario DESC LIMIT ? OFFSET ?";
+$sql_base .= " ORDER BY b.id_beneficiario ASC LIMIT ? OFFSET ?";
 $types .= 'ii';
 $params[] = $registros_por_pagina;
 $params[] = $offset;
@@ -221,13 +311,8 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beneficiarios - SIGEVU</title>
     <link rel="icon" type="image/x-icon" href="../imagenes/favicon.ico">
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- CSS personalizado -->
     <link rel="stylesheet" href="../css/beneficiarios.css">
     <style>
 .is-invalid {
@@ -314,6 +399,11 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     <li class="nav-item">
                         <a class="nav-link" href="../php/reportes.php">
                             <i class="fas fa-chart-bar me-1"></i> Reportes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../dashboard.php">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
                         </a>
                     </li>
                 </ul>
@@ -451,10 +541,35 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                 <h5 class="mb-0 text-white">
                                     <i class="fas fa-list me-2"></i> Beneficiarios Registrados
                                 </h5>
-                                <div class="search-box" style="max-width: 300px;">
-                                    <i class="fas fa-search search-icon"></i>
-                                    <input type="text" class="form-control" id="buscar" placeholder="Buscar beneficiario...">
-                                </div>
+                                <form class="search-box" style="max-width: 400px;" method="GET" id="formBusqueda">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="buscar_termino" name="buscar_termino" 
+                                               placeholder="Buscar por cédula o nombre..." 
+                                               value="<?php echo isset($_GET['buscar_termino']) ? htmlspecialchars($_GET['buscar_termino']) : ''; ?>">
+                                        <button class="btn btn-primary" type="submit" title="Buscar">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <?php if(isset($_GET['buscar_termino'])): ?>
+                                            <a href="beneficiarios.php" class="btn btn-secondary" title="Limpiar búsqueda">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <!-- Mantener los filtros actuales -->
+                                    <?php if(isset($_GET['municipio'])): ?>
+                                        <input type="hidden" name="municipio" value="<?php echo htmlspecialchars($_GET['municipio']); ?>">
+                                    <?php endif; ?>
+                                    <?php if(isset($_GET['parroquia'])): ?>
+                                        <input type="hidden" name="parroquia" value="<?php echo htmlspecialchars($_GET['parroquia']); ?>">
+                                    <?php endif; ?>
+                                    <?php if(isset($_GET['comunidad'])): ?>
+                                        <input type="hidden" name="comunidad" value="<?php echo htmlspecialchars($_GET['comunidad']); ?>">
+                                    <?php endif; ?>
+                                    <?php if(isset($_GET['status'])): ?>
+                                        <input type="hidden" name="status" value="<?php echo htmlspecialchars($_GET['status']); ?>">
+                                    <?php endif; ?>
+                                </form>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -590,23 +705,24 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="formNuevoBeneficiario" method="POST">
+                    <input type="hidden" name="action" value="nuevo_beneficiario">
                     <div class="modal-body">
                         <!-- Información Personal -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="nombre_beneficiario" class="form-label">Nombre Completo *</label>
-                                <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="cedula" class="form-label">Cédula *</label>
                                 <input type="text" class="form-control" id="cedula" name="cedula" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="telefono" class="form-label">Teléfono *</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono" required>
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="telefono" class="form-label">Teléfono *</label>
-                                <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                                <label for="nombre_beneficiario" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="codigo_obra" class="form-label">Código de Obra *</label>
@@ -660,19 +776,10 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
                         <div class="row">
                             <div class="col-md-8 mb-3">
-                                <label for="comunidad" class="form-label">Comunidad Existente</label>
+                                <label for="comunidad" class="form-label">Comunidad</label>
                                 <div class="input-group">
                                     <select class="form-select" id="comunidad" name="comunidad">
                                         <option value="">Seleccione una comunidad existente</option>
-                                        <?php
-                                        $comunidades = $conexion->query("SELECT c.ID_COMUNIDAD, c.COMUNIDAD, p.id_parroquia, p.parroquia 
-                                                                       FROM comunidades c 
-                                                                       JOIN parroquias p ON c.ID_PARROQUIA = p.id_parroquia 
-                                                                       ORDER BY c.COMUNIDAD ASC");
-                                        while ($com = $comunidades->fetch_assoc()) {
-                                            echo "<option value='{$com['ID_COMUNIDAD']}'>{$com['COMUNIDAD']} - {$com['parroquia']}</option>";
-                                        }
-                                        ?>
                                     </select>
                                 </div>
                                 <div class="mt-2">
@@ -700,15 +807,9 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                         Complete los siguientes campos para registrar una nueva comunidad
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-12 mb-3">
                                             <label for="nueva_comunidad_nombre" class="form-label">Nombre de la Nueva Comunidad</label>
                                             <input type="text" class="form-control" id="nueva_comunidad_nombre" name="nueva_comunidad_nombre">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label for="nueva_comunidad_parroquia" class="form-label">Parroquia para la Nueva Comunidad</label>
-                                            <select class="form-select" id="nueva_comunidad_parroquia" name="nueva_comunidad_parroquia">
-                                                <option value="">Seleccione una parroquia</option>
-                                            </select>
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
@@ -741,21 +842,39 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="metodo_constructivo" class="form-label">Método Constructivo *</label>
-                                <select class="form-select" id="metodo_constructivo" name="metodo_constructivo" required>
-                                    <option value="0">Seleccione un método</option>
+                                <label for="metodo_constructivo" class="form-label">Método Constructivo</label>
+                                <select class="form-select" id="metodo_constructivo" name="metodo_constructivo">
+                                    <option value="">Seleccione un método</option>
+                                    <?php
+                                    $metodos = $conexion->query("SELECT id_metodo, metodo FROM metodos_constructivos ORDER BY metodo ASC");
+                                    while ($met = $metodos->fetch_assoc()) {
+                                        echo "<option value='{$met['id_metodo']}'>{$met['metodo']}</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="modelo_constructivo" class="form-label">Modelo Constructivo *</label>
-                                <select class="form-select" id="modelo_constructivo" name="modelo_constructivo" required>
-                                    <option value="0">Seleccione un modelo</option>
+                                <label for="modelo_constructivo" class="form-label">Modelo Constructivo</label>
+                                <select class="form-select" id="modelo_constructivo" name="modelo_constructivo">
+                                    <option value="">Seleccione un modelo</option>
+                                    <?php
+                                    $modelos = $conexion->query("SELECT id_modelo, modelo FROM modelos_constructivos ORDER BY modelo ASC");
+                                    while ($mod = $modelos->fetch_assoc()) {
+                                        echo "<option value='{$mod['id_modelo']}'>{$mod['modelo']}</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="fiscalizador" class="form-label">Fiscalizador *</label>
-                                <select class="form-select" id="fiscalizador" name="fiscalizador" required>
-                                    <option value="0">Seleccione un fiscalizador</option>
+                                <label for="fiscalizador" class="form-label">Fiscalizador</label>
+                                <select class="form-select" id="fiscalizador" name="fiscalizador">
+                                    <option value="">Seleccione un fiscalizador</option>
+                                    <?php
+                                    $fiscalizadores = $conexion->query("SELECT id_fiscalizador, Fiscalizador FROM fiscalizadores ORDER BY Fiscalizador ASC");
+                                    while ($fis = $fiscalizadores->fetch_assoc()) {
+                                        echo "<option value='{$fis['id_fiscalizador']}'>{$fis['Fiscalizador']}</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                         </div>
@@ -800,18 +919,66 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             }, 5000);
         }
 
+        // Función para validar formulario
+        function validateForm(formData) {
+            const requiredFields = [
+                { field: 'nombre_beneficiario', name: 'Nombre del beneficiario' },
+                { field: 'cedula', name: 'Cédula' },
+                { field: 'telefono', name: 'Teléfono' },
+                { field: 'codigo_obra', name: 'Código de obra' },
+                { field: 'municipio', name: 'Municipio' },
+                { field: 'parroquia', name: 'Parroquia' }
+            ];
+
+            // Verificar campos requeridos
+            for (const { field, name } of requiredFields) {
+                if (!formData.get(field) || formData.get(field).trim() === '') {
+                    showAlert('error', `El campo ${name} es requerido`);
+                    return false;
+                }
+            }
+
+            // Validar formato de cédula
+            const cedula = formData.get('cedula').trim();
+            if (!/^\d{7,8}$/.test(cedula)) {
+                showAlert('error', 'La cédula debe tener entre 7 y 8 dígitos');
+                return false;
+            }
+
+            // Validar formato de teléfono
+            const telefono = formData.get('telefono').replace(/[-\s]/g, '');
+            if (!/^\d{10,11}$/.test(telefono)) {
+                showAlert('error', 'El teléfono debe tener un formato válido (10-11 dígitos)');
+                return false;
+            }
+
+            return true;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const municipioSelect = document.getElementById('municipioSelect');
             const parroquiaSelect = document.getElementById('parroquiaSelect');
             const comunidadSelect = document.getElementById('comunidadSelect');
+            const modalMunicipio = document.getElementById('modalMunicipio');
+            const modalParroquia = document.getElementById('modalParroquia');
+            const modalComunidad = document.getElementById('comunidad');
+            const toggleNuevaComunidad = document.getElementById('toggleNuevaComunidad');
+            const cerrarNuevaComunidad = document.getElementById('cerrarNuevaComunidad');
+            const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
+            const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
 
             // Función para cargar parroquias
-            async function cargarParroquias(municipioId) {
+            async function cargarParroquias(municipioId, targetSelect = parroquiaSelect) {
                 if (!municipioId) {
-                    parroquiaSelect.innerHTML = '<option value="">Todas</option>';
-                    parroquiaSelect.disabled = true;
-                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
-                    comunidadSelect.disabled = true;
+                    targetSelect.innerHTML = '<option value="">Todas</option>';
+                    targetSelect.disabled = true;
+                    if (targetSelect === parroquiaSelect) {
+                        comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                        comunidadSelect.disabled = true;
+                    } else {
+                        modalComunidad.innerHTML = '<option value="">Seleccione una comunidad</option>';
+                        modalComunidad.disabled = true;
+                    }
                     return;
                 }
 
@@ -819,25 +986,25 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     const response = await fetch(`conf/get_parroquias.php?municipio_id=${municipioId}`);
                     const data = await response.json();
                     
-                    parroquiaSelect.innerHTML = '<option value="">Todas</option>';
+                    targetSelect.innerHTML = '<option value="">Seleccione una parroquia</option>';
                     data.forEach(parroquia => {
                         const option = document.createElement('option');
                         option.value = parroquia.id_parroquia;
                         option.textContent = parroquia.parroquia;
-                        parroquiaSelect.appendChild(option);
+                        targetSelect.appendChild(option);
                     });
-                    parroquiaSelect.disabled = false;
+                    targetSelect.disabled = false;
                 } catch (error) {
                     console.error('Error cargando parroquias:', error);
-                    parroquiaSelect.innerHTML = '<option value="">Error al cargar parroquias</option>';
+                    targetSelect.innerHTML = '<option value="">Error al cargar parroquias</option>';
                 }
             }
 
             // Función para cargar comunidades
-            async function cargarComunidades(parroquiaId) {
+            async function cargarComunidades(parroquiaId, targetSelect = comunidadSelect) {
                 if (!parroquiaId) {
-                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
-                    comunidadSelect.disabled = true;
+                    targetSelect.innerHTML = '<option value="">Todas</option>';
+                    targetSelect.disabled = true;
                     return;
                 }
 
@@ -845,21 +1012,21 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     const response = await fetch(`conf/obtener_comunidades.php?id_parroquia=${parroquiaId}`);
                     const data = await response.json();
                     
-                    comunidadSelect.innerHTML = '<option value="">Todas</option>';
+                    targetSelect.innerHTML = '<option value="">Seleccione una comunidad</option>';
                     data.forEach(comunidad => {
                         const option = document.createElement('option');
                         option.value = comunidad.id_comunidad;
                         option.textContent = comunidad.nombre;
-                        comunidadSelect.appendChild(option);
+                        targetSelect.appendChild(option);
                     });
-                    comunidadSelect.disabled = false;
+                    targetSelect.disabled = false;
                 } catch (error) {
                     console.error('Error cargando comunidades:', error);
-                    comunidadSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
+                    targetSelect.innerHTML = '<option value="">Error al cargar comunidades</option>';
                 }
             }
 
-            // Eventos para los selects
+            // Eventos para los selects del formulario principal
             municipioSelect.addEventListener('change', function() {
                 cargarParroquias(this.value);
             });
@@ -868,22 +1035,16 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 cargarComunidades(this.value);
             });
 
-            // Cargar datos iniciales si hay valores seleccionados
-            if (municipioSelect.value) {
-                cargarParroquias(municipioSelect.value);
-            }
-            if (parroquiaSelect.value) {
-                cargarComunidades(parroquiaSelect.value);
-            }
+            // Eventos para los selects del modal
+            modalMunicipio.addEventListener('change', function() {
+                cargarParroquias(this.value, modalParroquia);
+                modalComunidad.innerHTML = '<option value="">Seleccione una comunidad</option>';
+                modalComunidad.disabled = true;
+            });
 
-            // Elementos del formulario principal de filtros
-            const modalMunicipio = document.getElementById('modalMunicipio');
-            const modalParroquia = document.getElementById('modalParroquia');
-            const modalComunidad = document.getElementById('comunidad');
-            const toggleNuevaComunidad = document.getElementById('toggleNuevaComunidad');
-            const cerrarNuevaComunidad = document.getElementById('cerrarNuevaComunidad');
-            const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
-            const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
+            modalParroquia.addEventListener('change', function() {
+                cargarComunidades(this.value, modalComunidad);
+            });
 
             // Funciones para mostrar/ocultar nueva comunidad
             function mostrarSeccionNuevaComunidad() {
@@ -905,19 +1066,24 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 
                 // Limpiar campos
                 document.getElementById('nueva_comunidad_nombre').value = '';
-                document.getElementById('nueva_comunidad_parroquia').value = '';
             }
 
+            // Eventos para mostrar/ocultar sección de nueva comunidad
             toggleNuevaComunidad.addEventListener('click', mostrarSeccionNuevaComunidad);
             cerrarNuevaComunidad.addEventListener('click', ocultarSeccionNuevaComunidad);
 
             // Evento para guardar nueva comunidad
             btnGuardarComunidad.addEventListener('click', async function() {
                 const nombreComunidad = document.getElementById('nueva_comunidad_nombre').value.trim();
-                const parroquiaId = document.getElementById('nueva_comunidad_parroquia').value;
+                const parroquiaId = modalParroquia.value;
 
-                if (!nombreComunidad || !parroquiaId) {
-                    showAlert('error', 'Por favor complete el nombre de la comunidad y seleccione una parroquia');
+                if (!nombreComunidad) {
+                    showAlert('error', 'Por favor ingrese el nombre de la comunidad');
+                    return;
+                }
+
+                if (!parroquiaId) {
+                    showAlert('error', 'Por favor seleccione una parroquia antes de crear una nueva comunidad');
                     return;
                 }
 
@@ -926,7 +1092,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                     formData.append('nombre_comunidad', nombreComunidad);
                     formData.append('id_parroquia', parroquiaId);
 
-                    const response = await fetch('../php/conf/guardar_comunidad.php', {
+                    const response = await fetch('conf/guardar_comunidad.php', {
                         method: 'POST',
                         body: formData
                     });
@@ -939,7 +1105,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         // Actualizar el select de comunidades
                         const option = document.createElement('option');
                         option.value = result.id_comunidad;
-                        option.textContent = result.nombre_comunidad;
+                        option.textContent = nombreComunidad;
                         modalComunidad.appendChild(option);
                         modalComunidad.value = result.id_comunidad;
                         
@@ -954,109 +1120,84 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 }
             });
 
-            // Manejar el envío del formulario de nuevo beneficiario
+            // Manejar el envío del formulario de nuevo beneficiario - CORREGIDO
             document.getElementById('formNuevoBeneficiario').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                const submitBtn = this.querySelector('button[type="submit"]');
+                const form = this;
+                const submitBtn = form.querySelector('button[type="submit"]');
                 const originalBtnContent = submitBtn.innerHTML;
                 
                 try {
-                    // Validar campos requeridos
-                    const requiredFields = {
-                        'nombre_beneficiario': 'Nombre del beneficiario',
-                        'cedula': 'Cédula',
-                        'telefono': 'Teléfono',
-                        'codigo_obra': 'Código de obra',
-                        'modalMunicipio': 'Municipio',
-                        'modalParroquia': 'Parroquia'
-                    };
+                    // Obtener datos del formulario
+                    const formData = new FormData(form);
                     
-                    let isValid = true;
-                    let missingFields = [];
-                    
-                    Object.entries(requiredFields).forEach(([fieldId, fieldName]) => {
-                        const element = document.getElementById(fieldId);
-                        
-                        if (!element || !element.value.trim()) {
-                            if (element) {
-                                element.classList.add('is-invalid');
-                            }
-                            isValid = false;
-                            missingFields.push(fieldName);
-                        } else {
-                            if (element) {
-                                element.classList.remove('is-invalid');
-                            }
-                        }
-                    });
-                    
-                    if (!isValid) {
-                        showAlert('error', `Por favor complete los siguientes campos requeridos: ${missingFields.join(', ')}`);
+                    // Validar formulario
+                    if (!validateForm(formData)) {
                         return;
                     }
                     
-                    // Mostrar indicador de carga
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+                    // Mostrar estado de carga
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
                     submitBtn.disabled = true;
                     
-                    const formData = new FormData(this);
-                    
+                    // Enviar formulario con manejo de JSON mejorado
                     const response = await fetch(window.location.href, {
                         method: 'POST',
                         body: formData
                     });
                     
-                    // Verificar si la respuesta es JSON válida
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        const text = await response.text();
-                        console.error('Respuesta no es JSON:', text);
-                        throw new Error('El servidor no devolvió una respuesta JSON válida');
+                    // Verificar si la respuesta es ok
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     
-                    const result = await response.json();
+                    // Obtener texto de respuesta primero para verificar contenido
+                    const responseText = await response.text();
                     
+                    // Intentar parsear como JSON
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Response text:', responseText);
+                        throw new Error('La respuesta del servidor no es un JSON válido');
+                    }
+                    
+                    // Manejar respuesta
                     if (result.status === 'success') {
-                        showAlert('success', result.message);
-                        // Cerrar el modal
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
-                        modal.hide();
-                        // Recargar la página después de un breve retraso
+                        showAlert('success', result.message || 'Beneficiario creado exitosamente');
+                        
+                        // Resetear formulario
+                        form.reset();
+                        
+                        // Cerrar modal y recargar página después de un delay
                         setTimeout(() => {
-                            location.reload();
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoBeneficiario'));
+                            if (modal) {
+                                modal.hide();
+                            }
+                            window.location.reload();
                         }, 1500);
                     } else {
-                        showAlert('error', result.message || 'Error al guardar el beneficiario');
-                        submitBtn.innerHTML = originalBtnContent;
-                        submitBtn.disabled = false;
+                        throw new Error(result.message || 'Error desconocido al crear el beneficiario');
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    showAlert('error', 'Error al procesar la solicitud: ' + error.message);
+                    showAlert('error', error.message || 'Error al procesar la solicitud');
+                } finally {
+                    // Restaurar estado del botón
                     submitBtn.innerHTML = originalBtnContent;
                     submitBtn.disabled = false;
                 }
             });
 
-            // Funcionalidad de búsqueda en tiempo real
-            const buscarInput = document.getElementById('buscar');
-            const tablaBeneficiarios = document.getElementById('tablaBeneficiarios');
-            
-            if (buscarInput && tablaBeneficiarios) {
-                buscarInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const rows = tablaBeneficiarios.querySelectorAll('tr');
-                    
-                    rows.forEach(row => {
-                        const text = row.textContent.toLowerCase();
-                        if (text.includes(searchTerm)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                });
+            // Cargar datos iniciales si hay valores seleccionados
+            if (municipioSelect.value) {
+                cargarParroquias(municipioSelect.value);
+            }
+            if (parroquiaSelect.value) {
+                cargarComunidades(parroquiaSelect.value);
             }
         });
     </script>

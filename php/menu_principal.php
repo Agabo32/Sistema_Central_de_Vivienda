@@ -1,6 +1,7 @@
 <?php
 require_once '../php/conf/session_helper.php';
 require_once '../php/conf/conexion.php';
+require_once '../php/conf/tema_helper.php';
 
 // Verificación de autenticación
 verificar_autenticacion();
@@ -39,7 +40,9 @@ $porcentaje_avance = ($total > 0) ? round(($avance / $total) * 100) : 0;
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSS personalizado -->
-    <link rel="stylesheet" href="..//css/menu_principal.css">
+    <link rel="stylesheet" href="../css/menu_principal.css">
+    <link rel="stylesheet" href="../css/temas.css">
+    <?php echo cargar_tema(); ?>
 </head>
 <body>
     <!-- Barra de navegación superior -->
@@ -67,6 +70,11 @@ $porcentaje_avance = ($total > 0) ? round(($avance / $total) * 100) : 0;
                     <li class="nav-item">
                         <a class="nav-link" href="../php/reportes.php">
                             <i class="fas fa-chart-bar me-1"></i> Reportes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../dashboard.php">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
                         </a>
                     </li>
                 </ul>

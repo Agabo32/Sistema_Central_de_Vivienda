@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once '../php/conf/conexion.php';
+require_once '../php/conf/session_helper.php';
+
+// Verificación de autenticación
+verificar_autenticacion();
 
 // Todos los usuarios tienen acceso total
 $esAdmin = true;
@@ -116,6 +120,108 @@ foreach ($reportes as $reporte) {
 }
 
 $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / $total_viviendas_general, 2) : 0;
+
+// Consulta para obtener datos por comunidad
+$sql_comunidades = "SELECT 
+    c.comunidad,
+    COUNT(DISTINCT b.id_beneficiario) as total_viviendas,
+    ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) as avance_promedio
+FROM comunidades c
+LEFT JOIN ubicaciones u ON c.id_comunidad = u.comunidad
+LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
+LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
+WHERE 1=1";
+
+// Consulta para obtener datos por municipio
+$sql_municipios = "SELECT 
+    m.municipio,
+    COUNT(DISTINCT b.id_beneficiario) as total_viviendas,
+    ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) as avance_promedio
+FROM municipios m
+LEFT JOIN parroquias p ON m.id_municipio = p.id_municipio
+LEFT JOIN ubicaciones u ON p.id_parroquia = u.parroquia
+LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
+LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
+WHERE m.id_estado = ?";
+
+// Consulta para obtener datos por parroquia
+$sql_parroquias = "SELECT 
+    p.parroquia,
+    COUNT(DISTINCT b.id_beneficiario) as total_viviendas,
+    ROUND(AVG(COALESCE(dc.$tipo_avance, 0)), 2) as avance_promedio
+FROM parroquias p
+LEFT JOIN ubicaciones u ON p.id_parroquia = u.parroquia
+LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
+LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
+WHERE p.id_municipio = ?";
+
+// Aplicar filtros a la consulta de comunidades
+if ($id_municipio) {
+    $sql_comunidades .= " AND u.municipio = ?";
+}
+if ($id_parroquia) {
+    $sql_comunidades .= " AND u.parroquia = ?";
+}
+if ($id_comunidad) {
+    $sql_comunidades .= " AND c.id_comunidad = ?";
+}
+if ($estado_beneficiario && $estado_beneficiario !== 'todos') {
+    $sql_comunidades .= " AND b.status = ?";
+}
+
+$sql_comunidades .= " GROUP BY c.id_comunidad ORDER BY c.comunidad";
+
+// Preparar y ejecutar consultas
+$stmt_comunidades = $conexion->prepare($sql_comunidades);
+$stmt_municipios = $conexion->prepare($sql_municipios);
+$stmt_parroquias = $conexion->prepare($sql_parroquias);
+
+if ($stmt_comunidades === false || $stmt_municipios === false || $stmt_parroquias === false) {
+    die("Error en la preparación de las consultas: " . $conexion->error);
+}
+
+// Vincular parámetros para la consulta de comunidades
+$types_comunidades = "";
+$params_comunidades = [];
+
+if ($id_municipio) {
+    $types_comunidades .= "i";
+    $params_comunidades[] = $id_municipio;
+}
+if ($id_parroquia) {
+    $types_comunidades .= "i";
+    $params_comunidades[] = $id_parroquia;
+}
+if ($id_comunidad) {
+    $types_comunidades .= "i";
+    $params_comunidades[] = $id_comunidad;
+}
+if ($estado_beneficiario && $estado_beneficiario !== 'todos') {
+    $types_comunidades .= "s";
+    $params_comunidades[] = $estado_beneficiario;
+}
+
+if (!empty($params_comunidades)) {
+    $stmt_comunidades->bind_param($types_comunidades, ...$params_comunidades);
+}
+
+// Ejecutar consultas
+$stmt_municipios->bind_param("i", $id_lara);
+$stmt_municipios->execute();
+$result_municipios = $stmt_municipios->get_result();
+$municipios = $result_municipios->fetch_all(MYSQLI_ASSOC);
+
+if ($id_municipio) {
+    $stmt_parroquias->bind_param("i", $id_municipio);
+    $stmt_parroquias->execute();
+    $result_parroquias = $stmt_parroquias->get_result();
+    $parroquias = $result_parroquias->fetch_all(MYSQLI_ASSOC);
+}
+
+$stmt_comunidades->execute();
+$result_comunidades = $stmt_comunidades->get_result();
+$comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -128,6 +234,7 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/reportes.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .table-responsive {
             overflow-x: auto;
@@ -158,17 +265,53 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
         }
         
         @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            
+            body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            
             .table th {
                 background-color: #f8f9fa !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .table {
+                width: 100% !important;
+                font-size: 10pt;
+            }
+            
+            .table td, .table th {
+                padding: 0.3rem;
+            }
+            
+            .container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            .navbar, .btn, .form-control, .input-group {
+                display: none !important;
             }
         }
     </style>
 </head>
 <body>
     <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark glass-navbar fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark glass-navbar fixed-top no-print">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="../php/menu_principal.php">
                 <img src="../imagenes/logo_menu.png.ico" alt="SIGEVU" style="height: 30px;" class="me-2">
@@ -190,8 +333,8 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="../php/reportes.php">
-                            <i class="fas fa-chart-bar me-1"></i> Reportes
+                        <a class="nav-link" href="../dashboard.php">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
                         </a>
                     </li>
                 </ul>
@@ -370,6 +513,15 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                 </button>
             </div>
             <div class="card-body">
+                <!-- Gráfico de Avance -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <canvas id="avanceChart"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="estadoChart"></canvas>
+                    </div>
+                </div>
                 <?php if (!empty($reportes)): ?>
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -428,6 +580,85 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Datos para los gráficos existentes
+            const avanceData = {
+                labels: ['Completadas', 'En Progreso', 'No Iniciadas'],
+                datasets: [{
+                    data: [
+                        <?= $total_completadas_general ?>,
+                        <?= $total_en_progreso_general ?>,
+                        <?= $total_no_iniciadas_general ?>
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545'
+                    ]
+                }]
+            };
+
+            const estadoData = {
+                labels: ['Avance Promedio'],
+                datasets: [{
+                    data: [<?= $avance_promedio_general ?>],
+                    backgroundColor: '#0dcaf0',
+                    borderColor: '#0dcaf0',
+                    borderWidth: 1
+                }]
+            };
+
+            // Configuración del gráfico de distribución
+            new Chart(document.getElementById('avanceChart'), {
+                type: 'pie',
+                data: avanceData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribución de Viviendas por Estado',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Configuración del gráfico de estado
+            new Chart(document.getElementById('estadoChart'), {
+                type: 'bar',
+                data: estadoData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Avance Promedio General',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje (%)'
+                            }
+                        }
+                    }
+                }
+            });
+
             const municipioSelect = document.getElementById('municipioSelect');
             const parroquiaSelect = document.getElementById('parroquiaSelect');
             const comunidadSelect = document.getElementById('comunidadSelect');
@@ -516,23 +747,89 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                 <head>
                     <title>Reporte de Avance Constructivo - SIGEVU</title>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-                        h1 { color: #1565C0; text-align: center; margin-bottom: 30px; }
-                        h3 { color: #333; margin-bottom: 20px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                        th { background-color: #f2f2f2; font-weight: bold; }
-                        .progress-container { border: 1px solid #ddd; height: 20px; background: #f8f9fa; }
-                        .progress-bar { height: 100%; color: white; text-align: center; line-height: 20px; }
+                        @page {
+                            size: A4;
+                            margin: 1cm;
+                        }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            margin: 0; 
+                            padding: 20px;
+                            width: 210mm;
+                            height: 297mm;
+                        }
+                        h1 { 
+                            color: #1565C0; 
+                            text-align: center; 
+                            margin-bottom: 30px;
+                            font-size: 24px;
+                        }
+                        h3 { 
+                            color: #333; 
+                            margin-bottom: 20px;
+                            font-size: 18px;
+                        }
+                        table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin-top: 20px;
+                            font-size: 12px;
+                        }
+                        th, td { 
+                            border: 1px solid #ddd; 
+                            padding: 8px; 
+                            text-align: left;
+                            vertical-align: middle;
+                        }
+                        th { 
+                            background-color: #f2f2f2; 
+                            font-weight: bold;
+                            white-space: nowrap;
+                        }
+                        .progress-container { 
+                            border: 1px solid #ddd; 
+                            height: 20px; 
+                            background: #f8f9fa;
+                            min-width: 100px;
+                        }
+                        .progress-bar { 
+                            height: 100%; 
+                            color: white; 
+                            text-align: center; 
+                            line-height: 20px;
+                            font-size: 11px;
+                        }
                         .complete { background-color: #28a745; }
                         .in-progress { background-color: #ffc107; }
                         .not-started { background-color: #dc3545; }
-                        .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.8em; }
+                        .badge { 
+                            padding: 4px 8px; 
+                            border-radius: 4px; 
+                            color: white; 
+                            font-size: 11px;
+                            display: inline-block;
+                            min-width: 30px;
+                            text-align: center;
+                        }
                         .bg-success { background-color: #28a745; }
                         .bg-warning { background-color: #ffc107; color: #000; }
                         .bg-danger { background-color: #dc3545; }
                         .text-center { text-align: center; }
-                        .summary { background: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+                        .summary { 
+                            background: #f8f9fa; 
+                            padding: 15px; 
+                            margin-bottom: 20px; 
+                            border-radius: 5px;
+                            font-size: 14px;
+                        }
+                        .comunidad-badge {
+                            background-color: rgba(13, 202, 240, 0.1);
+                            color: #0dcaf0;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            display: inline-block;
+                        }
                     </style>
                 </head>
                 <body>
@@ -540,9 +837,9 @@ $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / 
                     <div class="summary">
                         <strong>Resumen General:</strong><br>
                         <?php if (!empty($_GET['comunidad'])): ?>
-Comunidad: <?= htmlspecialchars($_GET['comunidad']) ?> | 
-<?php endif; ?>
-Total de Viviendas: <?= $total_viviendas_general ?> | 
+                        Comunidad: <?= htmlspecialchars($_GET['comunidad']) ?> | 
+                        <?php endif; ?>
+                        Total de Viviendas: <?= $total_viviendas_general ?> | 
                         Avance Promedio: <?= $avance_promedio_general ?>% | 
                         Completadas: <?= $total_completadas_general ?> | 
                         En Progreso: <?= $total_en_progreso_general ?> | 
@@ -568,5 +865,8 @@ Total de Viviendas: <?= $total_viviendas_general ?> |
 
 <?php
 $stmt->close();
+$stmt_comunidades->close();
+$stmt_municipios->close();
+$stmt_parroquias->close();
 $conexion->close();
 ?>

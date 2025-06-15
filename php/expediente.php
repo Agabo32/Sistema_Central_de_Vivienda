@@ -3,7 +3,7 @@ session_start();
 require_once '../php/conf/conexion.php';
 
 // Verificación robusta de sesión y rol
-$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'admin';
+$esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'root';
 
 if (!isset($_GET['id'])) {
     echo "ID de beneficiario no especificado.";
@@ -12,7 +12,7 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']); // Asegurarse de que el ID es un número entero
 
-// Consulta SQL corregida con nombres de tablas y campos actualizados
+// Consulta SQL actualizada para coincidir con la estructura de la base de datos
 $sql = "SELECT 
     b.id_beneficiario,
     b.cedula,
@@ -32,16 +32,22 @@ $sql = "SELECT
     mc.metodo as nombre_metodo,
     mo.modelo as nombre_modelo,
     co.cod_obra as codigo_obra_nombre,
-    f.Fiscalizador as nombre_fiscalizador
+    f.Fiscalizador as nombre_fiscalizador,
+    dc.avance_fisico,
+    dc.fecha_culminacion,
+    dc.fecha_protocolizacion,
+    dc.observaciones_responsables_control,
+    dc.observaciones_fiscalizadores
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN comunidades c ON u.comunidad = c.id_comunidad
 LEFT JOIN parroquias p ON u.parroquia = p.id_parroquia
-LEFT JOIN municipios m ON u.municipio = m.id_municipio
+LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
 LEFT JOIN cod_obra co ON b.cod_obra = co.id_cod_obra
 LEFT JOIN metodos_constructivos mc ON b.metodo_constructivo = mc.id_metodo
 LEFT JOIN modelos_constructivos mo ON b.modelo_constructivo = mo.id_modelo
 LEFT JOIN fiscalizadores f ON b.fiscalizador = f.id_fiscalizador
+LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE b.id_beneficiario = ?";
 
 $stmt = $conexion->prepare($sql);
@@ -64,9 +70,11 @@ if (!$data) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CORPOLARA - Expediente</title>
+    <title>Expediente - SIGEVU</title>
+    <link rel="icon" type="image/x-icon" href="../imagenes/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/expediente.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -75,18 +83,21 @@ if (!$data) {
         }
         
         .header-card {
-            background-color: #dc3545;
+            background-color: #28a745;
             color: white;
             padding: 0.75rem;
         }
         
         .logo-badge {
             background-color: white;
-            color: #dc3545;
+            color: #28a745;
             padding: 0.3rem 0.6rem;
             border-radius: 0.25rem;
             font-weight: bold;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
         
         .year-badge {
@@ -94,6 +105,26 @@ if (!$data) {
             color: black;
             padding: 0.3rem 0.6rem;
             border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .year-badge:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .year-input {
+            background: transparent;
+            border: none;
+            text-align: center;
+            font-weight: bold;
+            width: 60px;
+            color: black;
+        }
+        
+        .year-input:focus {
+            outline: 1px solid #667eea;
+            background-color: white;
         }
         
         .content-card {
@@ -127,13 +158,18 @@ if (!$data) {
         }
         
         .form-input:focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.25);
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.1rem rgba(40, 167, 69, 0.25);
         }
         
         .form-input.readonly {
             background-color: #f8f9fa;
             cursor: not-allowed;
+        }
+        
+        .form-input.modified {
+            border-color: #28a745;
+            background-color: #f8fff9;
         }
         
         .footer-section {
@@ -218,11 +254,23 @@ if (!$data) {
         .col-3-5 { flex: 0 0 30%; max-width: 30%; }
         .col-4-5 { flex: 0 0 40%; max-width: 40%; }
         
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
         /* Estilos específicos para impresión - Una sola hoja */
         @media print {
             @page {
                 size: A4;
-                margin: 5mm !important;
+                margin: 8mm !important;
             }
             
             * {
@@ -232,8 +280,8 @@ if (!$data) {
             
             body {
                 background: white !important;
-                font-size: 7px !important;
-                line-height: 1.0 !important;
+                font-size: 8px !important;
+                line-height: 1.1 !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
@@ -250,94 +298,118 @@ if (!$data) {
             
             .card {
                 box-shadow: none !important;
-                border: none !important;
+                border: 1px solid #000 !important;
                 margin: 0 !important;
             }
             
             .header-card {
-                padding: 2mm !important;
-                margin-bottom: 1mm !important;
+                padding: 3mm !important;
+                margin-bottom: 2mm !important;
                 display: flex !important;
                 justify-content: space-between !important;
                 align-items: center !important;
+                background-color: #28a745 !important;
+                border-bottom: 2px solid #000 !important;
             }
             
             .header-card h1 {
-                font-size: 10px !important;
+                font-size: 12px !important;
                 margin: 0 !important;
+                color: white !important;
+                font-weight: bold !important;
             }
             
             .header-card p {
-                font-size: 7px !important;
+                font-size: 8px !important;
                 margin: 0 !important;
+                color: white !important;
             }
             
             .logo-badge {
-                padding: 1mm !important;
-                font-size: 7px !important;
-                margin-right: 2mm !important;
+                padding: 2mm !important;
+                font-size: 8px !important;
+                margin-right: 3mm !important;
+                background-color: white !important;
+                color: #28a745 !important;
+                border: 1px solid #28a745 !important;
+                border-radius: 3px !important;
             }
             
             .year-badge {
-                padding: 1mm !important;
-                font-size: 6px !important;
+                padding: 2mm !important;
+                font-size: 7px !important;
+                background-color: white !important;
+                color: black !important;
+                border: 1px solid #000 !important;
+                border-radius: 3px !important;
             }
             
             .year-badge .small {
-                font-size: 5px !important;
+                font-size: 6px !important;
+                font-weight: bold !important;
+            }
+            
+            .year-input {
+                font-size: 7px !important;
+                background: transparent !important;
+                border: none !important;
+                font-weight: bold !important;
             }
             
             .content-card {
                 background: white !important;
-                padding: 1mm !important;
+                padding: 2mm !important;
                 margin: 0 !important;
             }
             
             .field-label {
-                padding: 0.5mm 1mm !important;
-                font-size: 5px !important;
-                margin-bottom: 0.5mm !important;
+                padding: 1mm 2mm !important;
+                font-size: 6px !important;
+                margin-bottom: 1mm !important;
                 background-color: #bbf7d0 !important;
-                border: 0.2px solid #22c55e !important;
+                border: 0.5px solid #22c55e !important;
                 white-space: nowrap !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
+                font-weight: bold !important;
+                text-align: center !important;
             }
             
             .form-input, .form-control {
-                font-size: 6px !important;
-                padding: 0.5mm !important;
-                border: 0.3px solid #000 !important;
+                font-size: 7px !important;
+                padding: 1mm !important;
+                border: 0.5px solid #000 !important;
                 background: white !important;
                 height: auto !important;
-                min-height: 3.5mm !important;
-                line-height: 1.0 !important;
+                min-height: 4mm !important;
+                line-height: 1.1 !important;
                 text-align: center !important;
             }
             
             textarea.form-input {
-                min-height: 6mm !important;
+                min-height: 8mm !important;
                 resize: none !important;
                 text-align: left !important;
+                padding: 1mm !important;
             }
             
             .compact-row {
-                margin-bottom: 0.5mm !important;
+                margin-bottom: 1mm !important;
                 display: flex !important;
                 flex-wrap: wrap !important;
             }
             
             .compact-col {
-                margin-bottom: 0.5mm !important;
-                padding-left: 0.5mm !important;
-                padding-right: 0.5mm !important;
+                margin-bottom: 1mm !important;
+                padding-left: 1mm !important;
+                padding-right: 1mm !important;
             }
             
             .row {
                 margin: 0 !important;
             }
             
-            /* Anchos específicos para impresión */
+            /* Anchos específicos para impresión mejorados */
             .col-1-5 { 
                 flex: 0 0 12.5% !important; 
                 max-width: 12.5% !important; 
@@ -381,48 +453,66 @@ if (!$data) {
             }
             
             .footer-section {
-                padding: 1mm !important;
-                margin-top: 1mm !important;
-                font-size: 6px !important;
+                padding: 2mm !important;
+                margin-top: 2mm !important;
+                font-size: 7px !important;
                 background: white !important;
                 text-align: center !important;
+                border-top: 1px solid #000 !important;
             }
             
             .footer-section .fw-bold {
-                font-size: 7px !important;
+                font-size: 8px !important;
                 margin: 0 !important;
+                font-weight: bold !important;
             }
             
             .flag-stripe {
-                width: 6px !important;
-                height: 4px !important;
+                width: 8px !important;
+                height: 5px !important;
             }
             
             .venezuela-flag {
-                margin-left: 2mm !important;
+                margin-left: 3mm !important;
             }
             
             .status-indicator {
-                width: 3px !important;
-                height: 3px !important;
-                margin-right: 1mm !important;
+                width: 4px !important;
+                height: 4px !important;
+                margin-right: 2mm !important;
             }
             
             /* Optimización específica del contenedor */
             .expediente-container {
-                transform: scale(0.95) !important;
+                transform: scale(0.98) !important;
                 transform-origin: top left !important;
-                width: 105% !important;
+                width: 102% !important;
             }
             
             /* Asegurar que los textos largos se ajusten */
             .form-input[readonly] {
-                background-color: #f5f5f5 !important;
+                background-color: #f9f9f9 !important;
             }
             
             /* Ajustes finales para que todo quepa */
             .d-flex {
-                margin-bottom: 0.5mm !important;
+                margin-bottom: 1mm !important;
+            }
+            
+            /* Mejorar la legibilidad de los campos */
+            input[type="text"], input[type="number"], input[type="date"], textarea {
+                font-family: Arial, sans-serif !important;
+                font-weight: normal !important;
+            }
+            
+            /* Asegurar que el contenido no se corte */
+            .card-body, .content-card {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Mejorar el espaciado entre secciones */
+            .compact-row:last-child {
+                margin-bottom: 0 !important;
             }
         }
     </style>
@@ -436,15 +526,18 @@ if (!$data) {
                     <div class="header-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
-                                <div class="logo-badge me-2">CP</div>
+                                <div class="logo-badge me-2">
+                                    <i class="fas fa-home"></i>
+                                    <span>SIGEVU</span>
+                                </div>
                                 <div>
-                                    <h1 class="h6 mb-0">CORPOLARA</h1>
-                                    <p class="small mb-0">Corporación de Desarrollo Jacinto Lara</p>
+                                    <h1 class="h6 mb-0">Sistema Integral de Gestión de Viviendas</h1>
+                                    <p class="small mb-0">Expediente de Beneficiario</p>
                                 </div>
                             </div>
                             <div class="year-badge">
                                 <div class="small fw-bold">AÑO</div>
-                                <div class="small mb-0">2024</div>
+                                <input type="number" class="year-input" id="yearInput" value="2024">
                             </div>
                         </div>
                     </div>
@@ -457,13 +550,13 @@ if (!$data) {
                                 <button type="button" class="btn btn-save" onclick="guardarCambios()">
                                     <i class="fas fa-save me-1"></i>Guardar
                                 </button>
-                                <button type="button" class="btn btn-print" onclick="imprimirExpediente()">
-                                    <i class="fas fa-print me-1"></i>Imprimir
-                                </button>
                             <?php endif; ?>
+                            <button type="button" class="btn btn-print" onclick="imprimirExpediente()">
+                                <i class="fas fa-print me-1"></i>Imprimir
+                            </button>
                         </div>
                         
-                        <form id="corpolara-form">
+                        <form id="sigevu-form">
                             <input type="hidden" id="id_beneficiario" value="<?php echo $data['id_beneficiario']; ?>">
                             
                             <!-- Fila 1: Datos básicos de identificación -->
@@ -471,14 +564,14 @@ if (!$data) {
                                 <div class="col-2-5 compact-col">
                                     <label class="field-label">N° Expediente</label>
                                     <input type="text" class="form-control form-input" id="expediente" 
-                                           value="<?php echo !empty($data['id_beneficiario']) ? htmlspecialchars($data['id_beneficiario']) : ''; ?>"
+                                           value="<?php echo !empty($data['id_beneficiario']) ? str_pad($data['id_beneficiario'], 6, '0', STR_PAD_LEFT) : ''; ?>"
                                            placeholder="<?php echo empty($data['id_beneficiario']) ? '#REF!' : ''; ?>">
                                 </div>
                                 <div class="col-2-5 compact-col">
                                     <label class="field-label">Código de obra</label>
                                     <input type="text" class="form-control form-input" id="codigoObra" 
-                                           value="<?php echo !empty($data['codigo_obra']) ? htmlspecialchars($data['codigo_obra']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['codigo_obra']) ? '#REF!' : ''; ?>">
+                                           value="<?php echo !empty($data['codigo_obra_nombre']) ? htmlspecialchars($data['codigo_obra_nombre']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['codigo_obra_nombre']) ? '#REF!' : ''; ?>">
                                 </div>
                                 <div class="col-3-5 compact-col">
                                     <label class="field-label">Cédula</label>
@@ -488,7 +581,7 @@ if (!$data) {
                                 </div>
                                 <div class="col-2-5 compact-col">
                                     <label class="field-label">Proyecto</label>
-                                    <input type="text" class="form-control form-input" id="proyecto" value="IMVI´S" readonly>
+                                    <input type="text" class="form-control form-input" id="proyecto" value="SIGEVU">
                                 </div>
                             </div>
                             
@@ -508,31 +601,25 @@ if (!$data) {
                                 </div>
                             </div>
                             
-                            <!-- Fila 3: Ubicación geográfica -->
+                            <!-- Fila 3: Ubicación geográfica (sin Estado) -->
                             <div class="row compact-row">
-                                <div class="col-md-3 compact-col">
+                                <div class="col-md-4 compact-col">
                                     <label class="field-label">COMUNIDAD</label>
                                     <input type="text" class="form-control form-input" id="comunidad" 
                                            value="<?php echo !empty($data['nombre_comunidad']) ? htmlspecialchars($data['nombre_comunidad']) : ''; ?>"
                                            placeholder="<?php echo empty($data['nombre_comunidad']) ? '#REF!' : ''; ?>">
                                 </div>
-                                <div class="col-md-3 compact-col">
+                                <div class="col-md-4 compact-col">
                                     <label class="field-label">Parroquia</label>
                                     <input type="text" class="form-control form-input" id="parroquia" 
                                            value="<?php echo !empty($data['nombre_parroquia']) ? htmlspecialchars($data['nombre_parroquia']) : ''; ?>"
                                            placeholder="<?php echo empty($data['nombre_parroquia']) ? '#REF!' : ''; ?>">
                                 </div>
-                                <div class="col-md-3 compact-col">
+                                <div class="col-md-4 compact-col">
                                     <label class="field-label">Municipio</label>
                                     <input type="text" class="form-control form-input" id="municipio" 
                                            value="<?php echo !empty($data['nombre_municipio']) ? htmlspecialchars($data['nombre_municipio']) : ''; ?>"
                                            placeholder="<?php echo empty($data['nombre_municipio']) ? '#REF!' : ''; ?>">
-                                </div>
-                                <div class="col-md-3 compact-col">
-                                    <label class="field-label">Estado</label>
-                                    <input type="text" class="form-control form-input" id="estado" 
-                                           value="<?php echo !empty($data['estado']) ? htmlspecialchars($data['estado']) : ''; ?>"
-                                           placeholder="<?php echo empty($data['estado']) ? '#REF!' : ''; ?>">
                                 </div>
                             </div>
                             
@@ -579,9 +666,9 @@ if (!$data) {
                                 <div class="col-md-3 compact-col">
                                     <label class="field-label">Avance Físico (%)</label>
                                     <input type="number" class="form-control form-input" id="avanceFisico" 
-                                           value="<?php echo !empty($data['avance_fisico']) ? htmlspecialchars($data['avance_fisico']) : ''; ?>"
+                                           value="<?php echo !empty($data['avance_fisico']) ? number_format($data['avance_fisico'], 2) : '0.00'; ?>"
                                            placeholder="<?php echo empty($data['avance_fisico']) ? '#REF!' : ''; ?>"
-                                           min="0" max="100">
+                                           min="0" max="100" step="0.01">
                                 </div>
                                 <div class="col-md-3 compact-col">
                                     <label class="field-label">Fecha Culminación</label>
@@ -589,17 +676,15 @@ if (!$data) {
                                            value="<?php echo !empty($data['fecha_culminacion']) ? htmlspecialchars($data['fecha_culminacion']) : ''; ?>">
                                 </div>
                                 <div class="col-md-3 compact-col">
-                                    <label class="field-label">Estado Beneficiario</label>
-                                    <div class="form-control form-input d-flex align-items-center justify-content-center">
-                                        <span class="status-indicator <?php echo $data['status'] == 'activo' ? 'status-active' : 'status-inactive'; ?>"></span>
-                                        <?php echo ucfirst($data['status']); ?>
-                                    </div>
+                                    <label class="field-label">Fecha Protocolización</label>
+                                    <input type="date" class="form-control form-input" id="fechaProtocolizacion" 
+                                           value="<?php echo !empty($data['fecha_protocolizacion']) ? htmlspecialchars($data['fecha_protocolizacion']) : ''; ?>">
                                 </div>
                                 <div class="col-md-3 compact-col">
-                                    <label class="field-label">Culminado</label>
-                                    <div class="form-control form-input d-flex align-items-center justify-content-center">
-                                        <?php echo !empty($data['fecha_culminacion']) ? 'Sí' : 'No'; ?>
-                                    </div>
+                                    <label class="field-label">Fiscalizador</label>
+                                    <input type="text" class="form-control form-input" id="fiscalizador" 
+                                           value="<?php echo !empty($data['nombre_fiscalizador']) ? htmlspecialchars($data['nombre_fiscalizador']) : ''; ?>"
+                                           placeholder="<?php echo empty($data['nombre_fiscalizador']) ? '#REF!' : ''; ?>">
                                 </div>
                             </div>
                             
@@ -620,7 +705,7 @@ if (!$data) {
                         
                         <!-- Footer -->
                         <div class="footer-section">
-                            <span class="fw-bold fst-italic">¡Impulsando el Desarrollo!</span>
+                            <span class="fw-bold fst-italic">¡Impulsando el Desarrollo Habitacional!</span>
                             <div class="venezuela-flag">
                                 <div class="flag-stripe yellow"></div>
                                 <div class="flag-stripe blue"></div>
@@ -633,19 +718,22 @@ if (!$data) {
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // JavaScript para manejar el formulario
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('corpolara-form');
+            const form = document.getElementById('sigevu-form');
             
             // Agregar event listeners para cada campo
             const campos = [
                 'expediente', 'codigoObra', 'beneficiario', 'cedula', 'telefono',
-                'comunidad', 'parroquia', 'municipio', 'estado', 'direccionExacta',
+                'comunidad', 'parroquia', 'municipio', 'direccionExacta',
                 'utmNorte', 'utmEste', 'metodoConstructivo', 'modeloConstructivo',
-                'proyecto', 'avanceFisico', 'fechaCulminacion', 'observacionesControl', 
-                'observacionesFiscalizadores'
+                'proyecto', 'avanceFisico', 'fechaCulminacion', 'fechaProtocolizacion',
+                'fiscalizador', 'observacionesControl', 'observacionesFiscalizadores'
             ];
             
             campos.forEach(campo => {
@@ -659,6 +747,15 @@ if (!$data) {
                 }
             });
             
+            // Event listener para el campo de año
+            const yearInput = document.getElementById('yearInput');
+            if (yearInput) {
+                yearInput.addEventListener('input', function() {
+                    console.log(`Año actualizado: ${this.value}`);
+                    this.classList.add('modified');
+                });
+            }
+            
             // Función para obtener todos los datos del formulario
             function obtenerDatosFormulario() {
                 const datos = {};
@@ -669,6 +766,7 @@ if (!$data) {
                     }
                 });
                 datos.id_beneficiario = document.getElementById('id_beneficiario').value;
+                datos.year = document.getElementById('yearInput').value;
                 return datos;
             }
             
@@ -683,15 +781,56 @@ if (!$data) {
             }
             
             // Exponer funciones globalmente para uso externo
-            window.corpolara = {
+            window.sigevu = {
                 obtenerDatos: obtenerDatosFormulario,
                 establecerDatos: establecerDatosFormulario
             };
         });
         
+        // Función para mostrar toast
+        function showToast(type, message) {
+            console.log('Mostrando toast:', type, message);
+            
+            // Crear el contenedor del toast si no existe
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Crear el toast
+            const toast = document.createElement('div');
+            toast.className = `toast show align-items-center text-white bg-${type} border-0`;
+            toast.role = 'alert';
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Agregar el toast al contenedor
+            toastContainer.appendChild(toast);
+            
+            // Remover el toast después de 5 segundos
+            setTimeout(() => {
+                toast.remove();
+                if (toastContainer.children.length === 0) {
+                    toastContainer.remove();
+                }
+            }, 5000);
+        }
+        
         // Función para guardar cambios
         function guardarCambios() {
-            const datos = window.corpolara.obtenerDatos();
+            const datos = window.sigevu.obtenerDatos();
             
             // Mostrar indicador de carga
             const btnSave = document.querySelector('.btn-save');
@@ -699,29 +838,38 @@ if (!$data) {
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
             btnSave.disabled = true;
             
-            // Enviar datos al servidor (aquí deberías implementar la llamada AJAX)
-            fetch('actualizar_expediente.php', {
+            // Enviar datos al servidor
+            fetch('../php/conf/actualizar_expediente.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(datos)
             })
-            .then(response => response.json())
+            .then(response => response.text())
+            .then(text => {
+                console.log('Respuesta del servidor:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('Error al parsear respuesta:', text);
+                    throw new Error('Error en la respuesta del servidor: ' + text);
+                }
+            })
             .then(data => {
                 if (data.success) {
-                    alert('Cambios guardados exitosamente');
+                    showToast('success', 'Expediente actualizado correctamente');
                     // Remover clase de modificado de todos los campos
                     document.querySelectorAll('.modified').forEach(el => {
                         el.classList.remove('modified');
                     });
                 } else {
-                    alert('Error al guardar los cambios: ' + data.message);
+                    throw new Error(data.error || 'Error al actualizar el expediente');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al guardar los cambios');
+                showToast('danger', error.message || 'Error al guardar los cambios');
             })
             .finally(() => {
                 btnSave.innerHTML = originalText;
@@ -731,13 +879,24 @@ if (!$data) {
         
         // Función para imprimir expediente
         function imprimirExpediente() {
+            // Configurar título para impresión
+            const originalTitle = document.title;
+            document.title = 'Expediente - <?php echo htmlspecialchars($data['nombre_beneficiario']); ?>';
+            
+            // Imprimir
             window.print();
+            
+            // Restaurar título
+            document.title = originalTitle;
         }
     </script>
 </body>
 </html>
 <?php
 // Cerrar conexiones de base de datos si las hay
+if (isset($stmt)) {
+    $stmt->close();
+}
 if (isset($conexion)) {
     $conexion->close();
 }
