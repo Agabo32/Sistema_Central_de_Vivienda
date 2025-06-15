@@ -9,7 +9,7 @@ const ROLES_PERMITIDOS = ['admin', 'root']; // Ajustar según necesidades
 // 2. Configuración de la base de datos
 $db_config = [
     'host' => 'localhost',
-    'dbname' => 'sistema_central',
+    'dbname' => 'prueva',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8mb4',
@@ -130,7 +130,7 @@ $input_usuario = $_POST['nombre_usuario'] ?? '';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../Sistema_Central_de_Vivienda-main/css/style.css">
 </head>
 
 <body>
