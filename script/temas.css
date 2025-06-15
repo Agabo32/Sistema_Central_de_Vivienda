@@ -1,0 +1,44 @@
+/* Temas del sistema */
+:root[data-tema="default"] {
+    --primary-color: #ee4242;
+    --secondary-color: #1b1918;
+    --accent-color: #ee4242;
+    --background-dark: #1A237E;
+    --background-light: #1565C0;
+    --text-color: #FFFFFF;
+    --shadow-color: yellow;
+    --border-color: rgba(221, 7, 7, 0.7);
+}
+
+:root[data-tema="azul"] {
+    --primary-color: #2196F3;
+    --secondary-color: #311B92;
+    --accent-color: #2196F3;
+    --background-dark: #1A237E;
+    --background-light: #1565C0;
+    --text-color: #FFFFFF;
+    --shadow-color: #64B5F6;
+    --border-color: rgba(33, 150, 243, 0.7);
+}
+
+:root[data-tema="verde"] {
+    --primary-color: #4CAF50;
+    --secondary-color: #1B5E20;
+    --accent-color: #4CAF50;
+    --background-dark: #1B5E20;
+    --background-light: #2E7D32;
+    --text-color: #FFFFFF;
+    --shadow-color: #81C784;
+    --border-color: rgba(76, 175, 80, 0.7);
+}
+
+:root[data-tema="morado"] {
+    --primary-color: #9C27B0;
+    --secondary-color: #4A148C;
+    --accent-color: #9C27B0;
+    --background-dark: #4A148C;
+    --background-light: #6A1B9A;
+    --text-color: #FFFFFF;
+    --shadow-color: #CE93D8;
+    --border-color: rgba(156, 39, 176, 0.7);
+} 
