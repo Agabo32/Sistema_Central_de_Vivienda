@@ -3,7 +3,6 @@ require_once '../php/conf/session_helper.php';
 require_once '../php/conf/conexion.php';
 require_once '../php/conf/tema_helper.php';
 
-// Verificación de autenticación
 verificar_autenticacion();
 
 // Total de beneficiarios

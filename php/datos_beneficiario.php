@@ -656,9 +656,15 @@ function formatProgressValue($value) {
                                             <h6 class="text-primary mb-3"><i class="fas fa-chart-line me-1"></i> Avance General</h6>
                                             
                                             <div class="mb-3">
-                                                <label for="avance_fisico" class="form-label">Avance Físico Total (%) - Calculado automáticamente</label>
-                                                <input type="number" min="0" max="100" class="form-control" id="avance_fisico" name="avance_fisico" 
-                                                       value="<?php echo $data['avance_fisico'] ?? 0; ?>" readonly>
+                                                <label for="avance_fisico" class="form-label">Avance Físico (%)</label>
+                                                <input type="number" class="form-control" id="avance_fisico" name="avance_fisico" 
+                                                       value="<?php echo htmlspecialchars($data['avance_fisico']); ?>" step="0.01" min="0" max="100">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="acabado" class="form-label">Acabado (%)</label>
+                                                <input type="number" class="form-control" id="acabado" name="acabado" 
+                                                       value="<?php echo htmlspecialchars($data['acabado']); ?>" step="0.01" min="0" max="100" readonly>
                                             </div>
                                             
                                             <div class="mb-3">
@@ -1551,13 +1557,126 @@ function formatProgressValue($value) {
     }
 
     function calcularAcondicionamiento() {
-        const limpieza = parseFloat(document.getElementById('limpieza').value) || 0;
-        const replanteo = parseFloat(document.getElementById('replanteo').value) || 0;
-        const promedio = (limpieza + replanteo) / 2;
+        const campos = [
+            'limpieza',
+            'replanteo',
+            'excavacion',
+            'fundacion',
+            'acero_vigas_riostra',
+            'encofrado_malla',
+            'instalaciones_electricas_sanitarias',
+            'vaciado_losa_anclajes'
+        ];
+
+        let suma = 0;
         
+        // Sumar todos los campos, incluyendo los que valen 0
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                const valor = parseFloat(elemento.value) || 0;
+                suma += valor;
+            }
+        });
+
+        // Calcular el promedio dividiendo por el total de campos
+        const promedio = suma / campos.length;
+        
+        // Actualizar el campo de acondicionamiento
         const acondicionamientoElement = document.getElementById('acondicionamiento');
         if (acondicionamientoElement) {
             acondicionamientoElement.value = promedio.toFixed(2);
+        }
+    }
+
+    function calcularCerramiento() {
+        const campos = [
+            'bloqueado',
+            'colocacion_correas',
+            'colocacion_techo'
+        ];
+
+        let suma = 0;
+        
+        // Sumar todos los campos, incluyendo los que valen 0
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                const valor = parseFloat(elemento.value) || 0;
+                suma += valor;
+            }
+        });
+
+        // Calcular el promedio dividiendo por el total de campos
+        const promedio = suma / campos.length;
+        
+        // Actualizar el campo de cerramiento
+        const cerramientoElement = document.getElementById('cerramiento');
+        if (cerramientoElement) {
+            cerramientoElement.value = promedio.toFixed(2);
+        }
+    }
+
+    function calcularAcabado() {
+        const campos = [
+            'colocacion_ventanas',
+            'colocacion_puertas_principales',
+            'instalaciones_electricas_sanitarias_paredes',
+            'frisos',
+            'sobrepiso',
+            'ceramica_bano',
+            'colocacion_puertas_internas',
+            'equipos_accesorios_electricos',
+            'equipos_accesorios_sanitarios',
+            'colocacion_lavaplatos',
+            'pintura'
+        ];
+        
+        let suma = 0;
+        let totalCampos = campos.length;
+        
+        campos.forEach(campo => {
+            const valor = parseFloat(document.getElementById(campo).value) || 0;
+            suma += valor;
+        });
+        
+        const promedio = suma / totalCampos;
+        const acabadoInput = document.getElementById('acabado');
+        acabadoInput.value = promedio.toFixed(2);
+        
+        // Actualizar el valor en el formulario de actualización
+        const acabadoUpdateInput = document.querySelector('#actualizarBeneficiarioForm input[name="acabado"]');
+        if (acabadoUpdateInput) {
+            acabadoUpdateInput.value = promedio.toFixed(2);
+        }
+    }
+
+    function calcularEstructura() {
+        const campos = [
+            'armado_columnas',
+            'vaciado_columnas',
+            'armado_vigas',
+            'vaciado_vigas'
+        ];
+
+        let suma = 0;
+        
+        // Sumar todos los campos, incluyendo los que valen 0
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                const valor = parseFloat(elemento.value) || 0;
+                suma += valor;
+            }
+        });
+
+        // Calcular el promedio dividiendo por el total de campos
+        const promedio = suma / campos.length;
+        
+        // Actualizar el campo de estructura
+        const estructuraElement = document.getElementById('estructura');
+        if (estructuraElement) {
+            estructuraElement.value = promedio.toFixed(2);
         }
     }
 
@@ -1586,6 +1705,9 @@ function formatProgressValue($value) {
         // Calcular valores antes de enviar
         calcularAvanceFisico();
         calcularAcondicionamiento();
+        calcularCerramiento();
+        calcularAcabado();
+        calcularEstructura();
 
         // Crear FormData
         const formData = new FormData(form);
@@ -1813,79 +1935,116 @@ function formatProgressValue($value) {
         });
 
         // Event listeners para el cálculo del acondicionamiento
-        const limpieza = document.getElementById('limpieza');
-        const replanteo = document.getElementById('replanteo');
+        const camposAcondicionamiento = [
+            'limpieza',
+            'replanteo',
+            'excavacion',
+            'fundacion',
+            'acero_vigas_riostra',
+            'encofrado_malla',
+            'instalaciones_electricas_sanitarias',
+            'vaciado_losa_anclajes'
+        ];
 
-        if (limpieza) {
-            limpieza.addEventListener('change', calcularAcondicionamiento);
-            limpieza.addEventListener('input', calcularAcondicionamiento);
-        }
+        camposAcondicionamiento.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.addEventListener('change', calcularAcondicionamiento);
+                elemento.addEventListener('input', calcularAcondicionamiento);
+            }
+        });
 
-        if (replanteo) {
-            replanteo.addEventListener('change', calcularAcondicionamiento);
-            replanteo.addEventListener('input', calcularAcondicionamiento);
-        }
+        // Event listeners para el cálculo del cerramiento
+        const camposCerramiento = [
+            'bloqueado',
+            'colocacion_correas',
+            'colocacion_techo'
+        ];
+
+        camposCerramiento.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.addEventListener('change', calcularCerramiento);
+                elemento.addEventListener('input', calcularCerramiento);
+            }
+        });
+
+        // Event listeners para el cálculo del acabado
+        const camposAcabado = [
+            'colocacion_ventanas',
+            'colocacion_puertas_principales',
+            'instalaciones_electricas_sanitarias_paredes',
+            'frisos',
+            'sobrepiso',
+            'ceramica_bano',
+            'colocacion_puertas_internas',
+            'equipos_accesorios_electricos',
+            'equipos_accesorios_sanitarios',
+            'colocacion_lavaplatos',
+            'pintura'
+        ];
+
+        camposAcabado.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.addEventListener('change', calcularAcabado);
+                elemento.addEventListener('input', calcularAcabado);
+            }
+        });
+
+        // Event listeners para el cálculo de la estructura
+        const camposEstructura = [
+            'armado_columnas',
+            'vaciado_columnas',
+            'armado_vigas',
+            'vaciado_vigas'
+        ];
+
+        camposEstructura.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.addEventListener('change', calcularEstructura);
+                elemento.addEventListener('input', calcularEstructura);
+            }
+        });
 
         // Calcular valores iniciales
         calcularAvanceFisico();
         calcularAcondicionamiento();
+        calcularCerramiento();
+        calcularAcabado();
+        calcularEstructura();
 
         // Datos para el gráfico de avance
         const avanceData = {
             labels: [
                 'Acondicionamiento',
-                'Limpieza',
-                'Replanteo',
-                'Fundación',
-                'Excavación',
-                'Acero Vigas Riostra',
-                'Encofrado Malla',
-                'Instalaciones Eléctricas/Sanitarias',
-                'Vaciado Losa/Anclajes',
                 'Estructura',
-                'Armado Columnas',
-                'Vaciado Columnas',
-                'Armado Vigas',
-                'Vaciado Vigas',
                 'Cerramiento',
-                'Bloqueado',
-                'Colocación Correas',
-                'Colocación Techo',
-                'Acabado',
-                'Colocación Ventanas',
-                'Colocación Puertas Principales',
-                'Instalaciones Eléctricas/Sanitarias Paredes',
-                'Frisos',
-                'Sobrepiso',
-                'Cerámica Baño',
-                'Colocación Puertas Internas',
-                'Equipos/Accesorios Eléctricos',
-                'Equipos/Accesorios Sanitarios',
-                'Colocación Lavaplatos',
-                'Pintura'
+                'Acabado'
             ],
             datasets: [{
                 label: 'Porcentaje de Avance',
                 data: [
                     <?php
-                    $campos = [
-                        'acondicionamiento', 'limpieza', 'replanteo', 'fundacion', 'excavacion',
-                        'acero_vigas_riostra', 'encofrado_malla', 'instalaciones_electricas_sanitarias',
-                        'vaciado_losa_anclajes', 'estructura', 'armado_columnas', 'vaciado_columnas',
-                        'armado_vigas', 'vaciado_vigas', 'cerramiento', 'bloqueado',
-                        'colocacion_correas', 'colocacion_techo', 'acabado', 'colocacion_ventanas',
-                        'colocacion_puertas_principales', 'instalaciones_electricas_sanitarias_paredes',
-                        'frisos', 'sobrepiso', 'ceramica_bano', 'colocacion_puertas_internas',
-                        'equipos_accesorios_electricos', 'equipos_accesorios_sanitarios',
-                        'colocacion_lavaplatos', 'pintura'
-                    ];
-                    foreach ($campos as $campo) {
-                        echo ($data[$campo] ?? 0) . ",";
-                    }
+                    echo ($data['acondicionamiento'] ?? 0) . ",";
+                    echo ($data['estructura'] ?? 0) . ",";
+                    echo ($data['cerramiento'] ?? 0) . ",";
+                    echo ($data['acabado'] ?? 0);
                     ?>
                 ],
-                backgroundColor: 'rgba(13, 202, 240, 0.2)',
-                borderColor: 'rgba(13, 202, 240, 1)',
+                backgroundColor: [
+                    'rgba(13, 202, 240, 0.2)',
+                    'rgba(40, 167, 69, 0.2)',
+                    'rgba(255, 193, 7, 0.2)',
+                    'rgba(220, 53, 69, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(13, 202, 240, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)'
+                ],
                 borderWidth: 1
             }]
         };
@@ -1899,6 +2058,7 @@ function formatProgressValue($value) {
                     $completadas = 0;
                     $enProgreso = 0;
                     $noIniciadas = 0;
+                    $campos = ['acondicionamiento', 'estructura', 'cerramiento', 'acabado'];
                     foreach ($campos as $campo) {
                         $valor = $data[$campo] ?? 0;
                         if ($valor == 100) $completadas++;
@@ -2005,6 +2165,75 @@ function formatProgressValue($value) {
         // Restaurar título
         document.title = originalTitle;
     }
+
+    // Event listeners para el cálculo del acabado
+    document.addEventListener('DOMContentLoaded', function() {
+        const camposAcabado = [
+            'colocacion_ventanas',
+            'colocacion_puertas_principales',
+            'instalaciones_electricas_sanitarias_paredes',
+            'frisos',
+            'sobrepiso',
+            'ceramica_bano',
+            'colocacion_puertas_internas',
+            'equipos_accesorios_electricos',
+            'equipos_accesorios_sanitarios',
+            'colocacion_lavaplatos',
+            'pintura'
+        ];
+
+        camposAcabado.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.addEventListener('change', calcularAcabado);
+                elemento.addEventListener('input', calcularAcabado);
+            }
+        });
+
+        // Calcular valores iniciales
+        calcularAvanceFisico();
+        calcularAcondicionamiento();
+        calcularCerramiento();
+        calcularEstructura();
+        calcularAcabado();
+    });
+
+    function actualizarGraficaAvance() {
+        if (avanceChartInstance) {
+            const valores = [
+                parseFloat(document.getElementById('acondicionamiento').value) || 0,
+                parseFloat(document.getElementById('estructura').value) || 0,
+                parseFloat(document.getElementById('cerramiento').value) || 0,
+                parseFloat(document.getElementById('acabado').value) || 0
+            ];
+            avanceChartInstance.data.datasets[0].data = valores;
+            avanceChartInstance.update();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cargar datos iniciales
+        const data = <?php echo json_encode($data); ?>;
+        
+        // Actualizar campos con los datos cargados
+        Object.keys(data).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+                element.value = data[key] || '';
+            }
+        });
+        
+        // Calcular valores iniciales
+        calcularAcondicionamiento();
+        calcularEstructura();
+        calcularCerramiento();
+        calcularAcabado();
+        calcularAvanceFisico();
+        
+        // Actualizar gráficas
+        actualizarGraficaAvance();
+        actualizarGraficaEstado();
+    });
     </script>
 </body>
 </html>

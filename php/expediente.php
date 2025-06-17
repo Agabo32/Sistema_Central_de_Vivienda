@@ -270,7 +270,7 @@ if (!$data) {
         @media print {
             @page {
                 size: A4;
-                margin: 8mm !important;
+                margin: 0.5cm;
             }
             
             * {
@@ -280,8 +280,8 @@ if (!$data) {
             
             body {
                 background: white !important;
-                font-size: 8px !important;
-                line-height: 1.1 !important;
+                font-size: 10px !important;
+                line-height: 1.2 !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
@@ -300,57 +300,58 @@ if (!$data) {
                 box-shadow: none !important;
                 border: 1px solid #000 !important;
                 margin: 0 !important;
+                padding: 0 !important;
             }
             
             .header-card {
-                padding: 3mm !important;
-                margin-bottom: 2mm !important;
+                padding: 0.5cm !important;
+                margin-bottom: 0.3cm !important;
                 display: flex !important;
                 justify-content: space-between !important;
                 align-items: center !important;
                 background-color: #28a745 !important;
-                border-bottom: 2px solid #000 !important;
+                border-bottom: 1px solid #000 !important;
             }
             
             .header-card h1 {
-                font-size: 12px !important;
+                font-size: 14px !important;
                 margin: 0 !important;
                 color: white !important;
                 font-weight: bold !important;
             }
             
             .header-card p {
-                font-size: 8px !important;
+                font-size: 10px !important;
                 margin: 0 !important;
                 color: white !important;
             }
             
             .logo-badge {
-                padding: 2mm !important;
-                font-size: 8px !important;
-                margin-right: 3mm !important;
+                padding: 0.2cm !important;
+                font-size: 10px !important;
+                margin-right: 0.3cm !important;
                 background-color: white !important;
                 color: #28a745 !important;
                 border: 1px solid #28a745 !important;
-                border-radius: 3px !important;
+                border-radius: 2px !important;
             }
             
             .year-badge {
-                padding: 2mm !important;
-                font-size: 7px !important;
+                padding: 0.2cm !important;
+                font-size: 9px !important;
                 background-color: white !important;
                 color: black !important;
                 border: 1px solid #000 !important;
-                border-radius: 3px !important;
+                border-radius: 2px !important;
             }
             
             .year-badge .small {
-                font-size: 6px !important;
+                font-size: 8px !important;
                 font-weight: bold !important;
             }
             
             .year-input {
-                font-size: 7px !important;
+                font-size: 9px !important;
                 background: transparent !important;
                 border: none !important;
                 font-weight: bold !important;
@@ -358,14 +359,14 @@ if (!$data) {
             
             .content-card {
                 background: white !important;
-                padding: 2mm !important;
+                padding: 0.3cm !important;
                 margin: 0 !important;
             }
             
             .field-label {
-                padding: 1mm 2mm !important;
-                font-size: 6px !important;
-                margin-bottom: 1mm !important;
+                padding: 0.1cm 0.2cm !important;
+                font-size: 8px !important;
+                margin-bottom: 0.1cm !important;
                 background-color: #bbf7d0 !important;
                 border: 0.5px solid #22c55e !important;
                 white-space: nowrap !important;
@@ -376,40 +377,40 @@ if (!$data) {
             }
             
             .form-input, .form-control {
-                font-size: 7px !important;
-                padding: 1mm !important;
+                font-size: 9px !important;
+                padding: 0.1cm !important;
                 border: 0.5px solid #000 !important;
                 background: white !important;
                 height: auto !important;
-                min-height: 4mm !important;
-                line-height: 1.1 !important;
+                min-height: 0.5cm !important;
+                line-height: 1.2 !important;
                 text-align: center !important;
             }
             
             textarea.form-input {
-                min-height: 8mm !important;
+                min-height: 1cm !important;
                 resize: none !important;
                 text-align: left !important;
-                padding: 1mm !important;
+                padding: 0.1cm !important;
             }
             
             .compact-row {
-                margin-bottom: 1mm !important;
+                margin-bottom: 0.2cm !important;
                 display: flex !important;
                 flex-wrap: wrap !important;
             }
             
             .compact-col {
-                margin-bottom: 1mm !important;
-                padding-left: 1mm !important;
-                padding-right: 1mm !important;
+                margin-bottom: 0.1cm !important;
+                padding-left: 0.1cm !important;
+                padding-right: 0.1cm !important;
             }
             
             .row {
                 margin: 0 !important;
             }
             
-            /* Anchos específicos para impresión mejorados */
+            /* Anchos específicos para impresión optimizados */
             .col-1-5 { 
                 flex: 0 0 12.5% !important; 
                 max-width: 12.5% !important; 
@@ -453,40 +454,40 @@ if (!$data) {
             }
             
             .footer-section {
-                padding: 2mm !important;
-                margin-top: 2mm !important;
-                font-size: 7px !important;
+                padding: 0.2cm !important;
+                margin-top: 0.3cm !important;
+                font-size: 9px !important;
                 background: white !important;
                 text-align: center !important;
                 border-top: 1px solid #000 !important;
             }
             
             .footer-section .fw-bold {
-                font-size: 8px !important;
+                font-size: 10px !important;
                 margin: 0 !important;
                 font-weight: bold !important;
             }
             
             .flag-stripe {
-                width: 8px !important;
-                height: 5px !important;
+                width: 1cm !important;
+                height: 0.6cm !important;
             }
             
             .venezuela-flag {
-                margin-left: 3mm !important;
+                margin-left: 0.3cm !important;
             }
             
             .status-indicator {
-                width: 4px !important;
-                height: 4px !important;
-                margin-right: 2mm !important;
+                width: 0.5cm !important;
+                height: 0.5cm !important;
+                margin-right: 0.2cm !important;
             }
             
-            /* Optimización específica del contenedor */
+            /* Optimización del contenedor */
             .expediente-container {
-                transform: scale(0.98) !important;
+                transform: scale(1) !important;
                 transform-origin: top left !important;
-                width: 102% !important;
+                width: 100% !important;
             }
             
             /* Asegurar que los textos largos se ajusten */
@@ -494,23 +495,23 @@ if (!$data) {
                 background-color: #f9f9f9 !important;
             }
             
-            /* Ajustes finales para que todo quepa */
+            /* Ajustes para espaciado */
             .d-flex {
-                margin-bottom: 1mm !important;
+                margin-bottom: 0.2cm !important;
             }
             
-            /* Mejorar la legibilidad de los campos */
+            /* Mejorar la legibilidad */
             input[type="text"], input[type="number"], input[type="date"], textarea {
                 font-family: Arial, sans-serif !important;
                 font-weight: normal !important;
             }
             
-            /* Asegurar que el contenido no se corte */
+            /* Evitar cortes de página */
             .card-body, .content-card {
                 page-break-inside: avoid !important;
             }
             
-            /* Mejorar el espaciado entre secciones */
+            /* Espaciado final */
             .compact-row:last-child {
                 margin-bottom: 0 !important;
             }

@@ -2,8 +2,13 @@
 require_once '../php/conf/session_helper.php';
 require_once '../php/conf/conexion.php';
 require_once '../php/conf/db_config.php';
-
-// Verificación de autenticación
+if(!isset($_SESSION['id_usuario'])){
+    // Si no hay sesión y no estamos en la página de login, redirigir al login
+    if(!isset($_GET['error'])) {
+        header("Location: ../php/configuracion.php?error=error_acceso");
+        exit();
+    }
+}
 verificar_autenticacion();
 
 // Verificar si el usuario es administrador
@@ -56,6 +61,22 @@ if (isset($_POST['guardar_tema'])) {
     <link rel="stylesheet" href="../css/menu_principal.css">
     <link rel="stylesheet" href="../css/temas.css">
     <style>
+        :root[data-tema='default'] {
+            --primary-color: #ee4242;
+            --secondary-color: #1b1918;
+        }
+        :root[data-tema='azul'] {
+            --primary-color: #2196F3;
+            --secondary-color: #311B92;
+        }
+        :root[data-tema='verde'] {
+            --primary-color: #4CAF50;
+            --secondary-color: #1B5E20;
+        }
+        :root[data-tema='morado'] {
+            --primary-color: #9C27B0;
+            --secondary-color: #4A148C;
+        }
         /* Estilos para las etiquetas del formulario */
         .modal-body .form-label {
             color: #000000 !important;
@@ -420,6 +441,99 @@ if (isset($_POST['guardar_tema'])) {
     </div>
     <?php endif; ?>
 
+<!-- Modal Editar Usuario -->
+<div class="modal fade" id="editarUsuarioModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Editar Usuario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarUsuario" class="needs-validation" novalidate>
+                    <input type="hidden" name="id_usuario" id="editar_id_usuario">
+                    <div class="row mb-4">
+                        <h6 class="mb-3"><i class="fas fa-user me-2"></i>Información Personal</h6>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" name="nombre" id="editar_nombre" required maxlength="50">
+                            <div class="invalid-feedback">El nombre es requerido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido *</label>
+                            <input type="text" class="form-control" name="apellido" id="editar_apellido" required maxlength="50">
+                            <div class="invalid-feedback">El apellido es requerido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cédula *</label>
+                            <input type="text" class="form-control" name="cedula" id="editar_cedula" required pattern="[0-9]+" maxlength="20">
+                            <div class="invalid-feedback">Ingrese una cédula válida (solo números)</div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <h6 class="mb-3"><i class="fas fa-address-card me-2"></i>Información de Contacto</h6>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Correo Electrónico *</label>
+                            <input type="email" class="form-control" name="correo" id="editar_correo" required maxlength="100">
+                            <div class="invalid-feedback">Ingrese un correo válido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono *</label>
+                            <input type="tel" class="form-control" name="telefono" id="editar_telefono" required pattern="[0-9]+" maxlength="20">
+                            <div class="invalid-feedback">Ingrese un número de teléfono válido</div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <h6 class="mb-3"><i class="fas fa-lock me-2"></i>Información de Acceso</h6>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre de Usuario *</label>
+                            <input type="text" class="form-control" name="nombre_usuario" id="editar_nombre_usuario" required maxlength="50">
+                            <div class="invalid-feedback">El nombre de usuario es requerido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contraseña (dejar en blanco para no cambiar)</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" id="editar_password" minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword(this)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback">La contraseña debe tener al menos 8 caracteres</div>
+                            <small class="text-muted">La contraseña debe tener al menos 8 caracteres</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rol *</label>
+                            <select class="form-select" name="rol" id="editar_rol" required>
+                                <option value="">Seleccione un rol</option>
+                                <option value="root">Administrador</option>
+                                <option value="usuario">Usuario</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccione un rol</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="activo" id="editar_activo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarEdicionUsuario()">
+                    <i class="fas fa-save me-2"></i>Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -453,8 +567,32 @@ if (isset($_POST['guardar_tema'])) {
 
         // Función para editar usuario
         function editarUsuario(id) {
-            // Implementar lógica de edición
-            alert('Editando usuario ' + id);
+            // Obtener datos del usuario por AJAX
+            fetch('conf/obtener_usuario.php?id=' + id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Llenar el formulario del modal con los datos
+                        document.getElementById('editar_id_usuario').value = data.usuario.id_usuario;
+                        document.getElementById('editar_nombre').value = data.usuario.Nombre;
+                        document.getElementById('editar_apellido').value = data.usuario.Apellido;
+                        document.getElementById('editar_cedula').value = data.usuario.cedula;
+                        document.getElementById('editar_correo').value = data.usuario.correo;
+                        document.getElementById('editar_telefono').value = data.usuario.telefono;
+                        document.getElementById('editar_nombre_usuario').value = data.usuario.nombre_usuario;
+                        document.getElementById('editar_rol').value = data.usuario.rol;
+                        document.getElementById('editar_activo').value = data.usuario.activo;
+                        document.getElementById('editar_password').value = '';
+                        // Mostrar el modal
+                        var modal = new bootstrap.Modal(document.getElementById('editarUsuarioModal'));
+                        modal.show();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error al obtener los datos del usuario');
+                });
         }
 
         // Función para eliminar usuario
@@ -536,6 +674,44 @@ if (isset($_POST['guardar_tema'])) {
                 console.error('Error:', error);
                 alert('Error al guardar el usuario');
                 // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+            });
+        }
+
+        // Función para guardar edición de usuario
+        function guardarEdicionUsuario() {
+            const form = document.getElementById('formEditarUsuario');
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
+            const formData = new FormData(form);
+            const submitBtn = document.querySelector('#editarUsuarioModal .btn-primary');
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+            fetch('conf/guardar_usuario.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Usuario actualizado exitosamente');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editarUsuarioModal'));
+                    modal.hide();
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnContent;
+                }
+            })
+            .catch(error => {
+                alert('Error al actualizar el usuario');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnContent;
             });
