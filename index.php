@@ -9,7 +9,7 @@ const ROLES_PERMITIDOS = ['admin', 'root']; // Ajustar según necesidades
 // 2. Configuración de la base de datos
 $db_config = [
     'host' => 'localhost',
-    'dbname' => 'prueva',
+    'dbname' => '12/06/2025',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8mb4',
@@ -46,8 +46,8 @@ function login_exitoso(array $user): void {
     
     // Redirección según rol
     $redirect = ($rol === 'root') 
-        ? './php/beneficiarios.php' 
-        : './php/menu_principal.php';
+        ? 'php/beneficiarios.php' 
+        : 'php/menu_principal.php';
     
     header("Location: $redirect");
     exit();
@@ -116,6 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $login_error = $_SESSION['login_error'] ?? '';
 unset($_SESSION['login_error']); // Limpiar el error después de mostrarlo
 $input_usuario = $_POST['nombre_usuario'] ?? '';
+
+// Manejar mensaje de sesión cerrada
+$sesion_cerrada = isset($_GET['msg']) && $_GET['msg'] === 'sesion_cerrada';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,7 +133,8 @@ $input_usuario = $_POST['nombre_usuario'] ?? '';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../Sistema_Central_de_Vivienda-main/css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/temas.css">
 </head>
 
 <body>
@@ -150,6 +154,13 @@ $input_usuario = $_POST['nombre_usuario'] ?? '';
             <?php if (!empty($login_error)): ?>
                 <div class="alert alert-danger alert-dismissible fade show">
                     <?= $login_error ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($sesion_cerrada): ?>
+                <div class="alert alert-info alert-dismissible fade show">
+                    <i class="fas fa-info-circle me-2"></i> Su sesión ha sido cerrada correctamente.
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -195,5 +206,11 @@ $input_usuario = $_POST['nombre_usuario'] ?? '';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Efecto de partículas opcional -->
     <script src="../Sistema_Central_de_Vivienda-main/script/script.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const temaGuardado = localStorage.getItem('tema') || 'default';
+        document.documentElement.setAttribute('data-tema', temaGuardado);
+    });
+    </script>
 </body>
 </html>
