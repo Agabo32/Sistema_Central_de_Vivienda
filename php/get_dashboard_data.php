@@ -1,148 +1,228 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Manejo de preflight requests
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    exit(0);
-}
-
+session_start();
 require_once 'conf/conexion.php';
 
+// Verificar si el usuario está autenticado
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'No autorizado']);
+    exit;
+}
+
 try {
-    // Verificar conexión
-    if (!$conexion) {
-        throw new Exception("Error de conexión a la base de datos");
+    // Obtener el período seleccionado
+    $periodo = isset($_GET['periodo']) ? $_GET['periodo'] : 'mes';
+    
+    // Calcular fechas según el período
+    $fecha_inicio = date('Y-m-d');
+    $fecha_fin = date('Y-m-d');
+    
+    switch ($periodo) {
+        case 'hoy':
+            $fecha_inicio = date('Y-m-d');
+            break;
+        case 'semana':
+            $fecha_inicio = date('Y-m-d', strtotime('-7 days'));
+            break;
+        case 'mes':
+            $fecha_inicio = date('Y-m-d', strtotime('-30 days'));
+            break;
+        case 'año':
+            $fecha_inicio = date('Y-m-d', strtotime('-365 days'));
+            break;
     }
 
-    // Obtener total de beneficiarios (consulta simple)
-    $query_total = "SELECT COUNT(*) as total_beneficiarios FROM beneficiarios";
-    $result_total = $conexion->query($query_total);
-    
-    if (!$result_total) {
-        throw new Exception("Error en consulta de beneficiarios: " . $conexion->error);
-    }
-    
-    $total_beneficiarios = $result_total->fetch_assoc()['total_beneficiarios'] ?? 0;
+    // Consulta para obtener totales generales
+    $sql_totales = "SELECT 
+        COUNT(*) as total_beneficiarios,
+        SUM(CASE WHEN b.status = 'completada' THEN 1 ELSE 0 END) as viviendas_completadas,
+        COUNT(DISTINCT u.comunidad) as total_comunidades,
+        COALESCE(AVG(dc.avance_fisico), 0) as avance_general
+    FROM beneficiarios b
+    LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+    LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario";
 
-    // Obtener viviendas completadas (consulta simplificada)
-    $query_completadas = "SELECT COUNT(*) as total_completadas 
-                         FROM beneficiarios b 
-                         LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario 
-                         WHERE dc.avance_fisico >= 100";
-    
-    $result_completadas = $conexion->query($query_completadas);
-    
-    if (!$result_completadas) {
-        // Si falla, intentar consulta más simple
-        $query_completadas_simple = "SELECT COUNT(*) as total_completadas 
-                                   FROM datos_de_construccion 
-                                   WHERE avance_fisico >= 100";
-        $result_completadas = $conexion->query($query_completadas_simple);
+    $result_totales = $conexion->query($sql_totales);
+    if (!$result_totales) {
+        throw new Exception("Error en consulta de totales: " . $conexion->error);
     }
-    
-    $viviendas_completadas = 0;
-    if ($result_completadas) {
-        $viviendas_completadas = $result_completadas->fetch_assoc()['total_completadas'] ?? 0;
-    }
+    $totales = $result_totales->fetch_assoc();
 
-    // Obtener beneficiarios por municipio (consulta simplificada)
-    $beneficiarios_municipio = [];
-    
-    // Intentar consulta con JOIN
-    $query_municipios = "SELECT 
-        m.municipio,
-        COUNT(b.id_beneficiario) as total_beneficiarios
-    FROM municipios m
-    LEFT JOIN parroquias p ON m.id_municipio = p.id_municipio
-    LEFT JOIN ubicaciones u ON p.id_parroquia = u.parroquia
-    LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
-    GROUP BY m.municipio
-    HAVING total_beneficiarios > 0
-    ORDER BY total_beneficiarios DESC
-    LIMIT 10";
+    // Consulta para obtener cambios porcentuales
+    $sql_cambios = "SELECT 
+        COALESCE(
+            (COUNT(*) - LAG(COUNT(*)) OVER (ORDER BY DATE(b.created_at))) * 100.0 / 
+            NULLIF(LAG(COUNT(*)) OVER (ORDER BY DATE(b.created_at)), 0),
+            0
+        ) as cambio_beneficiarios,
+        COALESCE(
+            (SUM(CASE WHEN b.status = 'completada' THEN 1 ELSE 0 END) - 
+            LAG(SUM(CASE WHEN b.status = 'completada' THEN 1 ELSE 0 END)) OVER (ORDER BY DATE(b.created_at))) * 100.0 / 
+            NULLIF(LAG(SUM(CASE WHEN b.status = 'completada' THEN 1 ELSE 0 END)) OVER (ORDER BY DATE(b.created_at)), 0),
+            0
+        ) as cambio_viviendas,
+        COALESCE(
+            (COUNT(DISTINCT u.comunidad) - 
+            LAG(COUNT(DISTINCT u.comunidad)) OVER (ORDER BY DATE(b.created_at))) * 100.0 / 
+            NULLIF(LAG(COUNT(DISTINCT u.comunidad)) OVER (ORDER BY DATE(b.created_at)), 0),
+            0
+        ) as cambio_comunidades,
+        COALESCE(
+            (AVG(dc.avance_fisico) - 
+            LAG(AVG(dc.avance_fisico)) OVER (ORDER BY DATE(b.created_at))) * 100.0 / 
+            NULLIF(LAG(AVG(dc.avance_fisico)) OVER (ORDER BY DATE(b.created_at)), 0),
+            0
+        ) as cambio_avance
+    FROM beneficiarios b
+    LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+    LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
+    WHERE DATE(b.created_at) BETWEEN ? AND ?
+    GROUP BY DATE(b.created_at)
+    ORDER BY DATE(b.created_at) DESC
+    LIMIT 1";
 
-    $result_municipios = $conexion->query($query_municipios);
-    
-    if (!$result_municipios) {
-        // Consulta alternativa más simple
-        $query_municipios_simple = "SELECT 
-            'Municipio 1' as municipio, 15 as total_beneficiarios
-            UNION SELECT 'Municipio 2', 12
-            UNION SELECT 'Municipio 3', 8
-            UNION SELECT 'Municipio 4', 6
-            UNION SELECT 'Municipio 5', 4";
-        
-        $result_municipios = $conexion->query($query_municipios_simple);
+    $stmt_cambios = $conexion->prepare($sql_cambios);
+    if (!$stmt_cambios) {
+        throw new Exception("Error en preparación de consulta de cambios: " . $conexion->error);
     }
-    
-    if ($result_municipios) {
-        while ($row = $result_municipios->fetch_assoc()) {
-            $beneficiarios_municipio[] = $row;
-        }
-    }
+    $stmt_cambios->bind_param("ss", $fecha_inicio, $fecha_fin);
+    $stmt_cambios->execute();
+    $result_cambios = $stmt_cambios->get_result();
+    $cambios = $result_cambios->fetch_assoc() ?: [
+        'cambio_beneficiarios' => 0,
+        'cambio_viviendas' => 0,
+        'cambio_comunidades' => 0,
+        'cambio_avance' => 0
+    ];
 
-    // Obtener cantidad de comunidades
-    $total_comunidades = 0;
+    // Consulta para el gráfico de progreso
+    $sql_progreso = "SELECT 
+        DATE(b.created_at) as fecha,
+        COALESCE(AVG(dc.avance_fisico), 0) as avance
+    FROM beneficiarios b
+    LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
+    WHERE DATE(b.created_at) BETWEEN ? AND ?
+    GROUP BY DATE(b.created_at)
+    ORDER BY DATE(b.created_at)";
+
+    $stmt_progreso = $conexion->prepare($sql_progreso);
+    if (!$stmt_progreso) {
+        throw new Exception("Error en preparación de consulta de progreso: " . $conexion->error);
+    }
+    $stmt_progreso->bind_param("ss", $fecha_inicio, $fecha_fin);
+    $stmt_progreso->execute();
+    $result_progreso = $stmt_progreso->get_result();
     
-    // Intentar obtener comunidades de diferentes tablas posibles
-    $queries_comunidades = [
-        "SELECT COUNT(*) as total FROM comunidades",
-        "SELECT COUNT(DISTINCT comunidad) as total FROM ubicaciones WHERE comunidad IS NOT NULL AND comunidad != ''",
-        "SELECT COUNT(DISTINCT sector) as total FROM ubicaciones WHERE sector IS NOT NULL AND sector != ''",
-        "SELECT COUNT(*) as total FROM ubicaciones"
+    $progreso_data = [
+        'labels' => [],
+        'values' => []
     ];
     
-    foreach ($queries_comunidades as $query) {
-        $result = $conexion->query($query);
-        if ($result) {
-            $total_comunidades = $result->fetch_assoc()['total'] ?? 0;
-            if ($total_comunidades > 0) {
-                break;
-            }
-        }
+    while ($row = $result_progreso->fetch_assoc()) {
+        $progreso_data['labels'][] = date('d/m', strtotime($row['fecha']));
+        $progreso_data['values'][] = round($row['avance'], 2);
     }
 
-    // Si no hay datos reales, usar datos de ejemplo
-    if (empty($beneficiarios_municipio)) {
-        $beneficiarios_municipio = [
-            ['municipio' => 'Iribarren', 'total_beneficiarios' => 25],
-            ['municipio' => 'Palavecino', 'total_beneficiarios' => 18],
-            ['municipio' => 'Simón Planas', 'total_beneficiarios' => 12],
-            ['municipio' => 'Torres', 'total_beneficiarios' => 8],
-            ['municipio' => 'Jiménez', 'total_beneficiarios' => 6]
-        ];
+    // Consulta para el gráfico de estado de viviendas
+    $sql_estado = "SELECT 
+        COALESCE(b.status, 'sin_estado') as status,
+        COUNT(*) as total
+    FROM beneficiarios b
+    GROUP BY b.status";
+
+    $result_estado = $conexion->query($sql_estado);
+    if (!$result_estado) {
+        throw new Exception("Error en consulta de estados: " . $conexion->error);
+    }
+    
+    $estado_data = [
+        'labels' => [],
+        'values' => []
+    ];
+    
+    while ($row = $result_estado->fetch_assoc()) {
+        $estado_data['labels'][] = ucfirst(str_replace('_', ' ', $row['status']));
+        $estado_data['values'][] = (int)$row['total'];
     }
 
-    if ($total_comunidades == 0) {
-        $total_comunidades = 15; // Valor por defecto
+    // Consulta para el gráfico de beneficiarios por municipio
+    $sql_municipios = "SELECT 
+        COALESCE(m.municipio, 'Sin Municipio') as municipio,
+        COUNT(*) as total
+    FROM beneficiarios b
+    LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+    LEFT JOIN parroquias p ON u.parroquia = p.id_parroquia
+    LEFT JOIN municipios m ON p.id_municipio = m.id_municipio
+    GROUP BY m.id_municipio, m.municipio
+    ORDER BY total DESC
+    LIMIT 10";
+
+    $result_municipios = $conexion->query($sql_municipios);
+    if (!$result_municipios) {
+        throw new Exception("Error en consulta de municipios: " . $conexion->error);
+    }
+    
+    $municipios_data = [
+        'labels' => [],
+        'values' => []
+    ];
+    
+    while ($row = $result_municipios->fetch_assoc()) {
+        $municipios_data['labels'][] = $row['municipio'];
+        $municipios_data['values'][] = (int)$row['total'];
+    }
+
+    // Consulta para el gráfico de métodos constructivos
+    $sql_metodos = "SELECT 
+        COALESCE(mc.metodo, 'Sin Método') as metodo,
+        COUNT(*) as total
+    FROM beneficiarios b
+    LEFT JOIN metodos_constructivos mc ON b.metodo_constructivo = mc.id_metodo
+    GROUP BY mc.id_metodo, mc.metodo
+    ORDER BY total DESC";
+
+    $result_metodos = $conexion->query($sql_metodos);
+    if (!$result_metodos) {
+        throw new Exception("Error en consulta de métodos: " . $conexion->error);
+    }
+    
+    $metodos_data = [
+        'labels' => [],
+        'values' => []
+    ];
+    
+    while ($row = $result_metodos->fetch_assoc()) {
+        $metodos_data['labels'][] = $row['metodo'];
+        $metodos_data['values'][] = (int)$row['total'];
     }
 
     // Preparar respuesta
     $response = [
-        'success' => true,
-        'total_beneficiarios' => (int)$total_beneficiarios,
-        'viviendas_completadas' => (int)$viviendas_completadas,
-        'total_comunidades' => (int)$total_comunidades,
-        'beneficiarios_municipio' => $beneficiarios_municipio,
-        'timestamp' => date('Y-m-d H:i:s')
+        'totalBeneficiarios' => (int)$totales['total_beneficiarios'],
+        'viviendasCompletadas' => (int)$totales['viviendas_completadas'],
+        'totalComunidades' => (int)$totales['total_comunidades'],
+        'avanceGeneral' => round($totales['avance_general'], 2),
+        'cambioBeneficiarios' => round($cambios['cambio_beneficiarios'], 2),
+        'cambioViviendas' => round($cambios['cambio_viviendas'], 2),
+        'cambioComunidades' => round($cambios['cambio_comunidades'], 2),
+        'cambioAvance' => round($cambios['cambio_avance'], 2),
+        'progresoData' => $progreso_data,
+        'estadoViviendasData' => $estado_data,
+        'municipiosData' => $municipios_data,
+        'metodosData' => $metodos_data
     ];
 
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    // Enviar respuesta
+    header('Content-Type: application/json');
+    echo json_encode($response);
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => 'Error al obtener datos: ' . $e->getMessage()]);
 }
 
-// Cerrar conexión si existe
-if (isset($conexion)) {
-    $conexion->close();
-}
+// Cerrar conexiones
+if (isset($stmt_cambios)) $stmt_cambios->close();
+if (isset($stmt_progreso)) $stmt_progreso->close();
+if (isset($conexion)) $conexion->close();
 ?>

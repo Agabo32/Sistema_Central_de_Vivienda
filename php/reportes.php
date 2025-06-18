@@ -16,6 +16,7 @@ $id_municipio = $_GET['municipios'] ?? null;
 $id_parroquia = $_GET['parroquias'] ?? null;
 $id_comunidad = $_GET['comunidad'] ?? null;
 $estado_beneficiario = $_GET['estado'] ?? null;
+$codigo_obra = $_GET['cod_obra'] ?? null;
 $tipo_avance = $_GET['tipo_avance'] ?? 'avance_fisico';
 
 function getProgressClass($valor) {
@@ -35,6 +36,7 @@ $sql = "SELECT
     p.parroquia,
     c.id_comunidad,
     c.comunidad,
+    co.cod_obra as codigo_obra,
     COUNT(DISTINCT b.id_beneficiario) as total_viviendas,
     COUNT(DISTINCT CASE WHEN dc.$tipo_avance = 100 THEN b.id_beneficiario END) as completadas,
     COUNT(DISTINCT CASE WHEN dc.$tipo_avance > 0 AND dc.$tipo_avance < 100 THEN b.id_beneficiario END) as en_progreso,
@@ -46,6 +48,7 @@ JOIN parroquias p ON m.id_municipio = p.id_municipio
 JOIN ubicaciones u ON p.id_parroquia = u.parroquia
 JOIN comunidades c ON u.comunidad = c.id_comunidad
 LEFT JOIN beneficiarios b ON u.id_ubicacion = b.id_ubicacion
+LEFT JOIN cod_obra co ON b.cod_obra = co.id_cod_obra
 LEFT JOIN datos_de_construccion dc ON b.id_beneficiario = dc.id_beneficiario
 WHERE e.id_estado = ?";
 
@@ -71,11 +74,19 @@ if ($id_comunidad) {
     $params[] = $id_comunidad;
 }
 
+if ($codigo_obra) {
+    $sql .= " AND b.cod_obra = ?";
+    $types .= "s";
+    $params[] = $codigo_obra;
+}
+
 // Filtro por estado del beneficiario
 if ($estado_beneficiario && $estado_beneficiario !== 'todos') {
     $sql .= " AND b.status = ?";
     $types .= "s";
     $params[] = $estado_beneficiario;
+} else {
+    $sql .= " AND b.status = 'activo'";
 }
 
 // Agrupar y ordenar
@@ -221,6 +232,15 @@ if ($id_municipio) {
 $stmt_comunidades->execute();
 $result_comunidades = $stmt_comunidades->get_result();
 $comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
+
+// Consulta para obtener códigos de obra únicos
+$sql_codigos_obra = "SELECT DISTINCT b.cod_obra, cod.cod_obra as codigo 
+                     FROM beneficiarios b 
+                     JOIN cod_obra cod ON b.cod_obra = cod.id_cod_obra 
+                     WHERE b.cod_obra IS NOT NULL 
+                     ORDER BY cod.cod_obra";
+$result_codigos_obra = $conexion->query($sql_codigos_obra);
+$codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
 
 ?>
 
@@ -431,8 +451,7 @@ $comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
                     <div class="col-md-3">
                         <label class="form-label">Estado Beneficiario</label>
                         <select name="estado" class="form-select">
-                            <option value="todos" <?= (!isset($_GET['estado']) || $_GET['estado'] === 'todos') ? 'selected' : '' ?>>Todos</option>
-                            <option value="activo" <?= (isset($_GET['estado']) && $_GET['estado'] === 'activo') ? 'selected' : '' ?>>Activos</option>
+                            <option value="activo" <?= (!isset($_GET['estado']) || $_GET['estado'] === 'activo') ? 'selected' : '' ?>>Activos</option>
                             <option value="inactivo" <?= (isset($_GET['estado']) && $_GET['estado'] === 'inactivo') ? 'selected' : '' ?>>Inactivos</option>
                         </select>
                     </div>
@@ -447,6 +466,19 @@ $comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
                                 while ($row = $comunidades->fetch_assoc()) {
                                     echo "<option value='{$row['id_comunidad']}' " . ($row['id_comunidad'] == ($_GET['comunidad'] ?? '') ? 'selected' : '') . ">{$row['comunidad']}</option>";
                                 }
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Código de Obra</label>
+                        <select name="cod_obra" class="form-select">
+                            <option value="">Todos los códigos</option>
+                            <?php
+                            foreach ($codigos_obra as $codigo) {
+                                $selected = (isset($_GET['cod_obra']) && $_GET['cod_obra'] === $codigo['cod_obra']) ? 'selected' : '';
+                                echo "<option value='" . htmlspecialchars($codigo['cod_obra']) . "' $selected>" . htmlspecialchars($codigo['codigo']) . "</option>";
                             }
                             ?>
                         </select>
@@ -531,11 +563,12 @@ $comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
                                     <th style="color: #000000;">Municipio</th>
                                     <th style="color: #000000;">Parroquia</th>
                                     <th style="color: #000000;">Comunidad</th>
+                                    <th style="color: #000000;">Código de Obra</th>
                                     <th style="color: #000000;">Total Viviendas</th>
                                     <th style="color: #000000;">Avance Promedio</th>
                                     <th style="color: #000000;">Completadas</th>
                                     <th style="color: #000000;">En Progreso</th>
-                                    <th style="color: #000000;">No Iniciadas</th>
+                                    <th style="color: #000000;">Sin Iniciar</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -549,6 +582,7 @@ $comunidades = $result_comunidades->fetch_all(MYSQLI_ASSOC);
                                             <?= htmlspecialchars($reporte['comunidad'] ?? 'No especificada') ?>
                                         </span>
                                     </td>
+                                    <td><?= htmlspecialchars($reporte['codigo_obra'] ?? 'N/A') ?></td>
                                     <td><strong><?= $reporte['total_viviendas'] ?? 0 ?></strong></td>
                                     <td>
                                         <div class="progress-container">

@@ -726,15 +726,49 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="codigo_obra" class="form-label">Código de Obra *</label>
-                                <select class="form-select" id="codigo_obra" name="codigo_obra" required>
-                                    <option value="">Seleccione un código de obra</option>
-                                    <?php
-                                    $codigos_obra = $conexion->query("SELECT id_cod_obra, cod_obra FROM cod_obra ORDER BY cod_obra ASC");
-                                    while ($row = $codigos_obra->fetch_assoc()) {
-                                        echo "<option value='{$row['id_cod_obra']}'>{$row['cod_obra']}</option>";
-                                    }
-                                    ?>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="codigo_obra" name="codigo_obra" required>
+                                        <option value="">Seleccione un código de obra</option>
+                                        <?php
+                                        $codigos_obra = $conexion->query("SELECT id_cod_obra, cod_obra FROM cod_obra ORDER BY cod_obra ASC");
+                                        while ($row = $codigos_obra->fetch_assoc()) {
+                                            echo "<option value='{$row['id_cod_obra']}'>{$row['cod_obra']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="toggleNuevoCodigoObra">
+                                        <i class="fas fa-plus-circle me-1"></i> Crear Nuevo Código de Obra
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Sección para crear nuevo código de obra - Inicialmente oculta -->
+                            <div class="nueva-codigo-obra-section" id="nuevoCodigoObraSection" style="display: none;">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Código de Obra</h6>
+                                        <button type="button" class="btn-close btn-close-white" id="cerrarNuevoCodigoObra"></button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Complete el siguiente campo para registrar un nuevo código de obra
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="nuevo_codigo_obra" class="form-label">Nuevo Código de Obra</label>
+                                                <input type="text" class="form-control" id="nuevo_codigo_obra" name="nuevo_codigo_obra">
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-success" id="btnGuardarCodigoObra">
+                                                <i class="fas fa-save me-1"></i> Guardar Nuevo Código
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -798,7 +832,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         <div class="nueva-comunidad-section" id="nuevaComunidadSection" style="display: none;">
                             <div class="card border-primary">
                                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Registrar Nueva Comunidad</h6>
+                                    <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Registrar Nueva Comunidad</h6>
                                     <button type="button" class="btn-close btn-close-white" id="cerrarNuevaComunidad"></button>
                                 </div>
                                 <div class="card-body">
@@ -807,9 +841,28 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                                         Complete los siguientes campos para registrar una nueva comunidad
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-12 mb-3">
-                                            <label for="nueva_comunidad_nombre" class="form-label">Nombre de la Nueva Comunidad</label>
-                                            <input type="text" class="form-control" id="nueva_comunidad_nombre" name="nueva_comunidad_nombre">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nueva_comunidad" class="form-label">Nombre de la Comunidad</label>
+                                            <input type="text" class="form-control" id="nueva_comunidad" name="nueva_comunidad">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nueva_comunidad_parroquia" class="form-label">Parroquia</label>
+                                            <select class="form-select" id="nueva_comunidad_parroquia" name="nueva_comunidad_parroquia" required>
+                                                <option value="">Seleccione una parroquia</option>
+                                                <?php
+                                                $parroquias = $conexion->query("
+                                                    SELECT p.id_parroquia, p.parroquia 
+                                                    FROM parroquias p 
+                                                    INNER JOIN municipios m ON p.id_municipio = m.id_municipio 
+                                                    INNER JOIN estados e ON m.id_estado = e.id_estado 
+                                                    WHERE e.estado = 'Lara' 
+                                                    ORDER BY p.parroquia ASC
+                                                ");
+                                                while ($row = $parroquias->fetch_assoc()) {
+                                                    echo "<option value='{$row['id_parroquia']}'>{$row['parroquia']}</option>";
+                                                }
+                                                ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
@@ -966,6 +1019,10 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             const cerrarNuevaComunidad = document.getElementById('cerrarNuevaComunidad');
             const nuevaComunidadSection = document.getElementById('nuevaComunidadSection');
             const btnGuardarComunidad = document.getElementById('btnGuardarComunidad');
+            const toggleNuevoCodigoObra = document.getElementById('toggleNuevoCodigoObra');
+            const cerrarNuevoCodigoObra = document.getElementById('cerrarNuevoCodigoObra');
+            const nuevoCodigoObraSection = document.getElementById('nuevoCodigoObraSection');
+            const btnGuardarCodigoObra = document.getElementById('btnGuardarCodigoObra');
 
             // Función para cargar parroquias
             async function cargarParroquias(municipioId, targetSelect = parroquiaSelect) {
@@ -1065,7 +1122,7 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                 toggleNuevaComunidad.style.display = 'inline-block';
                 
                 // Limpiar campos
-                document.getElementById('nueva_comunidad_nombre').value = '';
+                document.getElementById('nueva_comunidad').value = '';
             }
 
             // Eventos para mostrar/ocultar sección de nueva comunidad
@@ -1074,25 +1131,25 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
 
             // Evento para guardar nueva comunidad
             btnGuardarComunidad.addEventListener('click', async function() {
-                const nombreComunidad = document.getElementById('nueva_comunidad_nombre').value.trim();
-                const parroquiaId = modalParroquia.value;
+                const nuevaComunidad = document.getElementById('nueva_comunidad').value.trim();
+                const nuevaComunidadParroquia = document.getElementById('nueva_comunidad_parroquia').value;
 
-                if (!nombreComunidad) {
+                if (!nuevaComunidad) {
                     showAlert('error', 'Por favor ingrese el nombre de la comunidad');
                     return;
                 }
 
-                if (!parroquiaId) {
-                    showAlert('error', 'Por favor seleccione una parroquia antes de crear una nueva comunidad');
+                if (!nuevaComunidadParroquia) {
+                    showAlert('error', 'Por favor seleccione una parroquia');
                     return;
                 }
 
                 try {
                     const formData = new FormData();
-                    formData.append('nombre_comunidad', nombreComunidad);
-                    formData.append('id_parroquia', parroquiaId);
+                    formData.append('nombre_comunidad', nuevaComunidad);
+                    formData.append('id_parroquia', nuevaComunidadParroquia);
 
-                    const response = await fetch('conf/guardar_comunidad.php', {
+                    const response = await fetch('conf/guardar_beneficiario.php', {
                         method: 'POST',
                         body: formData
                     });
@@ -1105,14 +1162,81 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         // Actualizar el select de comunidades
                         const option = document.createElement('option');
                         option.value = result.id_comunidad;
-                        option.textContent = nombreComunidad;
-                        modalComunidad.appendChild(option);
-                        modalComunidad.value = result.id_comunidad;
+                        option.textContent = nuevaComunidad;
+                        document.getElementById('comunidad').appendChild(option);
+                        document.getElementById('comunidad').value = result.id_comunidad;
                         
                         // Ocultar la sección de nueva comunidad
                         ocultarSeccionNuevaComunidad();
                     } else {
                         showAlert('error', result.message || 'Error al crear la comunidad');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al procesar la solicitud');
+                }
+            });
+
+            // Funciones para mostrar/ocultar nuevo código de obra
+            function mostrarSeccionNuevoCodigoObra() {
+                nuevoCodigoObraSection.style.display = 'block';
+                setTimeout(() => {
+                    nuevoCodigoObraSection.classList.add('show');
+                    nuevoCodigoObraSection.classList.remove('hide');
+                }, 10);
+                toggleNuevoCodigoObra.style.display = 'none';
+            }
+
+            function ocultarSeccionNuevoCodigoObra() {
+                nuevoCodigoObraSection.classList.remove('show');
+                nuevoCodigoObraSection.classList.add('hide');
+                setTimeout(() => {
+                    nuevoCodigoObraSection.style.display = 'none';
+                }, 300);
+                toggleNuevoCodigoObra.style.display = 'inline-block';
+                
+                // Limpiar campos
+                document.getElementById('nuevo_codigo_obra').value = '';
+            }
+
+            // Eventos para mostrar/ocultar sección de nuevo código de obra
+            toggleNuevoCodigoObra.addEventListener('click', mostrarSeccionNuevoCodigoObra);
+            cerrarNuevoCodigoObra.addEventListener('click', ocultarSeccionNuevoCodigoObra);
+
+            // Evento para guardar nuevo código de obra
+            btnGuardarCodigoObra.addEventListener('click', async function() {
+                const nuevoCodigo = document.getElementById('nuevo_codigo_obra').value.trim();
+
+                if (!nuevoCodigo) {
+                    showAlert('error', 'Por favor ingrese el nuevo código de obra');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('codigo_obra', nuevoCodigo);
+
+                    const response = await fetch('conf/guardar_codigo_obra.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showAlert('success', 'Código de obra creado exitosamente');
+                        
+                        // Actualizar el select de códigos de obra
+                        const option = document.createElement('option');
+                        option.value = result.id_cod_obra;
+                        option.textContent = nuevoCodigo;
+                        document.getElementById('codigo_obra').appendChild(option);
+                        document.getElementById('codigo_obra').value = result.id_cod_obra;
+                        
+                        // Ocultar la sección de nuevo código de obra
+                        ocultarSeccionNuevoCodigoObra();
+                    } else {
+                        showAlert('error', result.message || 'Error al crear el código de obra');
                     }
                 } catch (error) {
                     console.error('Error:', error);
