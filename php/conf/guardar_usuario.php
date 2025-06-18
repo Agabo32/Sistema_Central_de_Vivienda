@@ -28,6 +28,7 @@ try {
     $password = $_POST['password'] ?? '';
     $rol = $_POST['rol'] ?? 'usuario';
     $activo = isset($_POST['activo']) ? (int)$_POST['activo'] : 1;
+    $id_usuario = isset($_POST['id_usuario']) && ctype_digit($_POST['id_usuario']) ? (int)$_POST['id_usuario'] : null;
 
     // Validaciones básicas
     $errores = [];
@@ -38,7 +39,7 @@ try {
     if (empty($cedula)) $errores[] = 'La cédula es requerida';
     if (empty($correo)) $errores[] = 'El correo es requerido';
     if (empty($telefono)) $errores[] = 'El teléfono es requerido';
-    if (empty($password)) $errores[] = 'La contraseña es requerida';
+    if (empty($password) && !$id_usuario) $errores[] = 'La contraseña es requerida';
     
     // Validar formato de correo
     if (!empty($correo) && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
@@ -70,35 +71,60 @@ try {
         exit;
     }
 
-    // Verificar si ya existe un usuario con la misma cédula, correo o nombre de usuario
-    $sql_verificar = "SELECT id_usuario FROM usuario WHERE cedula = ? OR correo = ? OR nombre_usuario = ?";
+    // Verificar si ya existe un usuario con la misma cédula, correo o nombre de usuario (excepto el actual en edición)
+    $sql_verificar = "SELECT id_usuario FROM usuario WHERE (cedula = ? OR correo = ? OR nombre_usuario = ?)" . ($id_usuario ? " AND id_usuario != ?" : "");
     $stmt_verificar = $conexion->prepare($sql_verificar);
-    $stmt_verificar->bind_param("sss", $cedula, $correo, $nombre_usuario);
+    if ($id_usuario) {
+        $stmt_verificar->bind_param("sssi", $cedula, $correo, $nombre_usuario, $id_usuario);
+    } else {
+        $stmt_verificar->bind_param("sss", $cedula, $correo, $nombre_usuario);
+    }
     $stmt_verificar->execute();
     $resultado_verificar = $stmt_verificar->get_result();
-    
     if ($resultado_verificar->num_rows > 0) {
         echo json_encode(['status' => 'error', 'message' => 'Ya existe un usuario con esa cédula, correo o nombre de usuario']);
         exit;
     }
 
-    // Encriptar contraseña
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Preparar consulta de inserción
-    $sql_insertar = "INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol, fecha_registro, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
-    
-    $stmt_insertar = $conexion->prepare($sql_insertar);
-    $stmt_insertar->bind_param("ssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol, $activo);
-    
-    if ($stmt_insertar->execute()) {
-        echo json_encode([
-            'status' => 'success', 
-            'message' => 'Usuario creado exitosamente',
-            'user_id' => $conexion->insert_id
-        ]);
+    if ($id_usuario) {
+        // Actualizar usuario
+        $sql_update = "UPDATE usuario SET Nombre=?, Apellido=?, nombre_usuario=?, cedula=?, correo=?, telefono=?, rol=?, activo=?" . (!empty($password) ? ", password=?" : "") . " WHERE id_usuario=?";
+        if (!empty($password)) {
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt_update = $conexion->prepare($sql_update);
+            $stmt_update->bind_param("sssssssisi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $password_hash, $id_usuario);
+        } else {
+            $stmt_update = $conexion->prepare(str_replace(", password=?", "", $sql_update));
+            $stmt_update->bind_param("ssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $id_usuario);
+        }
+        if ($stmt_update->execute()) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Usuario actualizado exitosamente',
+                'user_id' => $id_usuario
+            ]);
+        } else {
+            throw new Exception('Error al actualizar el usuario en la base de datos');
+        }
     } else {
-        throw new Exception('Error al insertar el usuario en la base de datos');
+        // Encriptar contraseña
+        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Preparar consulta de inserción
+        $sql_insertar = "INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol, fecha_registro, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+        
+        $stmt_insertar = $conexion->prepare($sql_insertar);
+        $stmt_insertar->bind_param("ssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol, $activo);
+        
+        if ($stmt_insertar->execute()) {
+            echo json_encode([
+                'status' => 'success', 
+                'message' => 'Usuario creado exitosamente',
+                'user_id' => $conexion->insert_id
+            ]);
+        } else {
+            throw new Exception('Error al insertar el usuario en la base de datos');
+        }
     }
 
 } catch (Exception $e) {

@@ -11,53 +11,51 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['rol'] !== 'root') {
 }
 
 // Verificar si es una solicitud POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['status' => 'error', 'message' => 'Método no permitido']);
-    exit;
-}
-
-// Obtener y validar los datos
-$nombre_comunidad = trim($_POST['nombre_comunidad'] ?? '');
-$id_parroquia = intval($_POST['id_parroquia'] ?? 0);
-
-if (empty($nombre_comunidad)) {
-    echo json_encode(['status' => 'error', 'message' => 'El nombre de la comunidad es requerido']);
-    exit;
-}
-
-if ($id_parroquia <= 0) {
-    echo json_encode(['status' => 'error', 'message' => 'La parroquia seleccionada no es válida']);
-    exit;
-}
-
-try {
-    // Verificar si la comunidad ya existe en la parroquia
-    $stmt = $conexion->prepare("SELECT id_comunidad FROM comunidades WHERE comunidad = ? AND id_parroquia = ?");
-    $stmt->bind_param("si", $nombre_comunidad, $id_parroquia);
-    $stmt->execute();
-    
-    if ($stmt->get_result()->num_rows > 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Ya existe una comunidad con este nombre en la parroquia seleccionada']);
-        exit;
-    }
-    
-    // Insertar la nueva comunidad
-    $stmt = $conexion->prepare("INSERT INTO comunidades (comunidad, id_parroquia) VALUES (?, ?)");
-    $stmt->bind_param("si", $nombre_comunidad, $id_parroquia);
-    
-    if ($stmt->execute()) {
-        $id_comunidad = $conexion->insert_id;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $nombre_comunidad = trim($_POST['nombre_comunidad']);
+        $id_parroquia = intval($_POST['id_parroquia']);
+        
+        if (empty($nombre_comunidad) || empty($id_parroquia)) {
+            throw new Exception('Nombre de comunidad y parroquia son requeridos');
+        }
+        
+        // Verificar si la comunidad ya existe en esa parroquia
+        $check_stmt = $conexion->prepare("SELECT id_comunidad FROM comunidades WHERE comunidad = ? AND id_parroquia = ?");
+        $check_stmt->bind_param("si", $nombre_comunidad, $id_parroquia);
+        $check_stmt->execute();
+        
+        if ($check_stmt->get_result()->num_rows > 0) {
+            throw new Exception('Ya existe una comunidad con ese nombre en la parroquia seleccionada');
+        }
+        
+        // Insertar nueva comunidad
+        $stmt = $conexion->prepare("INSERT INTO comunidades (comunidad, id_parroquia) VALUES (?, ?)");
+        $stmt->bind_param("si", $nombre_comunidad, $id_parroquia);
+        
+        if ($stmt->execute()) {
+            $id_comunidad = $conexion->insert_id;
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Comunidad creada exitosamente',
+                'id_comunidad' => $id_comunidad,
+                'nombre_comunidad' => $nombre_comunidad
+            ]);
+        } else {
+            throw new Exception('Error al guardar la comunidad');
+        }
+        
+    } catch (Exception $e) {
         echo json_encode([
-            'status' => 'success',
-            'message' => 'Comunidad creada exitosamente',
-            'id_comunidad' => $id_comunidad
+            'status' => 'error',
+            'message' => $e->getMessage()
         ]);
-    } else {
-        throw new Exception("Error al crear la comunidad: " . $stmt->error);
     }
-    
-} catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+} else {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Método no permitido'
+    ]);
 }
 
 $conexion->close();

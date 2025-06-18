@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// Destruir todas las variables de sesión
+// Limpiar todas las variables de sesión
 $_SESSION = array();
 
 // Destruir la cookie de sesión si existe
@@ -12,7 +12,12 @@ if (isset($_COOKIE[session_name()])) {
 // Destruir la sesión
 session_destroy();
 
-// Redirigir al login
-header('Location: ../../index.php');
+// Limpiar cualquier cookie de sesión que pudiera quedar
+if (isset($_COOKIE['PHPSESSID'])) {
+    setcookie('PHPSESSID', '', time() - 3600, '/');
+}
+
+// Redirigir al login con un mensaje de sesión cerrada
+header('Location: ../../index.php?msg=sesion_cerrada');
 exit();
 ?> 

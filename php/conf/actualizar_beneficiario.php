@@ -75,9 +75,9 @@ try {
     $avance_fisico = floatval($_POST['avance_fisico']);
     $fecha_culminacion = !empty($_POST['fecha_culminacion']) ? $_POST['fecha_culminacion'] : null;
     $fecha_protocolizacion = !empty($_POST['fecha_protocolizacion']) ? $_POST['fecha_protocolizacion'] : null;
-    $acta_entregada = intval($_POST['acta_entregada']);
-    $observaciones_responsables_control = trim($_POST['observaciones_responsables_control']);
-    $observaciones_fiscalizadores = trim($_POST['observaciones_fiscalizadores']);
+    $acta_entregada = isset($_POST['acta_entregada']) ? intval($_POST['acta_entregada']) : 0;
+    $observaciones_responsables_control = trim($_POST['observaciones_responsables_control'] ?? '');
+    $observaciones_fiscalizadores = trim($_POST['observaciones_fiscalizadores'] ?? '');
     
     // Calcular acondicionamiento
     $acondicionamiento = ($limpieza + $replanteo) / 2;

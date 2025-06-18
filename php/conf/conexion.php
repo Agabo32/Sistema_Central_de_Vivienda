@@ -5,7 +5,7 @@
 //$db   = "sistema_central_v_1.sql"; // cambia esto por el nombre real
 
 // Crear conexión
-$conexion = mysqli_connect("localhost", "root", "", "prueva");
+$conexion = mysqli_connect("localhost", "root", "", "18/06/2025");
 
 // Verificar conexión
 //if ($conexion) {
