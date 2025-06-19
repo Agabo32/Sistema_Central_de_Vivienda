@@ -2,7 +2,7 @@
     --primary-color: #e30016;
     --primary-hover: #e30016;
     --secondary-color: #1b1918;
-    --accent-color: #e30016;
+    --accent-color: #ee4242;
     --dark-color: #1a1a2e;
     --light-color: #f8f9fa;
     --success-color: #1a1a2e;
@@ -52,7 +52,7 @@ body::before {
 }
 
 .glass-navbar {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: (135deg, var(--primary-color) 0%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -85,7 +85,7 @@ body::before {
 }
 
 .card-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%);
     color: white;
     font-weight: 500;
 }
@@ -172,6 +172,31 @@ body::before {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background: var(--card-bg);
+}
+
+.modal-header.bg-primary {
+    background: var(--primary-color) !important;
+    border: none;
+}
+
+.modal-header .modal-title {
+    color: var(--text-color) !important;
+    font-weight: 600;
+}
+
+.modal-header .modal-title i {
+    color: var(--text-color) !important;
+}
+
+.modal-header .btn-close-white {
+    filter: invert(1);
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.modal-header .btn-close-white:hover {
+    opacity: 1;
 }
 
 .form-control, .form-select {
