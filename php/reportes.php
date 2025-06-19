@@ -9,6 +9,10 @@ verificar_autenticacion();
 // Todos los usuarios tienen acceso total
 $esAdmin = true;
 
+// Obtener el rol del usuario actual
+$usuario_actual = $_SESSION['user'] ?? null;
+$rol_usuario = $usuario_actual['rol'] ?? '';
+
 // Retrieve filter parameters
 $estadoLara = $conexion->query("SELECT id_estado FROM estados WHERE estado = 'Lara'")->fetch_assoc();
 $id_lara = $estadoLara['id_estado'];
@@ -540,9 +544,11 @@ $codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resultados Detallados</h3>
+                <?php if ($rol_usuario !== 'usuario'): ?>
                 <button class="btn btn-light btn-action" onclick="imprimirReporte()">
                     <i class="fas fa-print me-1"></i> Imprimir
                 </button>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <!-- Gráfico de Avance -->
@@ -770,10 +776,11 @@ $codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
         });
 
         function imprimirReporte() {
-            const contenido = document.querySelector('.card:last-child').cloneNode(true);
-            const botones = contenido.querySelectorAll('.btn-action');
-            botones.forEach(boton => boton.style.display = 'none');
-            
+            // Clonar solo la tabla de resultados y el resumen general
+            const card = document.querySelector('.card:last-child');
+            const tabla = card.querySelector('.table-responsive').cloneNode(true);
+            const resumen = document.querySelector('.summary-card')?.cloneNode(true);
+
             const ventanaImpresion = window.open('', '_blank');
             ventanaImpresion.document.write(`
                 <!DOCTYPE html>
@@ -868,18 +875,8 @@ $codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
                 </head>
                 <body>
                     <h1>Reporte de Avance Constructivo</h1>
-                    <div class="summary">
-                        <strong>Resumen General:</strong><br>
-                        <?php if (!empty($_GET['comunidad'])): ?>
-                        Comunidad: <?= htmlspecialchars($_GET['comunidad']) ?> | 
-                        <?php endif; ?>
-                        Total de Viviendas: <?= $total_viviendas_general ?> | 
-                        Avance Promedio: <?= $avance_promedio_general ?>% | 
-                        Completadas: <?= $total_completadas_general ?> | 
-                        En Progreso: <?= $total_en_progreso_general ?> | 
-                        No Iniciadas: <?= $total_no_iniciadas_general ?>
-                    </div>
-                    ${contenido.innerHTML}
+                    ${resumen ? resumen.outerHTML : ''}
+                    ${tabla.outerHTML}
                     <script>
                         window.onload = function() {
                             window.print();

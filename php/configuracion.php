@@ -240,8 +240,8 @@ if (isset($_POST['guardar_tema'])) {
                                 <?php echo $usuario['activo'] ? 'Activo' : 'Inactivo'; ?>
                             </span>
                         </p>
-                        <small class="text-muted">
-                            <i class="fas fa-calendar"></i> 
+                        <small class="text-muted" style="color: #FFFFFFFF;">
+                            <i class="fas fa-calendar" style="color: #FFFFFFFF;"></i> 
                             Registrado: <?php echo date('d/m/Y', strtotime($usuario['fecha_registro'])); ?>
                         </small>
                         <?php if ($esAdmin): ?>
@@ -406,6 +406,20 @@ if (isset($_POST['guardar_tema'])) {
                                 <small class="text-muted">La contraseña debe tener al menos 8 caracteres</small>
                             </div>
                         </div>
+                        <!-- Pregunta y Respuesta de Seguridad -->
+                        <div class="row mb-4">
+                            <h6 class="mb-3"><i class="fas fa-question-circle me-2 text-warning"></i>Pregunta de Seguridad</h6>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Pregunta de Seguridad *</label>
+                                <input type="text" class="form-control" name="pregunta_seguridad" required maxlength="100" placeholder="Ej: ¿Cuál es el nombre de tu primera mascota?">
+                                <div class="invalid-feedback">La pregunta de seguridad es requerida</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Respuesta de Seguridad *</label>
+                                <input type="text" class="form-control" name="respuesta_seguridad" required maxlength="100" placeholder="Respuesta secreta">
+                                <div class="invalid-feedback">La respuesta de seguridad es requerida</div>
+                            </div>
+                        </div>
 
                         <!-- Rol y Estado -->
                         <div class="row">
@@ -502,6 +516,20 @@ if (isset($_POST['guardar_tema'])) {
                             <small class="text-muted">La contraseña debe tener al menos 8 caracteres</small>
                         </div>
                     </div>
+                    <!-- Pregunta y Respuesta de Seguridad -->
+                    <div class="row mb-4">
+                        <h6 class="mb-3"><i class="fas fa-question-circle me-2 text-warning"></i>Pregunta de Seguridad</h6>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Pregunta de Seguridad *</label>
+                            <input type="text" class="form-control" name="pregunta_seguridad" id="editar_pregunta_seguridad" required maxlength="100" placeholder="Ej: ¿Cuál es el nombre de tu primera mascota?">
+                            <div class="invalid-feedback">La pregunta de seguridad es requerida</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Respuesta de Seguridad *</label>
+                            <input type="text" class="form-control" name="respuesta_seguridad" id="editar_respuesta_seguridad" required maxlength="100" placeholder="Respuesta secreta">
+                            <div class="invalid-feedback">La respuesta de seguridad es requerida</div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Rol *</label>
@@ -583,6 +611,8 @@ if (isset($_POST['guardar_tema'])) {
                         document.getElementById('editar_rol').value = data.usuario.rol;
                         document.getElementById('editar_activo').value = data.usuario.activo;
                         document.getElementById('editar_password').value = '';
+                        document.getElementById('editar_pregunta_seguridad').value = data.usuario.pregunta_seguridad || '';
+                        document.getElementById('editar_respuesta_seguridad').value = data.usuario.respuesta_seguridad || '';
                         // Mostrar el modal
                         var modal = new bootstrap.Modal(document.getElementById('editarUsuarioModal'));
                         modal.show();
@@ -598,8 +628,23 @@ if (isset($_POST['guardar_tema'])) {
         // Función para eliminar usuario
         function eliminarUsuario(id) {
             if(confirm('¿Está seguro de eliminar este usuario?')) {
-                // Implementar lógica de eliminación
-                alert('Usuario ' + id + ' eliminado');
+                fetch('conf/eliminar_usuario.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id_usuario=' + encodeURIComponent(id)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error al eliminar el usuario');
+                });
             }
         }
 

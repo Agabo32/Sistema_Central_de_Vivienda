@@ -5,6 +5,10 @@ require_once '../php/conf/conexion.php';
 // Verificación robusta de sesión y rol
 $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'root';
 
+// Obtener el rol del usuario actual
+$usuario_actual = $_SESSION['user'] ?? null;
+$rol_usuario = $usuario_actual['rol'] ?? '';
+
 // Obtener fiscalizadores
 $query_fiscalizadores = "SELECT id_fiscalizador, Fiscalizador FROM fiscalizadores ORDER BY Fiscalizador ASC";
 $resultado_fiscalizadores = mysqli_query($conexion, $query_fiscalizadores);
@@ -213,7 +217,7 @@ function formatProgressValue($value) {
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <a class="nav-link ms-2" href="/Sistema_Central_de_Vivienda-main/index.php" style="color: #f8f9fa">
+                    <a class="nav-link ms-2" href="../php/conf/logout.php" style="color: #f8f9fa">
                         <i class="fas fa-sign-out-alt me-1" style="color: #f8f9fa"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -234,6 +238,7 @@ function formatProgressValue($value) {
                             <i class="fas fa-edit me-2"></i>Actualizar Beneficiario
                         </button>
                         <?php endif; ?>
+                        <?php if ($rol_usuario !== 'usuario'): ?>
                         <a href="expediente.php?id=<?= $data['id_beneficiario'] ?>" 
                            class="btn btn-danger btn-action" 
                            target="_blank">
@@ -247,6 +252,7 @@ function formatProgressValue($value) {
                         <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#reporteIndividualModal">
                             <i class="fas fa-print me-2"></i>Imprimir Reporte
                         </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -1110,9 +1116,11 @@ function formatProgressValue($value) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i> Cerrar
                     </button>
+                    <?php if ($rol_usuario !== 'usuario'): ?>
                     <button type="button" class="btn btn-primary" onclick="imprimirReporte()">
                         <i class="fas fa-print me-1"></i> Imprimir Reporte
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

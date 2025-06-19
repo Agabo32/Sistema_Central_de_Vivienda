@@ -896,39 +896,147 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="metodo_constructivo" class="form-label">Método Constructivo</label>
-                                <select class="form-select" id="metodo_constructivo" name="metodo_constructivo">
-                                    <option value="">Seleccione un método</option>
-                                    <?php
-                                    $metodos = $conexion->query("SELECT id_metodo, metodo FROM metodos_constructivos ORDER BY metodo ASC");
-                                    while ($met = $metodos->fetch_assoc()) {
-                                        echo "<option value='{$met['id_metodo']}'>{$met['metodo']}</option>";
-                                    }
-                                    ?>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="metodo_constructivo" name="metodo_constructivo">
+                                        <option value="">Seleccione un método constructivo</option>
+                                        <?php
+                                        $metodos = $conexion->query("SELECT id_metodo, metodo FROM metodos_constructivos ORDER BY metodo ASC");
+                                        while ($row = $metodos->fetch_assoc()) {
+                                            echo "<option value='{$row['id_metodo']}'>{$row['metodo']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="toggleNuevoMetodo">
+                                        <i class="fas fa-plus-circle me-1"></i> Crear Nuevo Método Constructivo
+                                    </button>
+                                </div>
                             </div>
+
+                            <!-- Sección para crear nuevo método constructivo - Inicialmente oculta -->
+                            <div class="nueva-metodo-section" id="nuevoMetodoSection" style="display: none;">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Método Constructivo</h6>
+                                        <button type="button" class="btn-close btn-close-white" id="cerrarNuevoMetodo"></button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Complete el siguiente campo para registrar un nuevo método constructivo
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="nuevo_metodo" class="form-label">Nuevo Método Constructivo</label>
+                                                <input type="text" class="form-control" id="nuevo_metodo" name="nuevo_metodo">
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-success" id="btnGuardarMetodo">
+                                                <i class="fas fa-save me-1"></i> Guardar Nuevo Método
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="modelo_constructivo" class="form-label">Modelo Constructivo</label>
-                                <select class="form-select" id="modelo_constructivo" name="modelo_constructivo">
-                                    <option value="">Seleccione un modelo</option>
-                                    <?php
-                                    $modelos = $conexion->query("SELECT id_modelo, modelo FROM modelos_constructivos ORDER BY modelo ASC");
-                                    while ($mod = $modelos->fetch_assoc()) {
-                                        echo "<option value='{$mod['id_modelo']}'>{$mod['modelo']}</option>";
-                                    }
-                                    ?>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="modelo_constructivo" name="modelo_constructivo">
+                                        <option value="">Seleccione un modelo constructivo</option>
+                                        <?php
+                                        $modelos = $conexion->query("SELECT id_modelo, modelo FROM modelos_constructivos ORDER BY modelo ASC");
+                                        while ($row = $modelos->fetch_assoc()) {
+                                            echo "<option value='{$row['id_modelo']}'>{$row['modelo']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="toggleNuevoModelo">
+                                        <i class="fas fa-plus-circle me-1"></i> Crear Nuevo Modelo Constructivo
+                                    </button>
+                                </div>
                             </div>
+
+                            <!-- Sección para crear nuevo modelo constructivo - Inicialmente oculta -->
+                            <div class="nueva-modelo-section" id="nuevoModeloSection" style="display: none;">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Modelo Constructivo</h6>
+                                        <button type="button" class="btn-close btn-close-white" id="cerrarNuevoModelo"></button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Complete el siguiente campo para registrar un nuevo modelo constructivo
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="nuevo_modelo" class="form-label">Nuevo Modelo Constructivo</label>
+                                                <input type="text" class="form-control" id="nuevo_modelo" name="nuevo_modelo">
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-success" id="btnGuardarModelo">
+                                                <i class="fas fa-save me-1"></i> Guardar Nuevo Modelo
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="fiscalizador" class="form-label">Fiscalizador</label>
-                                <select class="form-select" id="fiscalizador" name="fiscalizador">
-                                    <option value="">Seleccione un fiscalizador</option>
-                                    <?php
-                                    $fiscalizadores = $conexion->query("SELECT id_fiscalizador, Fiscalizador FROM fiscalizadores ORDER BY Fiscalizador ASC");
-                                    while ($fis = $fiscalizadores->fetch_assoc()) {
-                                        echo "<option value='{$fis['id_fiscalizador']}'>{$fis['Fiscalizador']}</option>";
-                                    }
-                                    ?>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="fiscalizador" name="fiscalizador">
+                                        <option value="">Seleccione un fiscalizador</option>
+                                        <?php
+                                        $fiscalizadores = $conexion->query("SELECT id_fiscalizador, fiscalizador FROM fiscalizadores ORDER BY fiscalizador ASC");
+                                        while ($row = $fiscalizadores->fetch_assoc()) {
+                                            echo "<option value='{$row['id_fiscalizador']}'>{$row['fiscalizador']}</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="toggleNuevoFiscalizador">
+                                        <i class="fas fa-plus-circle me-1"></i> Crear Nuevo Fiscalizador
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección para crear nuevo fiscalizador - Inicialmente oculta -->
+                        <div class="nueva-fiscalizador-section" id="nuevoFiscalizadorSection" style="display: none;">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Fiscalizador</h6>
+                                    <button type="button" class="btn-close btn-close-white" id="cerrarNuevoFiscalizador"></button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Complete el siguiente campo para registrar un nuevo fiscalizador
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="nuevo_fiscalizador" class="form-label">Nuevo Fiscalizador</label>
+                                            <input type="text" class="form-control" id="nuevo_fiscalizador" name="nuevo_fiscalizador">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-success" id="btnGuardarFiscalizador">
+                                            <i class="fas fa-save me-1"></i> Guardar Nuevo Fiscalizador
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1023,6 +1131,18 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
             const cerrarNuevoCodigoObra = document.getElementById('cerrarNuevoCodigoObra');
             const nuevoCodigoObraSection = document.getElementById('nuevoCodigoObraSection');
             const btnGuardarCodigoObra = document.getElementById('btnGuardarCodigoObra');
+            const toggleNuevoFiscalizador = document.getElementById('toggleNuevoFiscalizador');
+            const cerrarNuevoFiscalizador = document.getElementById('cerrarNuevoFiscalizador');
+            const nuevoFiscalizadorSection = document.getElementById('nuevoFiscalizadorSection');
+            const btnGuardarFiscalizador = document.getElementById('btnGuardarFiscalizador');
+            const toggleNuevoMetodo = document.getElementById('toggleNuevoMetodo');
+            const cerrarNuevoMetodo = document.getElementById('cerrarNuevoMetodo');
+            const nuevoMetodoSection = document.getElementById('nuevoMetodoSection');
+            const btnGuardarMetodo = document.getElementById('btnGuardarMetodo');
+            const toggleNuevoModelo = document.getElementById('toggleNuevoModelo');
+            const cerrarNuevoModelo = document.getElementById('cerrarNuevoModelo');
+            const nuevoModeloSection = document.getElementById('nuevoModeloSection');
+            const btnGuardarModelo = document.getElementById('btnGuardarModelo');
 
             // Función para cargar parroquias
             async function cargarParroquias(municipioId, targetSelect = parroquiaSelect) {
@@ -1237,6 +1357,207 @@ $beneficiarios = $result->fetch_all(MYSQLI_ASSOC);
                         ocultarSeccionNuevoCodigoObra();
                     } else {
                         showAlert('error', result.message || 'Error al crear el código de obra');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al procesar la solicitud');
+                }
+            });
+
+            // Funciones para mostrar/ocultar nuevo fiscalizador
+            function mostrarSeccionNuevoFiscalizador() {
+                document.getElementById('nuevoFiscalizadorSection').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('nuevoFiscalizadorSection').classList.add('show');
+                    document.getElementById('nuevoFiscalizadorSection').classList.remove('hide');
+                }, 10);
+                document.getElementById('toggleNuevoFiscalizador').style.display = 'none';
+            }
+
+            function ocultarSeccionNuevoFiscalizador() {
+                document.getElementById('nuevoFiscalizadorSection').classList.remove('show');
+                document.getElementById('nuevoFiscalizadorSection').classList.add('hide');
+                setTimeout(() => {
+                    document.getElementById('nuevoFiscalizadorSection').style.display = 'none';
+                }, 300);
+                document.getElementById('toggleNuevoFiscalizador').style.display = 'inline-block';
+                
+                // Limpiar campos
+                document.getElementById('nuevo_fiscalizador').value = '';
+            }
+
+            // Eventos para mostrar/ocultar sección de nuevo fiscalizador
+            document.getElementById('toggleNuevoFiscalizador').addEventListener('click', mostrarSeccionNuevoFiscalizador);
+            document.getElementById('cerrarNuevoFiscalizador').addEventListener('click', ocultarSeccionNuevoFiscalizador);
+
+            // Evento para guardar nuevo fiscalizador
+            document.getElementById('btnGuardarFiscalizador').addEventListener('click', async function() {
+                const nuevoFiscalizador = document.getElementById('nuevo_fiscalizador').value.trim();
+
+                if (!nuevoFiscalizador) {
+                    showAlert('error', 'Por favor ingrese el nombre del fiscalizador');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('fiscalizador', nuevoFiscalizador);
+
+                    const response = await fetch('conf/guardar_fiscalizador.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showAlert('success', 'Fiscalizador creado exitosamente');
+                        
+                        // Actualizar el select de fiscalizadores
+                        const option = document.createElement('option');
+                        option.value = result.id_fiscalizador;
+                        option.textContent = nuevoFiscalizador;
+                        document.getElementById('fiscalizador').appendChild(option);
+                        document.getElementById('fiscalizador').value = result.id_fiscalizador;
+                        
+                        // Ocultar la sección de nuevo fiscalizador
+                        ocultarSeccionNuevoFiscalizador();
+                    } else {
+                        showAlert('error', result.message || 'Error al crear el fiscalizador');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al procesar la solicitud');
+                }
+            });
+
+            // Funciones para mostrar/ocultar nuevo método constructivo
+            function mostrarSeccionNuevoMetodo() {
+                document.getElementById('nuevoMetodoSection').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('nuevoMetodoSection').classList.add('show');
+                    document.getElementById('nuevoMetodoSection').classList.remove('hide');
+                }, 10);
+                document.getElementById('toggleNuevoMetodo').style.display = 'none';
+            }
+
+            function ocultarSeccionNuevoMetodo() {
+                document.getElementById('nuevoMetodoSection').classList.remove('show');
+                document.getElementById('nuevoMetodoSection').classList.add('hide');
+                setTimeout(() => {
+                    document.getElementById('nuevoMetodoSection').style.display = 'none';
+                }, 300);
+                document.getElementById('toggleNuevoMetodo').style.display = 'inline-block';
+                
+                // Limpiar campos
+                document.getElementById('nuevo_metodo').value = '';
+            }
+
+            // Eventos para mostrar/ocultar sección de nuevo método constructivo
+            document.getElementById('toggleNuevoMetodo').addEventListener('click', mostrarSeccionNuevoMetodo);
+            document.getElementById('cerrarNuevoMetodo').addEventListener('click', ocultarSeccionNuevoMetodo);
+
+            // Evento para guardar nuevo método constructivo
+            document.getElementById('btnGuardarMetodo').addEventListener('click', async function() {
+                const nuevoMetodo = document.getElementById('nuevo_metodo').value.trim();
+
+                if (!nuevoMetodo) {
+                    showAlert('error', 'Por favor ingrese el nombre del método constructivo');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('metodo', nuevoMetodo);
+
+                    const response = await fetch('conf/guardar_metodo.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showAlert('success', 'Método constructivo creado exitosamente');
+                        
+                        // Actualizar el select de métodos constructivos
+                        const option = document.createElement('option');
+                        option.value = result.id_metodo;
+                        option.textContent = nuevoMetodo;
+                        document.getElementById('metodo_constructivo').appendChild(option);
+                        document.getElementById('metodo_constructivo').value = result.id_metodo;
+                        
+                        // Ocultar la sección de nuevo método constructivo
+                        ocultarSeccionNuevoMetodo();
+                    } else {
+                        showAlert('error', result.message || 'Error al crear el método constructivo');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error al procesar la solicitud');
+                }
+            });
+
+            // Funciones para mostrar/ocultar nuevo modelo constructivo
+            function mostrarSeccionNuevoModelo() {
+                document.getElementById('nuevoModeloSection').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('nuevoModeloSection').classList.add('show');
+                    document.getElementById('nuevoModeloSection').classList.remove('hide');
+                }, 10);
+                document.getElementById('toggleNuevoModelo').style.display = 'none';
+            }
+
+            function ocultarSeccionNuevoModelo() {
+                document.getElementById('nuevoModeloSection').classList.remove('show');
+                document.getElementById('nuevoModeloSection').classList.add('hide');
+                setTimeout(() => {
+                    document.getElementById('nuevoModeloSection').style.display = 'none';
+                }, 300);
+                document.getElementById('toggleNuevoModelo').style.display = 'inline-block';
+                
+                // Limpiar campos
+                document.getElementById('nuevo_modelo').value = '';
+            }
+
+            // Eventos para mostrar/ocultar sección de nuevo modelo constructivo
+            document.getElementById('toggleNuevoModelo').addEventListener('click', mostrarSeccionNuevoModelo);
+            document.getElementById('cerrarNuevoModelo').addEventListener('click', ocultarSeccionNuevoModelo);
+
+            // Evento para guardar nuevo modelo constructivo
+            document.getElementById('btnGuardarModelo').addEventListener('click', async function() {
+                const nuevoModelo = document.getElementById('nuevo_modelo').value.trim();
+
+                if (!nuevoModelo) {
+                    showAlert('error', 'Por favor ingrese el nombre del modelo constructivo');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('modelo', nuevoModelo);
+
+                    const response = await fetch('conf/guardar_modelo.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showAlert('success', 'Modelo constructivo creado exitosamente');
+                        
+                        // Actualizar el select de modelos constructivos
+                        const option = document.createElement('option');
+                        option.value = result.id_modelo;
+                        option.textContent = nuevoModelo;
+                        document.getElementById('modelo_constructivo').appendChild(option);
+                        document.getElementById('modelo_constructivo').value = result.id_modelo;
+                        
+                        // Ocultar la sección de nuevo modelo constructivo
+                        ocultarSeccionNuevoModelo();
+                    } else {
+                        showAlert('error', result.message || 'Error al crear el modelo constructivo');
                     }
                 } catch (error) {
                     console.error('Error:', error);
