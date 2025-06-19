@@ -13,11 +13,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telefono = trim($_POST['telefono'] ?? '');
     $password = $_POST['password'] ?? '';
     $rol = $_POST['rol'] ?? 'usuario';
+    $pregunta_seguridad = trim($_POST['pregunta_seguridad'] ?? '');
+    $respuesta_seguridad = trim($_POST['respuesta_seguridad'] ?? '');
 
     // Validar que todos los campos requeridos estén llenos
     if (empty($nombre) || empty($apellido) || empty($nombre_usuario) || 
         empty($cedula) || empty($correo) || empty($telefono) || empty($password)) {
         echo json_encode(['status' => 'error', 'message' => 'Todos los campos son obligatorios']);
+        exit;
+    }
+
+    if (empty($pregunta_seguridad) || empty($respuesta_seguridad)) {
+        echo json_encode(['status' => 'error', 'message' => 'La pregunta y respuesta de seguridad son obligatorias']);
         exit;
     }
 
@@ -36,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
     // Insertar nuevo usuario
-    $stmt = $conexion->prepare("INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssss", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol);
+    $stmt = $conexion->prepare("INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol, pregunta_seguridad, respuesta_seguridad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssssss", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol, $pregunta_seguridad, $respuesta_seguridad);
 
     if ($stmt->execute()) {
         echo json_encode(['status' => 'success', 'message' => 'Usuario registrado exitosamente']);

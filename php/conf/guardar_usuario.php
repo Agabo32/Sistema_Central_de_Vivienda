@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    // Log de depuración: datos recibidos
+    error_log('POST DATA: ' . json_encode($_POST));
+
     // Obtener y validar datos del formulario
     $nombre = trim($_POST['nombre'] ?? '');
     $apellido = trim($_POST['apellido'] ?? '');
@@ -29,6 +32,8 @@ try {
     $rol = $_POST['rol'] ?? 'usuario';
     $activo = isset($_POST['activo']) ? (int)$_POST['activo'] : 1;
     $id_usuario = isset($_POST['id_usuario']) && ctype_digit($_POST['id_usuario']) ? (int)$_POST['id_usuario'] : null;
+    $pregunta_seguridad = trim($_POST['pregunta_seguridad'] ?? '');
+    $respuesta_seguridad = trim($_POST['respuesta_seguridad'] ?? '');
 
     // Validaciones básicas
     $errores = [];
@@ -40,6 +45,8 @@ try {
     if (empty($correo)) $errores[] = 'El correo es requerido';
     if (empty($telefono)) $errores[] = 'El teléfono es requerido';
     if (empty($password) && !$id_usuario) $errores[] = 'La contraseña es requerida';
+    if (empty($pregunta_seguridad)) $errores[] = 'La pregunta de seguridad es requerida';
+    if (empty($respuesta_seguridad)) $errores[] = 'La respuesta de seguridad es requerida';
     
     // Validar formato de correo
     if (!empty($correo) && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
@@ -67,6 +74,7 @@ try {
     }
 
     if (!empty($errores)) {
+        error_log('VALIDATION ERRORS: ' . implode(', ', $errores));
         echo json_encode(['status' => 'error', 'message' => implode(', ', $errores)]);
         exit;
     }
@@ -82,20 +90,21 @@ try {
     $stmt_verificar->execute();
     $resultado_verificar = $stmt_verificar->get_result();
     if ($resultado_verificar->num_rows > 0) {
+        error_log('DUPLICATE USER ERROR: ' . $cedula . ', ' . $correo . ', ' . $nombre_usuario);
         echo json_encode(['status' => 'error', 'message' => 'Ya existe un usuario con esa cédula, correo o nombre de usuario']);
         exit;
     }
 
     if ($id_usuario) {
         // Actualizar usuario
-        $sql_update = "UPDATE usuario SET Nombre=?, Apellido=?, nombre_usuario=?, cedula=?, correo=?, telefono=?, rol=?, activo=?" . (!empty($password) ? ", password=?" : "") . " WHERE id_usuario=?";
+        $sql_update = "UPDATE usuario SET Nombre=?, Apellido=?, nombre_usuario=?, cedula=?, correo=?, telefono=?, rol=?, activo=?, pregunta_seguridad=?, respuesta_seguridad=?" . (!empty($password) ? ", password=?" : "") . " WHERE id_usuario=?";
         if (!empty($password)) {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt_update = $conexion->prepare($sql_update);
-            $stmt_update->bind_param("sssssssisi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $password_hash, $id_usuario);
+            $stmt_update->bind_param("sssssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $pregunta_seguridad, $respuesta_seguridad, $password_hash, $id_usuario);
         } else {
             $stmt_update = $conexion->prepare(str_replace(", password=?", "", $sql_update));
-            $stmt_update->bind_param("ssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $id_usuario);
+            $stmt_update->bind_param("ssssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $rol, $activo, $pregunta_seguridad, $respuesta_seguridad, $id_usuario);
         }
         if ($stmt_update->execute()) {
             echo json_encode([
@@ -104,17 +113,19 @@ try {
                 'user_id' => $id_usuario
             ]);
         } else {
-            throw new Exception('Error al actualizar el usuario en la base de datos');
+            error_log('MYSQL UPDATE ERROR: ' . $stmt_update->error);
+            echo json_encode(['status' => 'error', 'message' => 'Error al actualizar el usuario: ' . $stmt_update->error]);
+            exit;
         }
     } else {
         // Encriptar contraseña
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         
         // Preparar consulta de inserción
-        $sql_insertar = "INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol, fecha_registro, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+        $sql_insertar = "INSERT INTO usuario (Nombre, Apellido, nombre_usuario, cedula, correo, telefono, password, rol, fecha_registro, activo, pregunta_seguridad, respuesta_seguridad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)";
         
         $stmt_insertar = $conexion->prepare($sql_insertar);
-        $stmt_insertar->bind_param("ssssssssi", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol, $activo);
+        $stmt_insertar->bind_param("ssssssssiss", $nombre, $apellido, $nombre_usuario, $cedula, $correo, $telefono, $password_hash, $rol, $activo, $pregunta_seguridad, $respuesta_seguridad);
         
         if ($stmt_insertar->execute()) {
             echo json_encode([
@@ -123,7 +134,9 @@ try {
                 'user_id' => $conexion->insert_id
             ]);
         } else {
-            throw new Exception('Error al insertar el usuario en la base de datos');
+            error_log('MYSQL INSERT ERROR: ' . $stmt_insertar->error);
+            echo json_encode(['status' => 'error', 'message' => 'Error al crear el usuario: ' . $stmt_insertar->error]);
+            exit;
         }
     }
 

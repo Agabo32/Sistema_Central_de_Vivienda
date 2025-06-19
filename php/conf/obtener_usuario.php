@@ -17,7 +17,7 @@ if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
 
 $id_usuario = (int)$_GET['id'];
 
-$sql = "SELECT id_usuario, Nombre, Apellido, nombre_usuario, cedula, correo, telefono, rol, activo FROM usuario WHERE id_usuario = ?";
+$sql = "SELECT id_usuario, Nombre, Apellido, nombre_usuario, cedula, correo, telefono, rol, activo, pregunta_seguridad, respuesta_seguridad FROM usuario WHERE id_usuario = ?";
 $stmt = $conexion->prepare($sql);
 $stmt->bind_param('i', $id_usuario);
 $stmt->execute();
