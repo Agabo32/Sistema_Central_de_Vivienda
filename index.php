@@ -9,7 +9,7 @@ const ROLES_PERMITIDOS = ['admin', 'root']; // Ajustar según necesidades
 // 2. Configuración de la base de datos
 $db_config = [
     'host' => 'localhost',
-    'dbname' => '12/06/2025',
+    'dbname' => '18/06/2025',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8mb4',
@@ -182,22 +182,22 @@ $sesion_cerrada = isset($_GET['msg']) && $_GET['msg'] === 'sesion_cerrada';
                         <span class="input-group-text"><i class="fas fa-lock"></i></span>
                         <input type="password" class="form-control modern-input" id="password" 
                                name="password" placeholder="••••••••" required autocomplete="current-password">
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword" tabindex="-1">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
                 </div>
                 
                 <div class="d-flex justify-content-between mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
-                        <label class="form-check-label" for="remember">Recordarme</label>
+                    
+                    <div class="mb-3">
+                        <a href="php/recuperar_password.php" class="text-muted">¿Olvidaste tu contraseña?</a>
                     </div>
-                    <a href="#!" class="text-muted">¿Olvidaste tu contraseña?</a>
                 </div>
                 
                 <button type="submit" class="btn btn-animado mb-4">Iniciar Sesión</button>
                 
-                <div class="text-center">
-                    <p class="mb-0">¿No tienes una cuenta? <a href="php/registro.php" class="text-muted">Regístrate</a></p>
-                </div>
+              
             </form>
         </div>
     </div>
@@ -210,6 +210,22 @@ $sesion_cerrada = isset($_GET['msg']) && $_GET['msg'] === 'sesion_cerrada';
     document.addEventListener('DOMContentLoaded', function() {
         const temaGuardado = localStorage.getItem('tema') || 'default';
         document.documentElement.setAttribute('data-tema', temaGuardado);
+
+        // Mostrar/ocultar contraseña
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('togglePassword');
+        toggleBtn.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
     });
     </script>
 </body>
