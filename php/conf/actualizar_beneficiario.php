@@ -146,7 +146,7 @@ try {
         WHERE id_beneficiario = ?";
     
     $stmt_update_beneficiario = mysqli_prepare($conexion, $query_update_beneficiario);
-    mysqli_stmt_bind_param($stmt_update_beneficiario, "ssiiiissi", 
+    mysqli_stmt_bind_param($stmt_update_beneficiario, "ssssiiisi", 
         $cedula, $nombre_beneficiario, $telefono, $codigo_obra, 
         $metodo_constructivo, $modelo_constructivo, $id_fiscalizador, 
         $status, $id_beneficiario);
