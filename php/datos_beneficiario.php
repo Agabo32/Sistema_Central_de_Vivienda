@@ -310,8 +310,7 @@ function formatProgressValue($value) {
                                             
                                             <div class="mb-3">
                                                 <label for="telefono" class="form-label">Teléfono</label>
-                                                <input type="text" class="form-control" id="telefono" name="telefono" 
-                                                       value="<?php echo htmlspecialchars($data['telefono']); ?>">
+                                                <input type="text" class="form-control" id="telefono" name="telefono" maxlength="50" value="<?php echo htmlspecialchars($data['telefono']); ?>">
                                             </div>
 
                                             <div class="mb-3">

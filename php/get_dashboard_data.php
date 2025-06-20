@@ -198,17 +198,20 @@ try {
 
     // Preparar respuesta
     $response = [
-        'totalBeneficiarios' => (int)$totales['total_beneficiarios'],
-        'viviendasCompletadas' => (int)$totales['viviendas_completadas'],
-        'totalComunidades' => (int)$totales['total_comunidades'],
-        'avanceGeneral' => round($totales['avance_general'], 2),
-        'cambioBeneficiarios' => round($cambios['cambio_beneficiarios'], 2),
-        'cambioViviendas' => round($cambios['cambio_viviendas'], 2),
-        'cambioComunidades' => round($cambios['cambio_comunidades'], 2),
-        'cambioAvance' => round($cambios['cambio_avance'], 2),
+        'success' => true,
+        'total_beneficiarios' => (int)$totales['total_beneficiarios'],
+        'viviendas_completadas' => (int)$totales['viviendas_completadas'],
+        'total_comunidades' => (int)$totales['total_comunidades'],
+        'avance_general' => round($totales['avance_general'], 2),
+        'cambio_beneficiarios' => round($cambios['cambio_beneficiarios'], 2),
+        'cambio_viviendas' => round($cambios['cambio_viviendas'], 2),
+        'cambio_comunidades' => round($cambios['cambio_comunidades'], 2),
+        'cambio_avance' => round($cambios['cambio_avance'], 2),
         'progresoData' => $progreso_data,
         'estadoViviendasData' => $estado_data,
-        'municipiosData' => $municipios_data,
+        'beneficiarios_municipio' => array_map(function($municipio, $total) {
+            return ['municipio' => $municipio, 'total_beneficiarios' => $total];
+        }, $municipios_data['labels'], $municipios_data['values']),
         'metodosData' => $metodos_data
     ];
 
