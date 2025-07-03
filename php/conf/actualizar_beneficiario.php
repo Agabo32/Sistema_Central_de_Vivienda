@@ -35,6 +35,9 @@ try {
     $modelo_constructivo = !empty($_POST['modelo_constructivo']) ? intval($_POST['modelo_constructivo']) : null;
     $id_fiscalizador = !empty($_POST['id_fiscalizador']) ? intval($_POST['id_fiscalizador']) : null;
     
+    // Recibir el campo de protocolizacion
+    $protocolizacion = isset($_POST['protocolizacion']) ? intval($_POST['protocolizacion']) : 0;
+    
     // Datos de ubicación
     $id_municipio = !empty($_POST['id_municipio']) ? intval($_POST['id_municipio']) : null;
     $id_parroquia = !empty($_POST['id_parroquia']) ? intval($_POST['id_parroquia']) : null;
@@ -142,14 +145,15 @@ try {
         metodo_constructivo = ?, 
         modelo_constructivo = ?, 
         fiscalizador = ?, 
-        status = ? 
+        status = ?,
+        protocolizacion = ?
         WHERE id_beneficiario = ?";
     
     $stmt_update_beneficiario = mysqli_prepare($conexion, $query_update_beneficiario);
-    mysqli_stmt_bind_param($stmt_update_beneficiario, "ssssiiisi", 
+    mysqli_stmt_bind_param($stmt_update_beneficiario, "ssssiiisii", 
         $cedula, $nombre_beneficiario, $telefono, $codigo_obra, 
         $metodo_constructivo, $modelo_constructivo, $id_fiscalizador, 
-        $status, $id_beneficiario);
+        $status, $protocolizacion, $id_beneficiario);
     
     if (!mysqli_stmt_execute($stmt_update_beneficiario)) {
         throw new Exception('Error al actualizar el beneficiario: ' . mysqli_error($conexion));
