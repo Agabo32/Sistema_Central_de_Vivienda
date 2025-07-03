@@ -79,7 +79,8 @@ SELECT
     dc.fecha_protocolizacion,
     dc.acta_entregada, 
     dc.observaciones_responsables_control, 
-    dc.observaciones_fiscalizadores
+    dc.observaciones_fiscalizadores, 
+    b.protocolizacion
 FROM beneficiarios b
 LEFT JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
 LEFT JOIN comunidades c ON u.comunidad = c.id_comunidad
@@ -331,6 +332,13 @@ function formatProgressValue($value) {
                                                 <label for="fecha_protocolizacion" class="form-label">Fecha de Protocolización</label>
                                                 <input type="date" class="form-control" id="fecha_protocolizacion" name="fecha_protocolizacion" 
                                                        value="<?php echo htmlspecialchars($data['fecha_protocolizacion'] ?? ''); ?>">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="protocolizacion" class="form-label">Protocolización</label>
+                                                <select class="form-select" id="protocolizacion" name="protocolizacion">
+                                                    <option value="0" <?= ($data['protocolizacion'] == 0) ? 'selected' : '' ?>>No</option>
+                                                    <option value="1" <?= ($data['protocolizacion'] == 1) ? 'selected' : '' ?>>Sí</option>
+                                                </select>
                                             </div>
                                         </div>
                                         
@@ -1477,6 +1485,14 @@ function formatProgressValue($value) {
                         <div class="info-value">
                             <span class="status-badge <?php echo ($data['acta_entregada'] == 1) ? 'bg-success' : 'bg-warning'; ?>">
                                 <?php echo ($data['acta_entregada'] == 1) ? 'Sí' : 'No'; ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label" style="color: #000000">Protocolización</div>
+                        <div class="info-value">
+                            <span class="status-badge <?php echo ($data['protocolizacion'] == 1) ? 'bg-success' : 'bg-warning'; ?>">
+                                <?php echo ($data['protocolizacion'] == 1) ? 'Sí' : 'No'; ?>
                             </span>
                         </div>
                     </div>

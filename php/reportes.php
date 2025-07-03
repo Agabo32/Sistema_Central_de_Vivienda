@@ -136,6 +136,32 @@ foreach ($reportes as $reporte) {
 
 $avance_promedio_general = $total_viviendas_general > 0 ? round($suma_avances / $total_viviendas_general, 2) : 0;
 
+// Contar protocolizados y no protocolizados
+$sql_protocolizados = "SELECT 
+    SUM(CASE WHEN b.protocolizacion = 1 THEN 1 ELSE 0 END) AS protocolizados,
+    SUM(CASE WHEN b.protocolizacion = 0 OR b.protocolizacion IS NULL THEN 1 ELSE 0 END) AS no_protocolizados
+FROM beneficiarios b
+JOIN ubicaciones u ON b.id_ubicacion = u.id_ubicacion
+WHERE 1=1";
+if ($id_municipio) {
+    $sql_protocolizados .= " AND u.municipio = " . intval($id_municipio);
+}
+if ($id_parroquia) {
+    $sql_protocolizados .= " AND u.parroquia = " . intval($id_parroquia);
+}
+if ($id_comunidad) {
+    $sql_protocolizados .= " AND u.comunidad = " . intval($id_comunidad);
+}
+if ($estado_beneficiario && $estado_beneficiario !== 'todos') {
+    $sql_protocolizados .= " AND b.status = '" . $conexion->real_escape_string($estado_beneficiario) . "'";
+} else {
+    $sql_protocolizados .= " AND b.status = 'activo'";
+}
+$result_protocolizados = $conexion->query($sql_protocolizados);
+$protocolizados_data = $result_protocolizados->fetch_assoc();
+$total_protocolizados = $protocolizados_data['protocolizados'] ?? 0;
+$total_no_protocolizados = $protocolizados_data['no_protocolizados'] ?? 0;
+
 // Consulta para obtener datos por comunidad
 $sql_comunidades = "SELECT 
     c.comunidad,
@@ -399,7 +425,15 @@ $codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
                 </div>
                 <div class="col-md-2 summary-item">
                     <span class="summary-number"><?= $total_no_iniciadas_general ?></span>
-                    <span class="summary-label">No Iniciadas</span>
+                    <span class="summary-label">Sin Iniciar</span>
+                </div>
+                <div class="col-md-3 summary-item">
+                    <span class="summary-number"><?= $total_protocolizados ?></span>
+                    <span class="summary-label">Protocolizados</span>
+                </div>
+                <div class="col-md-3 summary-item">
+                    <span class="summary-number"><?= $total_no_protocolizados ?></span>
+                    <span class="summary-label">No Protocolizados</span>
                 </div>
             </div>
         </div>
@@ -622,7 +656,7 @@ $codigos_obra = $result_codigos_obra->fetch_all(MYSQLI_ASSOC);
         document.addEventListener('DOMContentLoaded', function() {
             // Datos para los gráficos existentes
             const avanceData = {
-                labels: ['Completadas', 'En Progreso', 'No Iniciadas'],
+                labels: ['Completadas', 'En Progreso', 'Sin Iniciar'],
                 datasets: [{
                     data: [
                         <?= $total_completadas_general ?>,
